@@ -1,0 +1,367 @@
+{
+    "home": {
+        "title": "KREATIVIUM",
+        "subtitle": "Mestre din energi. Spor ditt sinn.",
+        "crisisMode": {
+            "title": "Krisemodus",
+            "subtitle": "Trykk for å starte tidtaker"
+        },
+        "newLog": {
+            "title": "Ny Logg",
+            "subtitle": "Registrer din nåværende tilstand"
+        },
+        "dashboard": {
+            "title": "Oversikt",
+            "subtitle": "Se daglig statistikk"
+        },
+        "analysis": {
+            "title": "Analyse",
+            "subtitle": "Dypdykk i data"
+        },
+        "behavior": {
+            "title": "Atferd",
+            "subtitle": "Nedsmeltingsanatomi"
+        },
+        "senses": {
+            "title": "Sanser",
+            "subtitle": "Sensorisk Radar"
+        },
+        "heatmap": {
+            "title": "Heatmap",
+            "subtitle": "Tidsmønstre"
+        },
+        "energy": {
+            "title": "Energi",
+            "subtitle": "Skjebatteri"
+        },
+        "reports": {
+            "title": "Rapporter",
+            "subtitle": "Generer PDF for BUP/Skole"
+        },
+        "schedule": {
+            "title": "Dagsplan",
+            "subtitle": "Visuell tidslinje"
+        },
+        "goals": {
+            "title": "Mål (IEP)",
+            "subtitle": "Følg opp progresjon"
+        },
+        "transitions": {
+            "title": "Overganger",
+            "subtitle": "Analyse av vanskelige overganger og effektive tiltak"
+        },
+        "settings": {
+            "title": "Innstillinger",
+            "subtitle": "Barnets profil & preferanser"
+        },
+        "devTools": {
+            "title": "Utviklerverktøy",
+            "loadData": "Last testdata (2 uker)",
+            "loaded": "Lastet!"
+        }
+    },
+    "settings": {
+        "title": "Innstillinger",
+        "subtitle": "Barnets profil og preferanser",
+        "infoBanner": "Denne informasjonen brukes til å gi AI-analysen bedre kontekst. All data lagres kun lokalt på enheten din.",
+        "basicInfo": "Grunnleggende info",
+        "nameLabel": "Navn / kallenavn",
+        "namePlaceholder": "F.eks. 'Mitt barn' eller kallenavn",
+        "ageLabel": "Alder (valgfritt)",
+        "agePlaceholder": "År",
+        "diagnoses": {
+            "title": "Diagnoser",
+            "subtitle": "Velg alle som gjelder"
+        },
+        "communication": {
+            "title": "Kommunikasjonsstil"
+        },
+        "sensoryChallenges": {
+            "title": "Sensoriske utfordringer",
+            "subtitle": "Hvilke sanseinntrykk er mest utfordrende?"
+        },
+        "sensorySeeking": {
+            "title": "Sensorisk søking",
+            "subtitle": "Hvilke sanseinntrykk søker barnet aktivt?"
+        },
+        "strategies": {
+            "title": "Kjente effektive strategier",
+            "subtitle": "Velg strategier som vanligvis fungerer godt"
+        },
+        "additionalContext": {
+            "label": "Tilleggsinformasjon for AI (valgfritt)",
+            "placeholder": "F.eks. 'Spesielt sensitiv for høye lyder', 'Elsker dyr', 'Foretrekker faste rutiner'...",
+            "note": "Denne teksten sendes med til AI for bedre analyse. Unngå sensitiv informasjon."
+        },
+        "dataManagement": {
+            "title": "Datahåndtering",
+            "export": {
+                "title": "Eksporter Data",
+                "subtitle": "Lagre backup av all data",
+                "desc": "Dette lager en JSON-fil med alle logger, krisehendelser, mål og innstillinger.",
+                "button": "Last ned Backup"
+            },
+            "import": {
+                "title": "Importer Data",
+                "subtitle": "Gjenopprett fra backup",
+                "desc": "Last opp en tidligere eksportert fil for å hente tilbake data.",
+                "button": "Velg Fil...",
+                "modal": {
+                    "title": "Bekreft Import",
+                    "desc": "Du er i ferd med å importere data. Hvordan vil du håndtere eksisterende data?",
+                    "replace": {
+                        "title": "Erstatt Alt (Reset)",
+                        "desc": "Sletter all nåværende data og erstatter med importen."
+                    },
+                    "merge": {
+                        "title": "Flett Sammen (Merge)",
+                        "desc": "Beholder eksisterende data og legger til nytt."
+                    },
+                    "cancel": "Avbryt",
+                    "confirm": "Importer Nå"
+                }
+            },
+            "demo": {
+                "title": "Demo Data",
+                "subtitle": "Last inn 3 måneder med testdata",
+                "desc": "Genererer realistiske atferdsdata med mønstre som AI-analysen kan oppdage. Perfekt for testing og demonstrasjon.",
+                "loadButton": "Last Demo Data",
+                "confirmLoad": "Dette vil erstatte eksisterende data. Fortsett?",
+                "confirmClear": "Slette all data?"
+            }
+        },
+        "stats": {
+            "logs": "Logger",
+            "events": "Hendelser",
+            "goals": "Mål"
+        },
+        "save": {
+            "button": "Lagre profil",
+            "saved": "Lagret!"
+        },
+        "delete": {
+            "modal": {
+                "title": "Slett profil?",
+                "desc": "Er du sikker på at du vil slette barnets profil? Dette kan ikke angres.",
+                "cancel": "Avbryt",
+                "confirm": "Slett"
+            }
+        },
+        "minute": "min",
+        "minutes": "min",
+        "hour": "time",
+        "hours": "timer"
+    },
+    "risk": {
+        "title": {
+            "today": "Dagens Prognose"
+        },
+        "level": {
+            "low": "Lav Risiko",
+            "moderate": "Moderat Risiko",
+            "high": "Høy Risiko"
+        },
+        "obs": "Obs: {{time}}",
+        "factors": {
+            "notEnoughData": "Ikke nok historiske data for denne ukedagen ennå",
+            "highStressTime": "Høyt stressnivå oppdages ofte rundt {{timeRange}}",
+            "elevatedStress": "Dager som i dag viser generelt forhøyede stressnivåer",
+            "calmPeriod": "Historiske data antyder en rolig periode",
+            "unknown": "Ingen spesifikke faktorer identifisert"
+        },
+        "error": {
+            "calculation": "Kunne ikke beregne prognose"
+        }
+    },
+    "layout": {
+        "home": "Hjem",
+        "school": "Skole"
+    },
+    "log": {
+        "title": "Ny Loggføring",
+        "date": "Dato & Tid",
+        "arousal": {
+            "label": "Spenning (Stress)",
+            "low": "Rolig",
+            "high": "Overveldet"
+        },
+        "valence": {
+            "label": "Valens (Humør)",
+            "low": "Ubehagelig",
+            "high": "Behagelig"
+        },
+        "energy": {
+            "label": "Energi (Overskudd)",
+            "low": "Lavt Batteri",
+            "high": "Fulladet"
+        },
+        "triggers": {
+            "sensory": "Sensoriske Utløsere",
+            "context": "Kontekstuelle Utløsere"
+        },
+        "strategies": "Hjelpsomme Strategier",
+        "effectiveness": {
+            "label": "Fungerte Strategiene?",
+            "required": "Påkrevd",
+            "helped": "Hjalp",
+            "noChange": "Uendret",
+            "escalated": "Eskalerte"
+        },
+        "duration": "Varighet (minutter)",
+        "notes": {
+            "label": "Notater",
+            "placeholder": "Legg til flere observasjoner..."
+        },
+        "save": "Lagre Logg"
+    },
+    "crisis": {
+        "title": "Krisemodus",
+        "duration": "Varighet",
+        "stopEvent": "STOPP HENDELSE",
+        "stopRecording": "Stopp Opptak",
+        "startRecording": "Ta Opp Lydnotat",
+        "recordingActive": "Opptak aktivt. Trykk Stopp når hendelsen er over.",
+        "eventEnded": "Hendelse Avsluttet",
+        "documentEvent": "Dokumenter Hendelsen",
+        "audioSaved": "Lydopptak lagret",
+        "helperText": "Denne informasjonen hjelper med å identifisere mønstre og forbedre strategier.",
+        "type": "Type Hendelse",
+        "intensity": {
+            "label": "Høyeste Intensitet",
+            "mild": "Mild",
+            "extreme": "Ekstrem"
+        },
+        "warningSigns": "Varseltegn Observert",
+        "sensoryTriggers": "Sensoriske Utløsere",
+        "contextTriggers": "Kontekstuelle Utløsere",
+        "strategiesUsed": "Strategier Brukt",
+        "resolution": "Hvordan Ble Det Løst?",
+        "notes": {
+            "label": "Notater",
+            "placeholder": "Hva skjedde? Hva fungerte? Hva kan forbedres?"
+        },
+        "actions": {
+            "skip": "Hopp Over",
+            "save": "Lagre Hendelse"
+        }
+    },
+    "reports": {
+        "title": "Rapporter",
+        "period": {
+            "title": "Velg Periode",
+            "last30": "Siste 30 Dager",
+            "last3Months": "Siste 3 Mnd",
+            "thisYear": "I År"
+        },
+        "preview": {
+            "title": "Forhåndsvisning",
+            "incidents": "Antall hendelser",
+            "avgDuration": "Gj.snitt varighet",
+            "topTrigger": "Topp Trigger",
+            "bestStrategy": "Beste Strategi"
+        },
+        "generate": "Generer PDF Rapport",
+        "generating": "Genererer PDF...",
+        "generated": "Rapport Lastet Ned",
+        "error": {
+            "noData": "Ingen data å generere rapport fra for denne perioden.",
+            "failed": "Kunne ikke generere PDF. Prøv igjen."
+        },
+        "success": "Rapporten er lagret i nedlastinger-mappen din.",
+        "noData": "Ingen data"
+    },
+    "visualSchedule": {
+        "title": "Dagsplan",
+        "timeline": "Tidslinje",
+        "next": "Neste",
+        "currentActivity": "Nåværende aktivitet",
+        "now": "Nå",
+        "timeRemaining": "Tid Igjen",
+        "startTimer": "Start Tidtaker",
+        "pauseTimer": "Pause",
+        "resumeTimer": "Fortsett",
+        "resetTimer": "Tilbakestill",
+        "complete": "Fullført",
+        "allDone": {
+            "title": "Ferdig for i dag!",
+            "subtitle": "Alle aktiviteter er fullført"
+        },
+        "modal": {
+            "newTitle": "Ny Aktivitet",
+            "editTitle": "Rediger Aktivitet",
+            "titleLabel": "Tittel",
+            "titlePlaceholder": "F.eks. Matte, Pause, Lunsj...",
+            "iconLabel": "Ikon",
+            "startTime": "Starttid",
+            "duration": "Varighet",
+            "save": "Lagre",
+            "add": "Legg Til",
+            "cancel": "Avbryt",
+            "delete": "Slett",
+            "validation": {
+                "titleRequired": "Tittel er påkrevd",
+                "durationInvalid": "Varighet må være større enn 0"
+            }
+        },
+        "deleteModal": {
+            "title": "Slett aktivitet?",
+            "description": "Er du sikker på at du vil slette \"{{title}}\"? Dette kan ikke angres."
+        }
+    },
+    "goals": {
+        "title": "IEP Mål",
+        "addGoal": "Legg til nytt mål",
+        "empty": "Legg til mål for å begynne å spore fremgang.",
+        "progression": "Målprogresjon",
+        "summary": "Du følger {{count}} av {{total}} mål denne uken.",
+        "totalCompletion": "Samlet Fullføring",
+        "activeGoals": "Aktive Mål",
+        "progress": "Fremgang",
+        "current": "Nå:",
+        "target": "Mål:",
+        "logProgress": "Logg Fremgang",
+        "noGoals": "Ingen egendefinerte mål ennå. Trykk + for å sette opp et nytt mål for barnet.",
+        "addFirst": "Legg Til Første Mål",
+        "newGoal": "Nytt Mål",
+        "form": {
+            "title": "Tittel",
+            "description": "Beskrivelse",
+            "category": "Kategori",
+            "targetValue": "Målverdi",
+            "unit": "Enhet",
+            "direction": "Retning",
+            "increase": "Øke",
+            "decrease": "Redusere",
+            "submit": "Legg Til Mål"
+        },
+        "logModal": {
+            "title": "Logg Fremgang",
+            "newValue": "Ny Verdi",
+            "note": "Notat (valgfritt)",
+            "save": "Lagre Fremgang"
+        }
+    },
+    "logExplorer": {
+        "title": "Loggutforsker",
+        "subtitle": "Historikk og administrasjon",
+        "chartTitle": "Spenningsmønstre (Siste 24t)",
+        "searchPlaceholder": "Søk i notater, triggere...",
+        "filters": {
+            "allLevels": "Alle nivåer",
+            "highArousal": "Høy Arousal (7+)",
+            "home": "Hjemme",
+            "school": "Skole"
+        },
+        "foundLogs": "{{count}} logger funnet",
+        "noLogs": "Ingen logger funnet med valgte filtre.",
+        "deleteConfirm": "Er du sikker på at du vil slette denne loggen?",
+        "deleteTitle": "Slett logg",
+        "valence": "Valens:",
+        "energy": "Energi:"
+    },
+    "navigation": {
+        "home": "Hjem",
+        "dashboard": "Oversikt",
+        "analysis": "Analyse"
+    }
+}

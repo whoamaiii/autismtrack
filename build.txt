@@ -1,0 +1,20 @@
+
+> neurolog-pro@0.0.0 build
+> tsc -b && vite build
+
+vite v7.2.4 building client environment for production...
+transforming...
+✓ 3 modules transformed.
+✗ Build failed in 130ms
+error during build:
+[vite:css] [postcss] It looks like you're trying to use `tailwindcss` directly as a PostCSS plugin. The PostCSS plugin has moved to a separate package, so to continue using Tailwind CSS with PostCSS you'll need to install `@tailwindcss/postcss` and update your PostCSS configuration.
+file: /Users/quentinthiessen/Desktop/kreaaaa/neurolog-pro/src/index.css:undefined:NaN
+    at at (/Users/quentinthiessen/Desktop/kreaaaa/neurolog-pro/node_modules/tailwindcss/dist/lib.js:38:1629)
+    at LazyResult.runOnRoot (/Users/quentinthiessen/Desktop/kreaaaa/neurolog-pro/node_modules/postcss/lib/lazy-result.js:361:16)
+    at LazyResult.runAsync (/Users/quentinthiessen/Desktop/kreaaaa/neurolog-pro/node_modules/postcss/lib/lazy-result.js:290:26)
+    at async runPostCSS (file:///Users/quentinthiessen/Desktop/kreaaaa/neurolog-pro/node_modules/vite/dist/node/chunks/config.js:30793:19)
+    at async compilePostCSS (file:///Users/quentinthiessen/Desktop/kreaaaa/neurolog-pro/node_modules/vite/dist/node/chunks/config.js:30777:6)
+    at async compileCSS (file:///Users/quentinthiessen/Desktop/kreaaaa/neurolog-pro/node_modules/vite/dist/node/chunks/config.js:30707:26)
+    at async Object.handler (file:///Users/quentinthiessen/Desktop/kreaaaa/neurolog-pro/node_modules/vite/dist/node/chunks/config.js:30240:54)
+    at async transform (file:///Users/quentinthiessen/Desktop/kreaaaa/neurolog-pro/node_modules/rollup/dist/es/shared/node-entry.js:21163:16)
+    at async ModuleLoader.addModuleSource (file:///Users/quentinthiessen/Desktop/kreaaaa/neurolog-pro/node_modules/rollup/dist/es/shared/node-entry.js:21377:36)

@@ -1,0 +1,367 @@
+{
+    "home": {
+        "title": "KREATIVIUM",
+        "subtitle": "Master your energy. Track your mind.",
+        "crisisMode": {
+            "title": "Crisis Mode",
+            "subtitle": "Tap to start timer"
+        },
+        "newLog": {
+            "title": "New Log",
+            "subtitle": "Log your current state"
+        },
+        "dashboard": {
+            "title": "Overview",
+            "subtitle": "View daily statistics"
+        },
+        "analysis": {
+            "title": "Analysis",
+            "subtitle": "Deep dive into data"
+        },
+        "behavior": {
+            "title": "Behavior",
+            "subtitle": "Meltdown anatomy"
+        },
+        "senses": {
+            "title": "Senses",
+            "subtitle": "Sensory Radar"
+        },
+        "heatmap": {
+            "title": "Heatmap",
+            "subtitle": "Time patterns"
+        },
+        "energy": {
+            "title": "Energy",
+            "subtitle": "Spoon battery"
+        },
+        "reports": {
+            "title": "Reports",
+            "subtitle": "Generate PDF for specialist/school"
+        },
+        "schedule": {
+            "title": "Daily Plan",
+            "subtitle": "Visual timeline"
+        },
+        "goals": {
+            "title": "Goals (IEP)",
+            "subtitle": "Track progression"
+        },
+        "transitions": {
+            "title": "Transitions",
+            "subtitle": "Analysis of difficult transitions"
+        },
+        "settings": {
+            "title": "Settings",
+            "subtitle": "Child's profile & preferences"
+        },
+        "devTools": {
+            "title": "Developer Tools",
+            "loadData": "Load test data (2 weeks)",
+            "loaded": "Loaded!"
+        }
+    },
+    "settings": {
+        "title": "Settings",
+        "subtitle": "Child's profile and preferences",
+        "infoBanner": "This information is used to give the AI context. All data is stored locally on your device.",
+        "basicInfo": "Basic Info",
+        "nameLabel": "Name / Nickname",
+        "namePlaceholder": "E.g. 'My Child' or nickname",
+        "ageLabel": "Age (Optional)",
+        "agePlaceholder": "Years",
+        "diagnoses": {
+            "title": "Diagnoses",
+            "subtitle": "Select all that apply"
+        },
+        "communication": {
+            "title": "Communication Style"
+        },
+        "sensoryChallenges": {
+            "title": "Sensory Challenges",
+            "subtitle": "Which senses are most challenging?"
+        },
+        "sensorySeeking": {
+            "title": "Sensory Seeking",
+            "subtitle": "Which senses does the child actively seek?"
+        },
+        "strategies": {
+            "title": "Known Effective Strategies",
+            "subtitle": "Select strategies that usually work well"
+        },
+        "additionalContext": {
+            "label": "Additional Context for AI (Optional)",
+            "placeholder": "E.g. 'Sensitive to loud noises', 'Loves animals', 'Prefers strict routines'...",
+            "note": "This text is sent to the AI for better analysis. Avoid sensitive PII."
+        },
+        "dataManagement": {
+            "title": "Data Management",
+            "export": {
+                "title": "Export Data",
+                "subtitle": "Save backup of all data",
+                "desc": "This creates a JSON file with all logs, crisis events, goals, and settings.",
+                "button": "Download Backup"
+            },
+            "import": {
+                "title": "Import Data",
+                "subtitle": "Restore from backup",
+                "desc": "Upload a previously exported file to restore data.",
+                "button": "Select File...",
+                "modal": {
+                    "title": "Confirm Import",
+                    "desc": "You are about to import data. How do you want to handle existing data?",
+                    "replace": {
+                        "title": "Replace All (Reset)",
+                        "desc": "Deletes all current data and replaces it with the import."
+                    },
+                    "merge": {
+                        "title": "Merge",
+                        "desc": "Keeps existing data and adds new data."
+                    },
+                    "cancel": "Cancel",
+                    "confirm": "Import Now"
+                }
+            },
+            "demo": {
+                "title": "Demo Data",
+                "subtitle": "Load 3 months of test data",
+                "desc": "Generates realistic behavior data for AI analysis testing.",
+                "loadButton": "Load Demo Data",
+                "confirmLoad": "This will replace existing data. Continue?",
+                "confirmClear": "Delete all data?"
+            }
+        },
+        "stats": {
+            "logs": "Logs",
+            "events": "Events",
+            "goals": "Goals"
+        },
+        "save": {
+            "button": "Save Profile",
+            "saved": "Saved!"
+        },
+        "delete": {
+            "modal": {
+                "title": "Delete Profile?",
+                "desc": "Are you sure you want to delete the profile? This cannot be undone.",
+                "cancel": "Cancel",
+                "confirm": "Delete"
+            }
+        },
+        "minute": "min",
+        "minutes": "mins",
+        "hour": "hour",
+        "hours": "hours"
+    },
+    "risk": {
+        "title": {
+            "today": "Today's Forecast"
+        },
+        "level": {
+            "low": "Low Risk",
+            "moderate": "Moderate Risk",
+            "high": "High Risk"
+        },
+        "obs": "Note: {{time}}",
+        "factors": {
+            "notEnoughData": "Not enough historical data for this weekday yet",
+            "highStressTime": "High stress often detected around {{timeRange}}",
+            "elevatedStress": "Days like today generally show elevated stress levels",
+            "calmPeriod": "Historical data suggests a calm period",
+            "unknown": "No specific factors identified"
+        },
+        "error": {
+            "calculation": "Could not calculate forecast"
+        }
+    },
+    "layout": {
+        "home": "Home",
+        "school": "School"
+    },
+    "log": {
+        "title": "New Log Entry",
+        "date": "Date & Time",
+        "arousal": {
+            "label": "Arousal (Stress)",
+            "low": "Calm",
+            "high": "Overwhelmed"
+        },
+        "valence": {
+            "label": "Valence (Mood)",
+            "low": "Unpleasant",
+            "high": "Pleasant"
+        },
+        "energy": {
+            "label": "Energy (Spoons)",
+            "low": "Low Battery",
+            "high": "Fully Charged"
+        },
+        "triggers": {
+            "sensory": "Sensory Triggers",
+            "context": "Contextual Triggers"
+        },
+        "strategies": "Helpful Strategies",
+        "effectiveness": {
+            "label": "Did strategies work?",
+            "required": "Required",
+            "helped": "Helped",
+            "noChange": "No Change",
+            "escalated": "Escalated"
+        },
+        "duration": "Duration (minutes)",
+        "notes": {
+            "label": "Notes",
+            "placeholder": "Add more observations..."
+        },
+        "save": "Save Log"
+    },
+    "crisis": {
+        "title": "Crisis Mode",
+        "duration": "Duration",
+        "stopEvent": "STOP EVENT",
+        "stopRecording": "Stop Recording",
+        "startRecording": "Record Audio Note",
+        "recordingActive": "Recording active. Tap Stop when event is over.",
+        "eventEnded": "Event Ended",
+        "documentEvent": "Document Event",
+        "audioSaved": "Audio recording saved",
+        "helperText": "This information helps identify patterns and improve strategies.",
+        "type": "Event Type",
+        "intensity": {
+            "label": "Peak Intensity",
+            "mild": "Mild",
+            "extreme": "Extreme"
+        },
+        "warningSigns": "Observed Warning Signs",
+        "sensoryTriggers": "Sensory Triggers",
+        "contextTriggers": "Contextual Triggers",
+        "strategiesUsed": "Strategies Used",
+        "resolution": "How was it resolved?",
+        "notes": {
+            "label": "Notes",
+            "placeholder": "What happened? What worked? What can be improved?"
+        },
+        "actions": {
+            "skip": "Skip",
+            "save": "Save Event"
+        }
+    },
+    "reports": {
+        "title": "Reports",
+        "period": {
+            "title": "Select Period",
+            "last30": "Last 30 Days",
+            "last3Months": "Last 3 Months",
+            "thisYear": "This Year"
+        },
+        "preview": {
+            "title": "Preview",
+            "incidents": "Total Incidents",
+            "avgDuration": "Avg Duration",
+            "topTrigger": "Top Trigger",
+            "bestStrategy": "Best Strategy"
+        },
+        "generate": "Generate PDF Report",
+        "generating": "Generating PDF...",
+        "generated": "Report Downloaded",
+        "error": {
+            "noData": "No data to generate report from for this period.",
+            "failed": "Could not generate PDF. Please try again."
+        },
+        "success": "The report has been saved to your downloads folder.",
+        "noData": "No data"
+    },
+    "visualSchedule": {
+        "title": "Daily Plan",
+        "timeline": "Timeline",
+        "next": "Next",
+        "currentActivity": "Current Activity",
+        "now": "Now",
+        "timeRemaining": "Time Remaining",
+        "startTimer": "Start Timer",
+        "pauseTimer": "Pause",
+        "resumeTimer": "Resume",
+        "resetTimer": "Reset",
+        "complete": "Complete",
+        "allDone": {
+            "title": "Done for today!",
+            "subtitle": "All activities completed"
+        },
+        "modal": {
+            "newTitle": "New Activity",
+            "editTitle": "Edit Activity",
+            "titleLabel": "Title",
+            "titlePlaceholder": "E.g. Math, Break, Lunch...",
+            "iconLabel": "Icon",
+            "startTime": "Start Time",
+            "duration": "Duration",
+            "save": "Save",
+            "add": "Add",
+            "cancel": "Cancel",
+            "delete": "Delete",
+            "validation": {
+                "titleRequired": "Title is required",
+                "durationInvalid": "Duration must be greater than 0"
+            }
+        },
+        "deleteModal": {
+            "title": "Delete activity?",
+            "description": "Are you sure you want to delete \"{{title}}\"? This cannot be undone."
+        }
+    },
+    "goals": {
+        "title": "IEP Goals",
+        "addGoal": "Add New Goal",
+        "empty": "Add goals to start tracking progress.",
+        "progression": "Goal Progression",
+        "summary": "You are tracking {{count}} of {{total}} goals this week.",
+        "totalCompletion": "Total Completion",
+        "activeGoals": "Active Goals",
+        "progress": "Progress",
+        "current": "Now:",
+        "target": "Goal:",
+        "logProgress": "Log Progress",
+        "noGoals": "No custom goals yet. Tap + to set up a new goal.",
+        "addFirst": "Add First Goal",
+        "newGoal": "New Goal",
+        "form": {
+            "title": "Title",
+            "description": "Description",
+            "category": "Category",
+            "targetValue": "Target Value",
+            "unit": "Unit",
+            "direction": "Direction",
+            "increase": "Increase",
+            "decrease": "Decrease",
+            "submit": "Add Goal"
+        },
+        "logModal": {
+            "title": "Log Progress",
+            "newValue": "New Value",
+            "note": "Note (Optional)",
+            "save": "Save Progress"
+        }
+    },
+    "logExplorer": {
+        "title": "Log Explorer",
+        "subtitle": "History and management",
+        "chartTitle": "Arousal Patterns (Last 24h)",
+        "searchPlaceholder": "Search notes, triggers...",
+        "filters": {
+            "allLevels": "All levels",
+            "highArousal": "High Arousal (7+)",
+            "home": "Home",
+            "school": "School"
+        },
+        "foundLogs": "{{count}} logs found",
+        "noLogs": "No logs found with selected filters.",
+        "deleteConfirm": "Are you sure you want to delete this log?",
+        "deleteTitle": "Delete log",
+        "valence": "Valence:",
+        "energy": "Energy:"
+    },
+    "navigation": {
+        "home": "Home",
+        "dashboard": "Dashboard",
+        "analysis": "Analysis"
+    }
+}

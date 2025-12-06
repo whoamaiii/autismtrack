@@ -1,0 +1,208 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #007AFF;
+  --color-primary-foreground: #FFFFFF;
+
+  --color-background-light: #F5F5F7;
+  --color-background-dark: #0a0a0f;
+
+  --color-surface-light: #FFFFFF;
+  --color-surface-dark: #1C1C1E;
+
+  --color-glass-border: rgba(255, 255, 255, 0.4);
+  --color-glass-bg: rgba(255, 255, 255, 0.65);
+  --color-glass-bg-dark: rgba(28, 28, 30, 0.65);
+
+  /* Liquid Glass Colors */
+  --color-liquid-glass-bg: rgba(255, 255, 255, 0.08);
+  --color-liquid-glass-border: rgba(255, 255, 255, 0.12);
+  --color-liquid-glass-highlight: rgba(255, 255, 255, 0.15);
+
+  /* Neon Accent Colors */
+  --color-neon-blue: #00D4FF;
+  --color-neon-purple: #A855F7;
+  --color-neon-green: #22C55E;
+  --color-neon-orange: #F97316;
+  --color-neon-pink: #EC4899;
+
+  --font-display: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  --shadow-soft: 0 4px 24px rgba(0, 0, 0, 0.04);
+  --shadow-layered: 0 8px 32px rgba(0, 0, 0, 0.08);
+  --shadow-glow: 0 0 20px rgba(0, 122, 255, 0.3);
+  --shadow-liquid: 0 8px 32px rgba(31, 38, 135, 0.37);
+  --shadow-neon-blue: 0 0 20px rgba(0, 212, 255, 0.5), 0 0 40px rgba(0, 212, 255, 0.2);
+  --shadow-neon-green: 0 0 20px rgba(34, 197, 94, 0.5), 0 0 40px rgba(34, 197, 94, 0.2);
+
+  --ease-spring: linear(0, 0.009 0.2%, 0.034 0.4%, 0.074 0.7%, 0.128 1%, 0.193 1.4%, 0.269 1.9%, 0.353 2.5%, 0.443 3.1%, 0.538 3.9%, 0.636 4.8%, 0.734 5.9%, 0.829 7.2%, 0.915 9%, 0.984 11.4%, 1.031 13.7%, 1.058 15.9%, 1.07 18%, 1.073 20.1%, 1.068 22.3%, 1.058 24.6%, 1.044 27.1%, 1.028 29.9%, 1.013 33.1%, 1 36.9%, 0.992 40.2%, 0.989 42.6%, 0.989 44.8%, 0.991 47.1%, 0.994 49.6%, 0.997 52.5%, 0.999 56%, 1 60.6%, 1);
+}
+
+@layer base {
+  body {
+    font-family: var(--font-display);
+    @apply bg-black text-slate-900 dark:text-white antialiased selection:bg-primary selection:text-white;
+  }
+
+  /* Dark mode gradient background for liquid glass aesthetic */
+  /* Dark mode gradient background removed to reveal shader */
+  .dark body,
+  body.dark {
+    background: transparent;
+  }
+}
+
+@utility glass {
+  @apply backdrop-blur-2xl bg-white/10 dark:bg-black/20 border border-white/20 shadow-lg;
+}
+
+@utility glass-dark {
+  @apply backdrop-blur-2xl bg-black/40 border border-white/10 shadow-lg;
+}
+
+/* Liquid Glass Utilities - Enhanced */
+@utility liquid-glass {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+@utility liquid-glass-card {
+  background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.05) 0%,
+      rgba(255, 255, 255, 0.01) 100%);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+@utility liquid-glass-active {
+  background: linear-gradient(135deg,
+      rgba(0, 212, 255, 0.1) 0%,
+      rgba(168, 85, 247, 0.05) 100%);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  box-shadow:
+    0 8px 32px rgba(0, 212, 255, 0.4),
+    0 0 20px rgba(0, 212, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+@utility liquid-glass-red {
+  background: linear-gradient(135deg,
+      rgba(220, 38, 38, 0.2) 0%,
+      rgba(239, 68, 68, 0.1) 100%);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  box-shadow:
+    0 8px 32px rgba(220, 38, 38, 0.4),
+    0 0 20px rgba(220, 38, 38, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+@utility liquid-glass-blue {
+  background: linear-gradient(135deg,
+      rgba(37, 99, 235, 0.2) 0%,
+      rgba(59, 130, 246, 0.1) 100%);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  box-shadow:
+    0 8px 32px rgba(37, 99, 235, 0.4),
+    0 0 20px rgba(37, 99, 235, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+@utility liquid-glass-orange {
+  background: linear-gradient(135deg,
+      rgba(249, 115, 22, 0.2) 0%,
+      rgba(234, 88, 12, 0.1) 100%);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(249, 115, 22, 0.3);
+  box-shadow:
+    0 8px 32px rgba(249, 115, 22, 0.4),
+    0 0 20px rgba(249, 115, 22, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+@utility neon-glow-blue {
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.5), 0 0 40px rgba(0, 212, 255, 0.2);
+}
+
+@utility neon-glow-green {
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.5), 0 0 40px rgba(34, 197, 94, 0.2);
+}
+
+@utility neon-text-blue {
+  color: #00D4FF;
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+}
+
+@utility neon-text-green {
+  color: #22C55E;
+  text-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+}
+
+.material-symbols-outlined {
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24
+}
+
+@utility shadow-glass {
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+}
+
+/* Timeline Connector */
+@utility timeline-connector {
+  background: linear-gradient(180deg, rgba(0, 212, 255, 0.5) 0%, rgba(168, 85, 247, 0.3) 100%);
+}
+
+/* Progress Bar Glow Animation */
+@keyframes progress-glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 5px rgba(0, 212, 255, 0.5);
+  }
+
+  50% {
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.8), 0 0 30px rgba(0, 212, 255, 0.4);
+  }
+}
+
+.progress-glow {
+  animation: progress-glow 2s ease-in-out infinite;
+}
+
+/* Shimmer effect for loading states */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer {
+  background: linear-gradient(90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.1) 50%,
+      rgba(255, 255, 255, 0) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
