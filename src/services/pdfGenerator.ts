@@ -95,7 +95,7 @@ export const generatePDF = (
 
         // Model badge if deep analysis
         if (analysisResult.isDeepAnalysis && analysisResult.modelUsed) {
-            const modelName = analysisResult.modelUsed.split('/')[1] || analysisResult.modelUsed;
+            const modelName = analysisResult.modelUsed?.split('/')[1] ?? analysisResult.modelUsed;
             doc.setFontSize(9);
             doc.setTextColor(100, 116, 139);
             doc.text(`(Analysert av ${modelName})`, margin + doc.getTextWidth(analysisTitle) + 5, currentY);
