@@ -446,7 +446,7 @@ const parseAnalysisResponse = (content: string): AnalysisResult => {
 
         // If wrapped in markdown code blocks, extract the JSON
         const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
-        if (jsonMatch) {
+        if (jsonMatch?.[1]) {
             jsonContent = jsonMatch[1].trim();
         }
 

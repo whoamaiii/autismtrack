@@ -414,7 +414,7 @@ export const NewActivityModal: React.FC<NewActivityModalProps> = ({
     }, [isOpen, editActivity]);
 
     const calculateEndTime = (start: string, mins: number) => {
-        const [h, m] = (start || '00:00').split(':').map(Number);
+        const [h = 0, m = 0] = (start || '00:00').split(':').map(Number);
         const totalMins = h * 60 + m + mins;
         const endH = Math.floor(totalMins / 60) % 24;
         const endM = totalMins % 60;

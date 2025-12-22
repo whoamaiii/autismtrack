@@ -329,7 +329,7 @@ export const DysregulationHeatmap: React.FC = () => {
                                 <span className="text-white font-medium">Hovedfunn:</span>{' '}
                                 Høyest arousal observeres på <span className="text-orange-400 font-medium">
                                     {hotspots[0]?.dayLabel} kl. {hotspots[0]?.timeLabel}
-                                </span> med snitt {hotspots[0]?.avgArousal.toFixed(1)}.
+                                </span> med snitt {hotspots[0]?.avgArousal?.toFixed(1)}.
                             </p>
                             {hotspots.length > 1 && (
                                 <p>
