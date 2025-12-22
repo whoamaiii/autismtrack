@@ -245,17 +245,17 @@ export const LogEntryForm: React.FC<LogEntryFormProps> = ({ onClose }) => {
                                 className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl p-4 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary h-32 resize-y transition-all"
                             />
                         </label>
-                    </form>
 
-                    <div className="p-6 border-t border-slate-100 dark:border-white/5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl sticky bottom-0 z-10">
-                        <motion.button
-                            type="submit"
-                            whileTap={{ scale: 0.98 }}
-                            className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/25 transition-colors"
-                        >
-                            {t('log.save')}
-                        </motion.button>
-                    </div>
+                        <div className="p-6 border-t border-slate-100 dark:border-white/5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl sticky bottom-0 z-10">
+                            <motion.button
+                                type="submit"
+                                whileTap={{ scale: 0.98 }}
+                                className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/25 transition-colors"
+                            >
+                                {t('log.save')}
+                            </motion.button>
+                        </div>
+                    </form>
                 </motion.div>
             </motion.div>
         </AnimatePresence>

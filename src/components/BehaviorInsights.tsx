@@ -198,7 +198,7 @@ export const BehaviorInsights: React.FC = () => {
                         ) : (
                             <>
                                 <Brain size={16} />
-                                <span>{analysis?.isDeepAnalysis ? 'Dyp Analyse' : 'Dyp Analyse'}</span>
+                                <span>{analysis?.isDeepAnalysis ? 'Dyp Analyse' : 'Kjør Dyp Analyse'}</span>
                             </>
                         )}
                     </button>

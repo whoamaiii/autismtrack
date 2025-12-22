@@ -39,6 +39,8 @@ export const GoalTracking: React.FC = () => {
     };
 
     const getProgressPercent = (goal: Goal) => {
+        if (goal.targetValue === 0) return 0;
+
         if (goal.targetDirection === 'decrease') {
             return Math.max(0, Math.min(100, (goal.targetValue - goal.currentValue) / goal.targetValue * 100));
         }

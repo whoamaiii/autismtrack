@@ -477,13 +477,11 @@ export const Settings: React.FC = () => {
                     </div>
                 </div>
 
-                {dataStats && (
-                    <div className="flex justify-between text-xs text-slate-500 px-2">
-                        <span>{t('settings.stats.logs')}: {dataStats.logs}</span>
-                        <span>{t('settings.stats.events')}: {dataStats.crisis}</span>
-                        <span>{t('settings.stats.goals')}: {dataStats.goals}</span>
-                    </div>
-                )}
+                <div className="flex justify-between text-xs text-slate-500 px-2">
+                    <span>{t('settings.stats.logs')}: {dataStats.logs}</span>
+                    <span>{t('settings.stats.events')}: {dataStats.crisis}</span>
+                    <span>{t('settings.stats.goals')}: {dataStats.goals}</span>
+                </div>
             </motion.div>
 
             {/* Save Profile Button */}
