@@ -283,7 +283,7 @@ export const Dashboard: React.FC = () => {
                                 </h3>
                                 <p className="text-slate-500 dark:text-slate-400 text-xs">
                                     {analysis?.isDeepAnalysis
-                                        ? (analysis.modelUsed?.split('/')[1] || 'Premium')
+                                        ? (analysis.modelUsed || 'Premium')
                                         : 'Gemini Flash (billig)'}
                                 </p>
                             </div>

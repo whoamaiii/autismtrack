@@ -29,7 +29,7 @@ export const LogEntryForm: React.FC<LogEntryFormProps> = ({ onClose }) => {
     // Validation: require effectiveness when strategies are selected
     const needsEffectiveness = strategies.length > 0 && !strategyEffectiveness;
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = (e: React.FormEvent | React.MouseEvent) => {
         e.preventDefault();
 
         // Validate strategy effectiveness is set when strategies are used
@@ -37,7 +37,7 @@ export const LogEntryForm: React.FC<LogEntryFormProps> = ({ onClose }) => {
             return; // Don't submit if validation fails
         }
 
-        const newLog: LogEntry = {
+        const newLog: Omit<LogEntry, 'dayOfWeek' | 'timeOfDay' | 'hourOfDay'> = {
             id: uuidv4(),
             timestamp,
             context: currentContext,

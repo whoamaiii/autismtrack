@@ -101,7 +101,6 @@ export const Home: React.FC = () => {
             >
                 <Link to="/crisis" className="group relative overflow-hidden liquid-glass-red p-4 rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-between">
                     <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
-                    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
                     <div className="relative z-10 flex items-center gap-3">
                         <div className="bg-white/20 p-2 rounded-full animate-pulse">
                             <Activity className="text-white" size={24} />
