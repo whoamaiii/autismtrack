@@ -8,6 +8,7 @@ import { nb } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
 import { analyzeLogs, analyzeLogsDeep, analyzeLogsStreaming } from '../services/ai';
 import type { AnalysisResult } from '../types';
+import { useToast } from './Toast';
 
 // Extended type for deep analysis result
 interface DeepAnalysisResult extends AnalysisResult {
@@ -17,6 +18,7 @@ interface DeepAnalysisResult extends AnalysisResult {
 export const Dashboard: React.FC = () => {
     const { logs } = useLogs();
     const { crisisEvents } = useCrisis();
+    const { showError, showSuccess } = useToast();
 
     // AI Analysis state
     const [analysis, setAnalysis] = useState<DeepAnalysisResult | null>(null);
@@ -55,11 +57,14 @@ export const Dashboard: React.FC = () => {
 
             const result = await analyzeLogs(logsToAnalyze, crisisToAnalyze, { forceRefresh: true });
             setAnalysis(result);
+            showSuccess('Analyse fullført', 'AI-analyse er klar til visning');
         } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Analyse feilet';
             if (import.meta.env.DEV) {
                 console.error('Analysis failed:', error);
             }
-            setAnalysisError(error instanceof Error ? error.message : 'Analyse feilet');
+            setAnalysisError(errorMessage);
+            showError('Analyse feilet', errorMessage);
         } finally {
             setIsAnalyzing(false);
         }
@@ -78,11 +83,14 @@ export const Dashboard: React.FC = () => {
 
             const result = await analyzeLogsDeep(logsToAnalyze, crisisToAnalyze);
             setAnalysis(result);
+            showSuccess('Dyp analyse fullført', 'Premium AI-analyse med detaljerte innsikter');
         } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Dyp analyse feilet';
             if (import.meta.env.DEV) {
                 console.error('Deep analysis failed:', error);
             }
-            setAnalysisError(error instanceof Error ? error.message : 'Dyp analyse feilet');
+            setAnalysisError(errorMessage);
+            showError('Dyp analyse feilet', errorMessage);
         } finally {
             setIsDeepAnalyzing(false);
         }
@@ -113,15 +121,19 @@ export const Dashboard: React.FC = () => {
                     },
                     onError: (error) => {
                         setAnalysisError(error.message);
+                        showError('Streaming feilet', error.message);
                     }
                 }
             );
             setAnalysis(result);
+            showSuccess('Streaming analyse fullført', 'AI-analyse med sanntidsvisning');
         } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Streaming analyse feilet';
             if (import.meta.env.DEV) {
                 console.error('Streaming analysis failed:', error);
             }
-            setAnalysisError(error instanceof Error ? error.message : 'Streaming analyse feilet');
+            setAnalysisError(errorMessage);
+            showError('Streaming analyse feilet', errorMessage);
         } finally {
             setIsStreaming(false);
             setStreamingText('');

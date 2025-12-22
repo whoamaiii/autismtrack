@@ -1,0 +1,8 @@
+{
+  "enabledPlugins": {
+    "analyze-codebase@cc-marketplace": true,
+    "bug-detective@cc-marketplace": true,
+    "code-review@cc-marketplace": true,
+    "code-review-assistant@cc-marketplace": true
+  }
+}

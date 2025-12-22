@@ -3,6 +3,7 @@ import { Suspense, lazy, useCallback } from 'react';
 import { DataProvider, useSettings } from './store';
 import { Layout } from './components/Layout';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { ToastProvider } from './components/Toast';
 
 // Eagerly loaded - these are on the main navigation path
 import { Home } from './components/Home';
@@ -94,11 +95,13 @@ function App() {
     <ErrorBoundary>
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <DataProvider>
-          {/* Load shader on ALL devices, CSS fallback only while loading */}
-          <Suspense fallback={<CSSBackground />}>
-            <BackgroundShader />
-          </Suspense>
-          <AppContent />
+          <ToastProvider>
+            {/* Load shader on ALL devices, CSS fallback only while loading */}
+            <Suspense fallback={<CSSBackground />}>
+              <BackgroundShader />
+            </Suspense>
+            <AppContent />
+          </ToastProvider>
         </DataProvider>
       </BrowserRouter>
     </ErrorBoundary>

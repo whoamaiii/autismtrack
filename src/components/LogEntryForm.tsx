@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useId } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useLogs, useAppContext } from '../store';
 import { type LogEntry, SENSORY_TRIGGERS, CONTEXT_TRIGGERS, STRATEGIES } from '../types';
@@ -6,6 +6,8 @@ import { TriggerSelector } from './TriggerSelector';
 import { X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { useToast } from './Toast';
+import { validateLogEntryInput } from '../utils/validation';
 
 interface LogEntryFormProps {
     onClose: () => void;
@@ -15,6 +17,9 @@ export const LogEntryForm: React.FC<LogEntryFormProps> = ({ onClose }) => {
     const { addLog } = useLogs();
     const { currentContext } = useAppContext();
     const { t } = useTranslation();
+    const { showSuccess, showError, showWarning } = useToast();
+    const formId = useId();
+
     const [arousal, setArousal] = useState(5);
     const [valence, setValence] = useState(5);
     const [energy, setEnergy] = useState(5);
@@ -34,25 +39,40 @@ export const LogEntryForm: React.FC<LogEntryFormProps> = ({ onClose }) => {
 
         // Validate strategy effectiveness is set when strategies are used
         if (needsEffectiveness) {
-            return; // Don't submit if validation fails
+            showWarning('Mangler strategi-effektivitet', 'Velg om strategiene hjalp, ikke hadde effekt, eller eskalerte');
+            return;
         }
 
-        const newLog: LogEntry = {
-            id: uuidv4(),
-            timestamp,
-            context: currentContext,
-            arousal,
-            valence,
-            energy,
-            sensoryTriggers,
-            contextTriggers,
-            strategies,
-            strategyEffectiveness,
-            duration,
-            note,
-        };
-        addLog(newLog);
-        onClose();
+        try {
+            const newLog: LogEntry = {
+                id: uuidv4(),
+                timestamp,
+                context: currentContext,
+                arousal,
+                valence,
+                energy,
+                sensoryTriggers,
+                contextTriggers,
+                strategies,
+                strategyEffectiveness,
+                duration,
+                note,
+            };
+
+            // Validate the log entry
+            const validation = validateLogEntryInput(newLog);
+            if (!validation.success) {
+                showError('Valideringsfeil', validation.errors.join(', '));
+                return;
+            }
+
+            addLog(newLog);
+            showSuccess('Logg lagret', 'Registreringen er lagret');
+            onClose();
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Kunne ikke lagre logg';
+            showError('Feil ved lagring', errorMessage);
+        }
     };
 
     return (
@@ -62,6 +82,9 @@ export const LogEntryForm: React.FC<LogEntryFormProps> = ({ onClose }) => {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 className="fixed inset-0 z-50 flex items-center justify-center bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md p-4 overflow-y-auto"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby={`${formId}-title`}
             >
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -71,13 +94,21 @@ export const LogEntryForm: React.FC<LogEntryFormProps> = ({ onClose }) => {
                     className="relative w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
                 >
                     <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-white/5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl sticky top-0 z-10">
-                        <h2 className="text-slate-900 dark:text-white text-xl font-bold">{t('log.title')}</h2>
-                        <button onClick={onClose} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400 transition-colors">
-                            <X size={24} />
+                        <h2 id={`${formId}-title`} className="text-slate-900 dark:text-white text-xl font-bold">{t('log.title')}</h2>
+                        <button
+                            onClick={onClose}
+                            className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-primary"
+                            aria-label={t('common.close')}
+                        >
+                            <X size={24} aria-hidden="true" />
                         </button>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 flex flex-col gap-8">
+                    <form
+                        onSubmit={handleSubmit}
+                        className="flex-1 overflow-y-auto p-6 flex flex-col gap-8"
+                        aria-labelledby={`${formId}-title`}
+                    >
                         {/* Date & Time */}
                         <label className="flex flex-col gap-2">
                             <span className="text-slate-700 dark:text-slate-300 font-medium text-sm">{t('log.date')}</span>
