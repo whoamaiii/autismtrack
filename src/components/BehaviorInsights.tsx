@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useLogs, useCrisis, useChildProfile } from '../store';
 import { analyzeLogs, analyzeLogsDeep } from '../services/ai';
 import type { AnalysisResult, LogEntry } from '../types';
+import { getModelDisplayName } from '../utils/modelUtils';
 
 // Helper to calculate strategy effectiveness from logs
 const calculateStrategyEffectiveness = (logs: LogEntry[]) => {
@@ -275,7 +276,7 @@ export const BehaviorInsights: React.FC = () => {
                                         <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
                                     </span>
                                     <span className="text-[10px] uppercase font-bold text-indigo-300 tracking-wider">
-                                        {analysis.modelUsed?.split('/')[1] ?? 'Deep Analysis'}
+                                        {getModelDisplayName(analysis.modelUsed, 'Deep Analysis')}
                                     </span>
                                 </div>
                             )}

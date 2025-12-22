@@ -67,7 +67,7 @@ export const calculateRiskForecast = (logs: LogEntry[]): RiskForecast => {
 
     // Adjust score based on current time proximity to known hotspots
     const upcomingRiskHours = Object.entries(timeBuckets)
-        .map(([hour, count]) => ({ hour: parseInt(hour), count }))
+        .map(([hour, count]) => ({ hour: parseInt(hour, 10), count }))
         .filter(bucket => bucket.count >= 2) // At least 2 incidents to count as a pattern
         .filter(bucket => {
             // Handle hour wraparound for late-night hours (e.g., 22:00 + 4 hours = 02:00)

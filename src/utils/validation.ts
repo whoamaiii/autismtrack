@@ -59,7 +59,7 @@ export const CrisisResolutionSchema = z.enum([
 
 export const CrisisEventSchema = z.object({
     id: z.string().uuid(),
-    timestamp: z.string(),
+    timestamp: z.string().datetime({ offset: true }).or(z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/)),
     context: ContextTypeSchema,
     type: CrisisTypeSchema,
     durationSeconds: z.number().int().min(0),
@@ -110,6 +110,15 @@ export const ScheduleEntrySchema = z.object({
     transitionDifficulty: z.number().int().min(1).max(10).optional(),
     transitionSupport: z.array(z.string()).optional(),
     notes: z.string().optional(),
+});
+
+// Daily schedule template schema
+export const DailyScheduleTemplateSchema = z.object({
+    id: z.string().uuid(),
+    name: z.string().min(1).max(100),
+    context: ContextTypeSchema,
+    dayOfWeek: DayOfWeekSchema.or(z.literal('all')),
+    activities: z.array(ScheduleActivitySchema),
 });
 
 // ============================================
@@ -290,7 +299,7 @@ export const ImportedDataSchema = z.object({
     logs: z.array(LogEntrySchema).optional(),
     crisisEvents: z.array(CrisisEventSchema).optional(),
     scheduleEntries: z.array(ScheduleEntrySchema).optional(),
-    scheduleTemplates: z.array(z.any()).optional(),
+    scheduleTemplates: z.array(DailyScheduleTemplateSchema).optional(),
     goals: z.array(GoalSchema).optional(),
     childProfile: ChildProfileSchema.nullable().optional(),
     exportedAt: z.string().optional(),

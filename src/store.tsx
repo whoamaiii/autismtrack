@@ -372,9 +372,17 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 const latestValue = newProgress.value;
 
                 // Auto-calculate status based on progress
-                const progressPercent = g.targetDirection === 'decrease'
-                    ? Math.max(0, (g.targetValue - latestValue) / g.targetValue * 100)
-                    : Math.min(100, (latestValue / g.targetValue) * 100);
+                let progressPercent: number;
+                if (g.targetDirection === 'decrease') {
+                    // For decrease goals, use first progress entry as baseline
+                    const baseline = updatedHistory.length > 1 ? updatedHistory[0].value : latestValue;
+                    const range = baseline - g.targetValue;
+                    progressPercent = range > 0
+                        ? Math.min(100, Math.max(0, (baseline - latestValue) / range * 100))
+                        : (latestValue <= g.targetValue ? 100 : 0);
+                } else {
+                    progressPercent = Math.min(100, (latestValue / g.targetValue) * 100);
+                }
 
                 const daysUntilDeadline = Math.ceil(
                     (new Date(g.targetDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
@@ -418,14 +426,23 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const getOverallProgress = useCallback(() => {
         if (goals.length === 0) return 0;
-        const totalProgress = goals.reduce((sum, g) => {
-            if (g.targetValue === 0) return sum;
-            const progress = g.targetDirection === 'decrease'
-                ? Math.max(0, (g.targetValue - g.currentValue) / g.targetValue * 100)
-                : Math.min(100, (g.currentValue / g.targetValue) * 100);
+        const validGoals = goals.filter(g => g.targetValue > 0);
+        if (validGoals.length === 0) return 0;
+        const totalProgress = validGoals.reduce((sum, g) => {
+            let progress: number;
+            if (g.targetDirection === 'decrease') {
+                // For decrease goals, use first progress entry as baseline
+                const baseline = g.progressHistory.length > 0 ? g.progressHistory[0].value : g.currentValue;
+                const range = baseline - g.targetValue;
+                progress = range > 0
+                    ? Math.min(100, Math.max(0, (baseline - g.currentValue) / range * 100))
+                    : (g.currentValue <= g.targetValue ? 100 : 0);
+            } else {
+                progress = Math.min(100, (g.currentValue / g.targetValue) * 100);
+            }
             return sum + progress;
         }, 0);
-        return Math.round(totalProgress / goals.length);
+        return Math.round(totalProgress / validGoals.length);
     }, [goals]);
 
     // ============================================

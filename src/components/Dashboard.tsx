@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { analyzeLogs, analyzeLogsDeep, analyzeLogsStreaming } from '../services/ai';
 import type { AnalysisResult } from '../types';
 import { useToast } from './Toast';
+import { getModelDisplayName } from '../utils/modelUtils';
 
 // Extended type for deep analysis result
 interface DeepAnalysisResult extends AnalysisResult {
@@ -145,10 +146,10 @@ export const Dashboard: React.FC = () => {
 
     // Load cached analysis on mount (doesn't call API if cached)
     useEffect(() => {
-        if (hasAttemptedCacheLoad.current) return;
-        if (logs.length >= 3 && !analysis) {
+        let isMounted = true;
+
+        if (!hasAttemptedCacheLoad.current && logs.length >= 3 && !analysis) {
             hasAttemptedCacheLoad.current = true;
-            let isMounted = true;
             // Try to get cached result without forcing refresh
             analyzeLogs(logs.slice(0, 30), crisisEvents.slice(0, 10))
                 .then((result) => {
@@ -157,11 +158,13 @@ export const Dashboard: React.FC = () => {
                     }
                 })
                 .catch(() => { /* Ignore - user can manually trigger */ });
-            return () => {
-                isMounted = false;
-            };
         }
-    }, [logs, crisisEvents, analysis]);
+
+        return () => {
+            isMounted = false;
+        };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- analysis intentionally excluded to prevent re-runs after setting
+    }, [logs, crisisEvents]);
 
     return (
         <div className="flex flex-col gap-6 pb-24">
@@ -295,7 +298,7 @@ export const Dashboard: React.FC = () => {
                                 </h3>
                                 <p className="text-slate-500 dark:text-slate-400 text-xs">
                                     {analysis?.isDeepAnalysis
-                                        ? (analysis.modelUsed?.split('/')[1] || 'Premium')
+                                        ? getModelDisplayName(analysis.modelUsed, 'Premium')
                                         : 'Gemini Flash (billig)'}
                                 </p>
                             </div>

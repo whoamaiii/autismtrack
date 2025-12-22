@@ -53,6 +53,20 @@ function safeJsonParse<T>(key: string, fallback: T): T {
     }
 }
 
+// Safe localStorage write helper with quota error handling
+function safeSetItem(key: string, value: string): boolean {
+    try {
+        localStorage.setItem(key, value);
+        return true;
+    } catch (error) {
+        // Handle QuotaExceededError or SecurityError (private browsing)
+        if (import.meta.env.DEV) {
+            console.error(`Failed to write to localStorage key "${key}":`, error);
+        }
+        return false;
+    }
+}
+
 export function exportAllData(): ExportedData {
     const logs: LogEntry[] = safeJsonParse(STORAGE_KEYS.LOGS, []);
     const crisisEvents: CrisisEvent[] = safeJsonParse(STORAGE_KEYS.CRISIS_EVENTS, []);
@@ -171,16 +185,19 @@ export function importData(jsonString: string, mergeMode: 'replace' | 'merge' = 
             return { success: false, error: 'Ugyldig filformat. Data mangler eller er korrupt.' };
         }
 
+        // Helper to perform all writes atomically (all succeed or report failure)
+        const writeResults: boolean[] = [];
+
         if (mergeMode === 'replace') {
             // Replace all data
-            localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(data.logs));
-            localStorage.setItem(STORAGE_KEYS.CRISIS_EVENTS, JSON.stringify(data.crisisEvents));
-            localStorage.setItem(STORAGE_KEYS.SCHEDULE_ENTRIES, JSON.stringify(data.scheduleEntries));
-            localStorage.setItem(STORAGE_KEYS.SCHEDULE_TEMPLATES, JSON.stringify(data.scheduleTemplates || []));
-            localStorage.setItem(STORAGE_KEYS.GOALS, JSON.stringify(data.goals));
+            writeResults.push(safeSetItem(STORAGE_KEYS.LOGS, JSON.stringify(data.logs)));
+            writeResults.push(safeSetItem(STORAGE_KEYS.CRISIS_EVENTS, JSON.stringify(data.crisisEvents)));
+            writeResults.push(safeSetItem(STORAGE_KEYS.SCHEDULE_ENTRIES, JSON.stringify(data.scheduleEntries)));
+            writeResults.push(safeSetItem(STORAGE_KEYS.SCHEDULE_TEMPLATES, JSON.stringify(data.scheduleTemplates || [])));
+            writeResults.push(safeSetItem(STORAGE_KEYS.GOALS, JSON.stringify(data.goals)));
 
             if (data.childProfile) {
-                localStorage.setItem(STORAGE_KEYS.CHILD_PROFILE, JSON.stringify(data.childProfile));
+                writeResults.push(safeSetItem(STORAGE_KEYS.CHILD_PROFILE, JSON.stringify(data.childProfile)));
             }
         } else {
             // Merge mode - add new entries, skip duplicates by ID
@@ -202,16 +219,21 @@ export function importData(jsonString: string, mergeMode: 'replace' | 'merge' = 
             const newTemplates = (data.scheduleTemplates || []).filter(t => !existingTemplateIds.has(t.id));
             const newGoals = data.goals.filter(g => !existingGoalIds.has(g.id));
 
-            localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify([...existingLogs, ...newLogs]));
-            localStorage.setItem(STORAGE_KEYS.CRISIS_EVENTS, JSON.stringify([...existingCrisis, ...newCrisis]));
-            localStorage.setItem(STORAGE_KEYS.SCHEDULE_ENTRIES, JSON.stringify([...existingSchedule, ...newSchedule]));
-            localStorage.setItem(STORAGE_KEYS.SCHEDULE_TEMPLATES, JSON.stringify([...existingTemplates, ...newTemplates]));
-            localStorage.setItem(STORAGE_KEYS.GOALS, JSON.stringify([...existingGoals, ...newGoals]));
+            writeResults.push(safeSetItem(STORAGE_KEYS.LOGS, JSON.stringify([...existingLogs, ...newLogs])));
+            writeResults.push(safeSetItem(STORAGE_KEYS.CRISIS_EVENTS, JSON.stringify([...existingCrisis, ...newCrisis])));
+            writeResults.push(safeSetItem(STORAGE_KEYS.SCHEDULE_ENTRIES, JSON.stringify([...existingSchedule, ...newSchedule])));
+            writeResults.push(safeSetItem(STORAGE_KEYS.SCHEDULE_TEMPLATES, JSON.stringify([...existingTemplates, ...newTemplates])));
+            writeResults.push(safeSetItem(STORAGE_KEYS.GOALS, JSON.stringify([...existingGoals, ...newGoals])));
 
             // Child profile - only import if not already set
             if (data.childProfile && !localStorage.getItem(STORAGE_KEYS.CHILD_PROFILE)) {
-                localStorage.setItem(STORAGE_KEYS.CHILD_PROFILE, JSON.stringify(data.childProfile));
+                writeResults.push(safeSetItem(STORAGE_KEYS.CHILD_PROFILE, JSON.stringify(data.childProfile)));
             }
+        }
+
+        // Check if any writes failed
+        if (writeResults.some(result => !result)) {
+            return { success: false, error: 'Kunne ikke lagre all data. Prøv å frigjøre lagringsplass.' };
         }
 
         return {

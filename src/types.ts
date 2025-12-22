@@ -359,20 +359,26 @@ export function getTimeOfDay(date: Date): TimeOfDay {
 
 export function enrichLogEntry(log: Omit<LogEntry, 'dayOfWeek' | 'timeOfDay' | 'hourOfDay'>): LogEntry {
     const date = new Date(log.timestamp);
+    // Validate timestamp - use current date as fallback if invalid
+    const isValidDate = !isNaN(date.getTime());
+    const safeDate = isValidDate ? date : new Date();
     return {
         ...log,
-        dayOfWeek: getDayOfWeek(date),
-        timeOfDay: getTimeOfDay(date),
-        hourOfDay: date.getHours()
+        dayOfWeek: getDayOfWeek(safeDate),
+        timeOfDay: getTimeOfDay(safeDate),
+        hourOfDay: safeDate.getHours()
     };
 }
 
 export function enrichCrisisEvent(event: Omit<CrisisEvent, 'dayOfWeek' | 'timeOfDay' | 'hourOfDay'>): CrisisEvent {
     const date = new Date(event.timestamp);
+    // Validate timestamp - use current date as fallback if invalid
+    const isValidDate = !isNaN(date.getTime());
+    const safeDate = isValidDate ? date : new Date();
     return {
         ...event,
-        dayOfWeek: getDayOfWeek(date),
-        timeOfDay: getTimeOfDay(date),
-        hourOfDay: date.getHours()
+        dayOfWeek: getDayOfWeek(safeDate),
+        timeOfDay: getTimeOfDay(safeDate),
+        hourOfDay: safeDate.getHours()
     };
 }

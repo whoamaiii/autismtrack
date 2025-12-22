@@ -82,8 +82,10 @@ const determineCurrentActivity = (activities: Activity[]): Activity[] => {
 
     let foundCurrent = false;
     return activities.map(activity => {
-        const [startH, startM] = (activity.time || '00:00').split(':').map(Number);
-        const [endH, endM] = (activity.endTime || '00:00').split(':').map(Number);
+        const startParts = (activity.time || '00:00').split(':');
+        const [startH, startM] = [parseInt(startParts[0] || '0', 10), parseInt(startParts[1] || '0', 10)];
+        const endParts = (activity.endTime || '00:00').split(':');
+        const [endH, endM] = [parseInt(endParts[0] || '0', 10), parseInt(endParts[1] || '0', 10)];
         const startMinutes = startH * 60 + startM;
         const endMinutes = endH * 60 + endM;
 

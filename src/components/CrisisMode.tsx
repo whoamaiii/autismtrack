@@ -48,15 +48,13 @@ export const CrisisMode: React.FC = () => {
         let interval: ReturnType<typeof setInterval> | null = null;
         if (isActive) {
             interval = setInterval(() => {
-                setSeconds((seconds) => seconds + 1);
+                setSeconds((prev) => prev + 1);
             }, 1000);
-        } else if (!isActive && seconds !== 0) {
-            if (interval) clearInterval(interval);
         }
         return () => {
             if (interval) clearInterval(interval);
         };
-    }, [isActive, seconds]);
+    }, [isActive]);
 
     // Cleanup media stream on unmount to prevent memory leaks
     useEffect(() => {
