@@ -266,7 +266,7 @@ export const Settings: React.FC = () => {
                             <input
                                 type="number"
                                 value={age}
-                                onChange={(e) => setAge(e.target.value === '' ? '' : parseInt(e.target.value))}
+                                onChange={(e) => setAge(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
                                 min={1}
                                 max={25}
                                 placeholder={t('settings.agePlaceholder')}

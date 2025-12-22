@@ -137,10 +137,13 @@ function getStorageItem<T>(key: string, fallback: T): T {
     }
 }
 
-function getStorageString<T extends string>(key: string, fallback: T): T {
+function getStorageString(key: string, fallback: ContextType): ContextType {
     try {
         const item = localStorage.getItem(key);
-        return (item as T) ?? fallback;
+        if (item === 'home' || item === 'school') {
+            return item;
+        }
+        return fallback;
     } catch {
         return fallback;
     }

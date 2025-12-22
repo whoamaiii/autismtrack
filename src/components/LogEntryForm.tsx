@@ -249,8 +249,8 @@ export const LogEntryForm: React.FC<LogEntryFormProps> = ({ onClose }) => {
 
                     <div className="p-6 border-t border-slate-100 dark:border-white/5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl sticky bottom-0 z-10">
                         <motion.button
+                            type="submit"
                             whileTap={{ scale: 0.98 }}
-                            onClick={handleSubmit}
                             className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/25 transition-colors"
                         >
                             {t('log.save')}
