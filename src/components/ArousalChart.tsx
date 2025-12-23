@@ -26,7 +26,7 @@ export const ArousalChart: React.FC<ArousalChartProps> = ({ logs }) => {
     }
 
     return (
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minHeight={150}>
             <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                     <linearGradient id="colorArousal" x1="0" y1="0" x2="0" y2="1">

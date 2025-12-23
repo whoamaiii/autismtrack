@@ -205,9 +205,13 @@ export const LogEntryForm: React.FC<LogEntryFormProps> = ({ onClose }) => {
         // Validate strategy effectiveness is set when strategies are used
         if (needsEffectiveness) {
             showWarning(t('log.effectiveness.required'), t('log.effectiveness.requiredDescription'));
-            // Focus on the effectiveness section for accessibility
+            // Scroll to and focus on the effectiveness section for accessibility
             const effectivenessSection = document.getElementById(`${formId}-effectiveness`);
-            effectivenessSection?.focus();
+            if (effectivenessSection) {
+                effectivenessSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // Focus after scroll animation completes
+                setTimeout(() => effectivenessSection.focus(), 300);
+            }
             return;
         }
 

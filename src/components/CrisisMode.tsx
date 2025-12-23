@@ -450,7 +450,7 @@ export const CrisisMode: React.FC = () => {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0 }}
-                            className="flex-1 overflow-y-auto pb-32"
+                            className="flex-1 overflow-y-auto pb-40"
                         >
                             <div className="bg-green-500/10 border border-green-500/20 p-4 rounded-2xl text-center mb-6">
                                 <CheckCircle className="mx-auto text-green-500 mb-2" size={36} />
@@ -601,18 +601,19 @@ export const CrisisMode: React.FC = () => {
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-slate-900 via-slate-900 to-transparent"
+                        className="fixed bottom-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-lg border-t border-white/10"
+                        style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}
                     >
-                        <div className="flex gap-3 max-w-md mx-auto">
+                        <div className="flex gap-3 max-w-md mx-auto px-6 pt-4">
                             <button
                                 onClick={handleSkipDetails}
-                                className="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-4 rounded-xl font-bold transition-colors"
+                                className="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-4 rounded-xl font-bold transition-colors shadow-lg"
                             >
                                 {t('crisis.actions.skip')}
                             </button>
                             <button
                                 onClick={handleSave}
-                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold transition-colors"
+                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold transition-colors shadow-lg shadow-blue-600/30"
                             >
                                 {t('crisis.actions.save')}
                             </button>

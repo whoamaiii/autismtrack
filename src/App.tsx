@@ -40,12 +40,31 @@ const OnboardingWizard = lazy(() => import('./components/onboarding/OnboardingWi
 
 
 
-// Loading fallback component
+// Skeleton loading component for better UX during lazy load
+const SkeletonPulse = ({ className }: { className?: string }) => (
+  <div className={`animate-pulse bg-white/10 rounded-xl ${className || ''}`} />
+);
+
+// Loading fallback component with skeleton UI
 const PageLoader = () => (
-  <div className="flex items-center justify-center min-h-[50vh]">
-    <div className="flex flex-col items-center gap-3">
-      <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      <span className="text-slate-400 text-sm">Laster...</span>
+  <div className="flex flex-col gap-6 p-4 animate-in fade-in duration-200">
+    {/* Header skeleton */}
+    <div className="flex items-center gap-4">
+      <SkeletonPulse className="w-10 h-10 rounded-full" />
+      <div className="flex flex-col gap-2">
+        <SkeletonPulse className="w-32 h-6" />
+        <SkeletonPulse className="w-24 h-4" />
+      </div>
+    </div>
+
+    {/* Content skeleton cards */}
+    <SkeletonPulse className="w-full h-48" />
+    <SkeletonPulse className="w-full h-32" />
+    <SkeletonPulse className="w-full h-24" />
+
+    {/* Loading indicator */}
+    <div className="flex items-center justify-center py-4">
+      <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
     </div>
   </div>
 );

@@ -155,8 +155,9 @@ describe('calculateRiskForecast - Enhanced Features', () => {
         const lowResult = calculateRiskForecast(fewLogs);
         expect(lowResult.confidence).toBe('low');
 
-        // High sample size (15+)
-        const manyLogs = Array.from({ length: 15 }, (_, i) => {
+        // High sample size (15+) - need 15+ same-day logs
+        // Create 20 logs to ensure we have enough after filtering
+        const manyLogs = Array.from({ length: 20 }, (_, i) => {
             const date = new Date(now.getTime() - (Math.floor(i / 5) * 7 * 24 * 60 * 60 * 1000));
             while (date.getDay() !== now.getDay()) {
                 date.setDate(date.getDate() - 1);
