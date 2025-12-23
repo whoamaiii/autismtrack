@@ -397,5 +397,87 @@
         "home": "Home",
         "dashboard": "Dashboard",
         "analysis": "Analysis"
+    },
+    "behaviorInsights": {
+        "title": "Behavior Insights",
+        "goBack": "Go back",
+        "thinking": "Thinking...",
+        "deepAnalysis": "Deep Analysis",
+        "runDeepAnalysis": "Run Deep Analysis",
+        "analyzingWithAi": "Analyzing with AI...",
+        "dateRange": {
+            "7days": "7 Days",
+            "30days": "30 Days",
+            "90days": "90 Days"
+        },
+        "aiSummary": "AI Summary",
+        "recommendations": "Recommendations",
+        "meltdownAnatomy": {
+            "title": "Meltdown Anatomy",
+            "subtitle": "Connection between Triggers, Behavior and Outcome",
+            "lastCrisis": "Latest crisis event",
+            "unknownTrigger": "Unknown trigger",
+            "warning": "Warning",
+            "notObserved": "Not observed",
+            "meltdown": "Meltdown",
+            "shutdown": "Shutdown",
+            "anxiety": "Anxiety",
+            "sensoryOverload": "Sensory overload",
+            "crisis": "Crisis",
+            "intensity": "Intensity",
+            "duration": "Duration",
+            "recovered": "Recovered",
+            "recoveryTime": "Recovery time",
+            "noCrisisEvents": "No crisis events in this period"
+        },
+        "heatmap": {
+            "title": "Dysregulation Heatmap",
+            "subtitle": "Tension intensity by Day and Time",
+            "days": {
+                "mon": "Mon",
+                "tue": "Tue",
+                "wed": "Wed",
+                "thu": "Thu",
+                "fri": "Fri",
+                "sat": "Sat",
+                "sun": "Sun"
+            },
+            "times": {
+                "morning": "Morn",
+                "midday": "Mid",
+                "afternoon": "Aft",
+                "evening": "Eve",
+                "night": "Night"
+            },
+            "legend": {
+                "low": "Low",
+                "medium": "Medium",
+                "high": "High",
+                "critical": "Critical",
+                "noData": "No data"
+            },
+            "cellLabel": "{{day}} {{time}}: Arousal level {{level}}"
+        },
+        "strategy": {
+            "title": "Strategy Effectiveness",
+            "subtitle": "Which Strategies Work Best?",
+            "aiBasedSubtitle": "Based on AI analysis of logs",
+            "used": "Used {{count}}x",
+            "success": "Success",
+            "noChange": "No Change",
+            "escalated": "Escalated",
+            "aiAnalysis": "AI Strategy Analysis",
+            "noData": "No strategy data available",
+            "noDataHint": "Log strategies to see effectiveness data"
+        },
+        "correlations": {
+            "title": "Discovered Correlations",
+            "subtitle": "AI-identified patterns",
+            "strength": {
+                "strong": "Strong",
+                "moderate": "Moderate",
+                "weak": "Weak"
+            }
+        }
     }
 }

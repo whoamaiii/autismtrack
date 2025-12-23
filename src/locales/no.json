@@ -397,5 +397,87 @@
         "home": "Hjem",
         "dashboard": "Oversikt",
         "analysis": "Analyse"
+    },
+    "behaviorInsights": {
+        "title": "Atferdsinnsikt",
+        "goBack": "Gå tilbake",
+        "thinking": "Tenker...",
+        "deepAnalysis": "Dyp Analyse",
+        "runDeepAnalysis": "Kjør Dyp Analyse",
+        "analyzingWithAi": "Analyserer med AI...",
+        "dateRange": {
+            "7days": "7 Dager",
+            "30days": "30 Dager",
+            "90days": "90 Dager"
+        },
+        "aiSummary": "AI Oppsummering",
+        "recommendations": "Anbefalinger",
+        "meltdownAnatomy": {
+            "title": "Nedsmeltingsanatomi",
+            "subtitle": "Kobling mellom Utløsere, Atferd og Utfall",
+            "lastCrisis": "Siste krisehendelse",
+            "unknownTrigger": "Ukjent trigger",
+            "warning": "Forvarsel",
+            "notObserved": "Ikke observert",
+            "meltdown": "Nedsmelting",
+            "shutdown": "Shutdown",
+            "anxiety": "Angst",
+            "sensoryOverload": "Sensorisk overbelastning",
+            "crisis": "Krise",
+            "intensity": "Intensitet",
+            "duration": "Varighet",
+            "recovered": "Gjenopprettet",
+            "recoveryTime": "Gjenopprettingstid",
+            "noCrisisEvents": "Ingen krisehendelser i denne perioden"
+        },
+        "heatmap": {
+            "title": "Dysreguleringsvarme",
+            "subtitle": "Spenningsintensitet per Dag og Tid",
+            "days": {
+                "mon": "Man",
+                "tue": "Tir",
+                "wed": "Ons",
+                "thu": "Tor",
+                "fri": "Fre",
+                "sat": "Lør",
+                "sun": "Søn"
+            },
+            "times": {
+                "morning": "Morg",
+                "midday": "Form",
+                "afternoon": "Ettm",
+                "evening": "Kveld",
+                "night": "Natt"
+            },
+            "legend": {
+                "low": "Lav",
+                "medium": "Middels",
+                "high": "Høy",
+                "critical": "Kritisk",
+                "noData": "Ingen data"
+            },
+            "cellLabel": "{{day}} {{time}}: Spenningsnivå {{level}}"
+        },
+        "strategy": {
+            "title": "Strategieffekt",
+            "subtitle": "Hvilke Strategier Fungerer Best?",
+            "aiBasedSubtitle": "Basert på AI-analyse av loggene",
+            "used": "Brukt {{count}}x",
+            "success": "Suksess",
+            "noChange": "Uendret",
+            "escalated": "Eskalering",
+            "aiAnalysis": "AI Strategianalyse",
+            "noData": "Ingen strategidata tilgjengelig",
+            "noDataHint": "Logg strategier for å se effektivitetsdata"
+        },
+        "correlations": {
+            "title": "Oppdagede Sammenhenger",
+            "subtitle": "AI-identifiserte mønstre",
+            "strength": {
+                "strong": "Sterk",
+                "moderate": "Moderat",
+                "weak": "Svak"
+            }
+        }
     }
 }
