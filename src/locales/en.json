@@ -243,7 +243,18 @@
         "actions": {
             "skip": "Skip",
             "save": "Save Event"
-        }
+        },
+        "timerRunning": "Timer active",
+        "micPermissionDenied": "Microphone access is blocked. Click the lock icon in the address bar to change permissions.",
+        "micOsDenied": "Microphone access is blocked at the system level. Open System Preferences > Privacy > Microphone to grant access.",
+        "micBrowserDenied": "Microphone access was denied. Click the lock icon in the address bar to change permissions.",
+        "micNotFound": "No microphone found. Connect a microphone and try again.",
+        "micInUse": "The microphone is in use by another app. Close other apps using the microphone.",
+        "micAborted": "Recording was aborted. Try again.",
+        "micUnknownError": "Could not start recording. Try again later.",
+        "audioEmptyError": "The recording is empty. Try recording again.",
+        "audioEncodingError": "Could not process the audio recording.",
+        "retryEncoding": "Try again"
     },
     "reports": {
         "title": "Reports",

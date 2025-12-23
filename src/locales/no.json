@@ -243,7 +243,18 @@
         "actions": {
             "skip": "Hopp Over",
             "save": "Lagre Hendelse"
-        }
+        },
+        "timerRunning": "Tidtaker aktiv",
+        "micPermissionDenied": "Mikrofontilgang er blokkert. Klikk på låsikonet i adressefeltet for å endre tillatelser.",
+        "micOsDenied": "Mikrofontilgang er blokkert på systemnivå. Åpne Systeminnstillinger > Personvern > Mikrofon for å gi tilgang.",
+        "micBrowserDenied": "Mikrofontilgang ble avvist. Klikk på låsikonet i adressefeltet for å endre tillatelser.",
+        "micNotFound": "Ingen mikrofon funnet. Koble til en mikrofon og prøv igjen.",
+        "micInUse": "Mikrofonen er i bruk av en annen app. Lukk andre apper som bruker mikrofonen.",
+        "micAborted": "Opptaket ble avbrutt. Prøv igjen.",
+        "micUnknownError": "Kunne ikke starte opptak. Prøv igjen senere.",
+        "audioEmptyError": "Opptaket er tomt. Prøv å ta opp på nytt.",
+        "audioEncodingError": "Kunne ikke behandle lydopptaket.",
+        "retryEncoding": "Prøv igjen"
     },
     "reports": {
         "title": "Rapporter",

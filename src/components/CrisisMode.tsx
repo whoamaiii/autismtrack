@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mic, Square, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Mic, Square, AlertTriangle, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { v4 as uuidv4 } from 'uuid';
 import { useCrisis, useAppContext } from '../store';
@@ -15,6 +15,7 @@ import {
 } from '../types';
 import { TriggerSelector } from './TriggerSelector';
 import { useTranslation } from 'react-i18next';
+import { AudioPlayer } from './AudioPlayer';
 
 export const CrisisMode: React.FC = () => {
     const { t } = useTranslation();
@@ -42,19 +43,71 @@ export const CrisisMode: React.FC = () => {
     // Audio Recording refs - declared early so cleanup effect can access them
     const mediaRecorderRef = React.useRef<MediaRecorder | null>(null);
     const audioChunksRef = React.useRef<Blob[]>([]);
+    const [pendingAudioBlob, setPendingAudioBlob] = useState<Blob | null>(null);
     const [audioUrl, setAudioUrl] = useState<string | null>(null);
+    const [audioError, setAudioError] = useState<string | null>(null);
+    const [micPermissionState, setMicPermissionState] = useState<'prompt' | 'granted' | 'denied' | 'unavailable'>('prompt');
+    const startTimeRef = React.useRef<number | null>(null);
 
+    // Initialize start time on mount
     useEffect(() => {
-        let interval: ReturnType<typeof setInterval> | null = null;
-        if (isActive) {
-            interval = setInterval(() => {
-                setSeconds((prev) => prev + 1);
-            }, 1000);
+        startTimeRef.current = Date.now();
+    }, []);
+
+    // Timer effect - calculates elapsed time from startTimeRef to avoid drift
+    useEffect(() => {
+        let animationFrameId: number;
+        let lastUpdate = 0;
+
+        const updateTimer = (timestamp: number) => {
+            if (!isActive || startTimeRef.current === null) return;
+
+            // Only update state once per second to avoid excessive re-renders
+            if (timestamp - lastUpdate >= 1000 || lastUpdate === 0) {
+                const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
+                setSeconds(elapsed);
+                lastUpdate = timestamp;
+            }
+            animationFrameId = requestAnimationFrame(updateTimer);
+        };
+
+        if (isActive && startTimeRef.current !== null) {
+            animationFrameId = requestAnimationFrame(updateTimer);
         }
+
         return () => {
-            if (interval) clearInterval(interval);
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
         };
     }, [isActive]);
+
+    // Check microphone permission state on mount
+    useEffect(() => {
+        let permissionStatus: PermissionStatus | null = null;
+
+        const handlePermissionChange = () => {
+            if (permissionStatus) {
+                setMicPermissionState(permissionStatus.state as 'prompt' | 'granted' | 'denied');
+            }
+        };
+
+        if (navigator.permissions) {
+            navigator.permissions.query({ name: 'microphone' as PermissionName })
+                .then(status => {
+                    permissionStatus = status;
+                    setMicPermissionState(status.state as 'prompt' | 'granted' | 'denied');
+                    status.addEventListener('change', handlePermissionChange);
+                })
+                .catch(() => setMicPermissionState('unavailable'));
+        }
+
+        return () => {
+            if (permissionStatus) {
+                permissionStatus.removeEventListener('change', handlePermissionChange);
+            }
+        };
+    }, []);
 
     // Cleanup media stream on unmount to prevent memory leaks
     useEffect(() => {
@@ -84,9 +137,29 @@ export const CrisisMode: React.FC = () => {
         });
     };
 
+    // Retry audio encoding from pending blob
+    const retryAudioEncoding = useCallback(async () => {
+        if (!pendingAudioBlob) return;
+
+        try {
+            setAudioError(null);
+            const base64Url = await blobToBase64(pendingAudioBlob);
+            setAudioUrl(base64Url);
+            setPendingAudioBlob(null);
+        } catch (error) {
+            if (import.meta.env.DEV) {
+                console.error('Retry audio encoding failed:', error);
+            }
+            setAudioError(t('crisis.audioEncodingError'));
+        }
+    }, [pendingAudioBlob, t]);
+
     const startRecording = async () => {
+        setAudioError(null);
+
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            setMicPermissionState('granted');
             const mediaRecorder = new MediaRecorder(stream);
             mediaRecorderRef.current = mediaRecorder;
             audioChunksRef.current = [];
@@ -99,30 +172,73 @@ export const CrisisMode: React.FC = () => {
 
             mediaRecorder.onstop = async () => {
                 const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+
+                // Validate blob has content
+                if (audioBlob.size === 0) {
+                    setAudioError(t('crisis.audioEmptyError'));
+                    return;
+                }
+
                 try {
+                    setAudioError(null);
                     const base64Url = await blobToBase64(audioBlob);
                     setAudioUrl(base64Url);
                 } catch (error) {
                     if (import.meta.env.DEV) {
                         console.error('Failed to process audio recording:', error);
                     }
+                    setAudioError(t('crisis.audioEncodingError'));
+                    // Store blob for retry
+                    setPendingAudioBlob(audioBlob);
                 }
+            };
+
+            mediaRecorder.onerror = () => {
+                if (import.meta.env.DEV) {
+                    console.error('MediaRecorder error');
+                }
+                setAudioError(t('crisis.micUnknownError'));
+                setIsRecording(false);
             };
 
             mediaRecorder.start();
             setIsRecording(true);
         } catch (error) {
+            const err = error as DOMException;
+
             if (import.meta.env.DEV) {
                 console.error('Error accessing microphone:', error);
             }
-            alert('Kunne ikke starte opptak. Sjekk at du har gitt tilgang til mikrofonen.');
+
+            switch (err.name) {
+                case 'NotAllowedError':
+                    // Check if it's likely OS-level or browser-level
+                    if (micPermissionState === 'denied') {
+                        setAudioError(t('crisis.micOsDenied'));
+                    } else {
+                        setAudioError(t('crisis.micBrowserDenied'));
+                        setMicPermissionState('denied');
+                    }
+                    break;
+                case 'NotFoundError':
+                    setAudioError(t('crisis.micNotFound'));
+                    break;
+                case 'NotReadableError':
+                    setAudioError(t('crisis.micInUse'));
+                    break;
+                case 'AbortError':
+                    setAudioError(t('crisis.micAborted'));
+                    break;
+                default:
+                    setAudioError(t('crisis.micUnknownError'));
+            }
         }
     };
 
     const stopRecording = () => {
         if (mediaRecorderRef.current && isRecording) {
             mediaRecorderRef.current.stop();
-            mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop()); // Stop stream
+            mediaRecorderRef.current.stream?.getTracks().forEach(track => track.stop()); // Stop stream
             setIsRecording(false);
         }
     };
@@ -244,9 +360,27 @@ export const CrisisMode: React.FC = () => {
                                 className="text-center"
                             >
                                 <p className="text-slate-400 text-lg mb-2 font-medium uppercase tracking-widest">{t('crisis.duration')}</p>
-                                <div className={`text-8xl font-bold tabular-nums tracking-tighter ${isActive ? 'text-white' : 'text-slate-300'}`}>
+                                <motion.div
+                                    className={`text-8xl font-bold tabular-nums tracking-tighter ${isActive ? 'text-white' : 'text-slate-300'}`}
+                                    animate={isActive ? { opacity: [1, 0.7, 1] } : { opacity: 1 }}
+                                    transition={isActive ? { repeat: Infinity, duration: 2 } : {}}
+                                    role="timer"
+                                    aria-live="polite"
+                                    aria-label={`${t('crisis.duration')}: ${formatTime(seconds)}`}
+                                >
                                     {formatTime(seconds)}
-                                </div>
+                                </motion.div>
+                                {seconds >= 60 && (
+                                    <p className="text-slate-400 text-sm mt-2">
+                                        {Math.floor(seconds / 60)} {Math.floor(seconds / 60) === 1 ? t('settings.minute') : t('settings.minutes')}
+                                    </p>
+                                )}
+                                {isActive && (
+                                    <div className="flex items-center justify-center gap-2 text-red-400 mt-3">
+                                        <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                                        <span className="text-sm font-medium">{t('crisis.timerRunning')}</span>
+                                    </div>
+                                )}
                             </motion.div>
 
                             <div className="flex flex-col gap-6 w-full max-w-xs">
@@ -259,6 +393,37 @@ export const CrisisMode: React.FC = () => {
                                     <span className="text-2xl font-bold">{t('crisis.stopEvent')}</span>
                                 </motion.button>
 
+                                {/* Mic permission denied warning */}
+                                {micPermissionState === 'denied' && !isRecording && (
+                                    <div className="bg-red-900/30 border border-red-700 p-3 rounded-xl">
+                                        <div className="flex items-start gap-2">
+                                            <AlertCircle size={18} className="text-red-400 mt-0.5 flex-shrink-0" />
+                                            <p className="text-red-300 text-sm">{t('crisis.micPermissionDenied')}</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Audio error message with retry */}
+                                {audioError && (
+                                    <div className="bg-amber-900/30 border border-amber-700 p-3 rounded-xl">
+                                        <div className="flex items-start gap-2">
+                                            <AlertCircle size={18} className="text-amber-400 mt-0.5 flex-shrink-0" />
+                                            <div className="flex-1">
+                                                <p className="text-amber-300 text-sm">{audioError}</p>
+                                                {pendingAudioBlob && (
+                                                    <button
+                                                        onClick={retryAudioEncoding}
+                                                        className="flex items-center gap-1 text-cyan-400 text-sm mt-2 hover:text-cyan-300"
+                                                    >
+                                                        <RefreshCw size={14} />
+                                                        {t('crisis.retryEncoding')}
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
                                 <motion.button
                                     whileTap={{ scale: 0.98 }}
                                     onClick={toggleRecording}
@@ -266,8 +431,10 @@ export const CrisisMode: React.FC = () => {
                                         ? 'bg-red-500/20 border-red-500 text-red-500 animate-pulse'
                                         : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'
                                         }`}
+                                    aria-label={isRecording ? t('crisis.stopRecording') : t('crisis.startRecording')}
+                                    aria-pressed={isRecording}
                                 >
-                                    <Mic size={24} />
+                                    <Mic size={24} aria-hidden="true" />
                                     <span className="text-lg font-bold">{isRecording ? t('crisis.stopRecording') : t('crisis.startRecording')}</span>
                                 </motion.button>
                             </div>
@@ -295,12 +462,29 @@ export const CrisisMode: React.FC = () => {
 
                             {/* Audio Player if recorded */}
                             {audioUrl && (
-                                <div className="mb-6 bg-slate-800 p-4 rounded-xl border border-slate-700">
-                                    <div className="flex items-center gap-3 mb-2 text-slate-300">
-                                        <Mic size={18} className="text-red-400" />
-                                        <span className="text-sm font-bold">{t('crisis.audioSaved')}</span>
+                                <div className="mb-6">
+                                    <AudioPlayer audioUrl={audioUrl} />
+                                </div>
+                            )}
+
+                            {/* Audio error in details form */}
+                            {audioError && !audioUrl && (
+                                <div className="mb-6 bg-amber-900/30 border border-amber-700 p-3 rounded-xl">
+                                    <div className="flex items-start gap-2">
+                                        <AlertCircle size={18} className="text-amber-400 mt-0.5 flex-shrink-0" />
+                                        <div className="flex-1">
+                                            <p className="text-amber-300 text-sm">{audioError}</p>
+                                            {pendingAudioBlob && (
+                                                <button
+                                                    onClick={retryAudioEncoding}
+                                                    className="flex items-center gap-1 text-cyan-400 text-sm mt-2 hover:text-cyan-300"
+                                                >
+                                                    <RefreshCw size={14} />
+                                                    {t('crisis.retryEncoding')}
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
-                                    <audio controls src={audioUrl} className="w-full h-8" />
                                 </div>
                             )}
 
