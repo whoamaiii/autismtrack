@@ -13,6 +13,7 @@
 
 import type { LogEntry, CrisisEvent, ScheduleEntry } from '../types';
 import { enrichLogEntry, enrichCrisisEvent } from '../types';
+import { STORAGE_KEYS } from '../constants/storage';
 
 // Weighted random selection
 const weightedRandom = <T>(items: T[], weights: number[]): T => {
@@ -406,9 +407,9 @@ export const loadMockData = () => {
     const crisisEvents = generateMockCrisisEvents(14);
     const scheduleEntries = generateMockSchedule(7);
 
-    localStorage.setItem('kreativium_logs', JSON.stringify(logs));
-    localStorage.setItem('kreativium_crisis_events', JSON.stringify(crisisEvents));
-    localStorage.setItem('kreativium_schedule_entries', JSON.stringify(scheduleEntries));
+    localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(logs));
+    localStorage.setItem(STORAGE_KEYS.CRISIS_EVENTS, JSON.stringify(crisisEvents));
+    localStorage.setItem(STORAGE_KEYS.SCHEDULE_ENTRIES, JSON.stringify(scheduleEntries));
 
     if (import.meta.env.DEV) {
         console.log(`Loaded mock data:
@@ -429,9 +430,9 @@ export const loadMockData = () => {
  * Clear all mock data
  */
 export const clearMockData = () => {
-    localStorage.removeItem('kreativium_logs');
-    localStorage.removeItem('kreativium_crisis_events');
-    localStorage.removeItem('kreativium_schedule_entries');
+    localStorage.removeItem(STORAGE_KEYS.LOGS);
+    localStorage.removeItem(STORAGE_KEYS.CRISIS_EVENTS);
+    localStorage.removeItem(STORAGE_KEYS.SCHEDULE_ENTRIES);
     if (import.meta.env.DEV) {
         console.log('Cleared all mock data');
     }

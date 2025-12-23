@@ -17,6 +17,7 @@ import {
     ConfirmDeleteModal,
     type Activity
 } from './DailyPlanComponents';
+import { STORAGE_KEYS, STORAGE_PREFIXES } from '../constants/storage';
 
 // Extend window type for webkit prefix
 interface WebkitWindow extends Window {
@@ -48,9 +49,9 @@ const playTimerEndSound = () => {
     }
 };
 
-// Storage keys
-const SCHEDULE_STORAGE_KEY = 'kreativium_daily_schedule';
-const TIMER_STATE_KEY = 'kreativium_timer_state';
+// Storage keys (use centralized constants)
+const SCHEDULE_STORAGE_KEY = STORAGE_PREFIXES.DAILY_SCHEDULE;
+const TIMER_STATE_KEY = STORAGE_KEYS.TIMER_STATE;
 
 // Time validation regex: HH:mm format (00:00 - 23:59)
 const TIME_FORMAT_REGEX = /^([01]?[0-9]|2[0-3]):([0-5][0-9])$/;

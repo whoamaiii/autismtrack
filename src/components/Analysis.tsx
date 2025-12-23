@@ -20,10 +20,11 @@ import { nb, enUS } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useToast } from './Toast';
+import { STORAGE_KEYS } from '../constants/storage';
 
 // Constants
 const LOGS_PER_PAGE = 20;
-const FILTER_STORAGE_KEY = 'kreativium_analysis_filters';
+const FILTER_STORAGE_KEY = STORAGE_KEYS.ANALYSIS_FILTERS;
 
 // Types
 interface AnalysisFilters {

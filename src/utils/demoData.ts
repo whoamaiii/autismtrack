@@ -4,6 +4,7 @@
  * to showcase Gemini 3 Pro's analysis capabilities
  */
 
+import { STORAGE_KEYS } from '../constants/storage';
 import type {
     LogEntry,
     CrisisEvent,
@@ -573,12 +574,12 @@ export function generateDemoData(daysBack: number = 90): DemoData {
 export function loadDemoData(): DemoData {
     const data = generateDemoData(90);
 
-    // Save to localStorage using the same keys as the app
-    localStorage.setItem('kreativium_logs', JSON.stringify(data.logs));
-    localStorage.setItem('kreativium_crisis_events', JSON.stringify(data.crisisEvents));
-    localStorage.setItem('kreativium_goals', JSON.stringify(data.goals));
-    localStorage.setItem('kreativium_child_profile', JSON.stringify(data.childProfile));
-    localStorage.setItem('kreativium_onboarding_completed', 'true');
+    // Save to localStorage using centralized storage keys
+    localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(data.logs));
+    localStorage.setItem(STORAGE_KEYS.CRISIS_EVENTS, JSON.stringify(data.crisisEvents));
+    localStorage.setItem(STORAGE_KEYS.GOALS, JSON.stringify(data.goals));
+    localStorage.setItem(STORAGE_KEYS.CHILD_PROFILE, JSON.stringify(data.childProfile));
+    localStorage.setItem(STORAGE_KEYS.ONBOARDING_COMPLETED, 'true');
 
     console.log(`[Demo Data] Loaded ${data.logs.length} logs, ${data.crisisEvents.length} crisis events, ${data.goals.length} goals`);
 
@@ -589,14 +590,14 @@ export function loadDemoData(): DemoData {
  * Clears demo data from localStorage
  */
 export function clearDemoData(): void {
-    localStorage.removeItem('kreativium_logs');
-    localStorage.removeItem('kreativium_crisis_events');
-    localStorage.removeItem('kreativium_goals');
-    localStorage.removeItem('kreativium_child_profile');
-    localStorage.removeItem('kreativium_onboarding_completed');
-    localStorage.removeItem('kreativium_schedule_entries');
-    localStorage.removeItem('kreativium_schedule_templates');
-    localStorage.removeItem('kreativium_current_context');
+    localStorage.removeItem(STORAGE_KEYS.LOGS);
+    localStorage.removeItem(STORAGE_KEYS.CRISIS_EVENTS);
+    localStorage.removeItem(STORAGE_KEYS.GOALS);
+    localStorage.removeItem(STORAGE_KEYS.CHILD_PROFILE);
+    localStorage.removeItem(STORAGE_KEYS.ONBOARDING_COMPLETED);
+    localStorage.removeItem(STORAGE_KEYS.SCHEDULE_ENTRIES);
+    localStorage.removeItem(STORAGE_KEYS.SCHEDULE_TEMPLATES);
+    localStorage.removeItem(STORAGE_KEYS.CURRENT_CONTEXT);
 
     console.log('[Demo Data] Cleared all demo data');
 }

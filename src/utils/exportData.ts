@@ -11,6 +11,12 @@ import type {
     ChildProfile,
     DailyScheduleTemplate
 } from '../types';
+import { STORAGE_KEYS, STORAGE_PREFIXES } from '../constants/storage';
+import {
+    validateExportData,
+    formatValidationErrors,
+    type ValidationError
+} from './exportValidation';
 
 // Activity type for daily schedules (matches DailyPlanComponents.tsx)
 interface DailyScheduleActivity {
@@ -24,18 +30,8 @@ interface DailyScheduleActivity {
     color?: string;
 }
 
-// Storage keys - must match store.tsx
-const STORAGE_KEYS = {
-    LOGS: 'kreativium_logs',
-    CRISIS_EVENTS: 'kreativium_crisis_events',
-    SCHEDULE_ENTRIES: 'kreativium_schedule_entries',
-    SCHEDULE_TEMPLATES: 'kreativium_schedule_templates',
-    GOALS: 'kreativium_goals',
-    CHILD_PROFILE: 'kreativium_child_profile',
-} as const;
-
-// Prefix for daily schedule keys
-const DAILY_SCHEDULE_PREFIX = 'kreativium_daily_schedule_';
+// Use centralized prefix
+const DAILY_SCHEDULE_PREFIX = STORAGE_PREFIXES.DAILY_SCHEDULE;
 
 export interface ExportedData {
     version: string;
@@ -227,11 +223,12 @@ export function downloadExport(): void {
 }
 
 /**
- * Import result type
+ * Import result type with detailed stats and validation errors
  */
 export interface ImportResult {
     success: boolean;
     error?: string;
+    validationErrors?: ValidationError[];
     imported?: {
         logs: number;
         crisisEvents: number;
@@ -240,6 +237,14 @@ export interface ImportResult {
         goals: number;
         childProfile: boolean;
         dailySchedules: number;
+    };
+    merged?: {
+        logsAdded: number;
+        logsSkipped: number;
+        crisisAdded: number;
+        crisisSkipped: number;
+        goalsAdded: number;
+        goalsSkipped: number;
     };
 }
 
@@ -333,23 +338,32 @@ function restoreBackup(backup: ImportBackup): void {
 
 /**
  * Validates and imports data from a backup file with atomic rollback on failure
+ * Uses Zod schema validation for robust data checking
  */
 export function importData(jsonString: string, mergeMode: 'replace' | 'merge' = 'replace'): ImportResult {
     try {
-        const data = JSON.parse(jsonString) as Partial<ExportedData>;
-
-        // Validate structure
-        if (!data.version || !data.exportedAt) {
-            return { success: false, error: 'Ugyldig filformat. Mangler versjon eller eksportdato.' };
+        // Parse JSON first
+        let rawData: unknown;
+        try {
+            rawData = JSON.parse(jsonString);
+        } catch {
+            return { success: false, error: 'Ugyldig JSON-format. Filen kan være korrupt.' };
         }
 
-        // Validate arrays
-        if (!Array.isArray(data.logs) ||
-            !Array.isArray(data.crisisEvents) ||
-            !Array.isArray(data.scheduleEntries) ||
-            !Array.isArray(data.goals)) {
-            return { success: false, error: 'Ugyldig filformat. Data mangler eller er korrupt.' };
+        // Validate with Zod schema
+        const validationResult = validateExportData(rawData);
+
+        if (!validationResult.success) {
+            const errorMessage = formatValidationErrors(validationResult.errors || []);
+            return {
+                success: false,
+                error: errorMessage || 'Ugyldig filformat. Data validering feilet.',
+                validationErrors: validationResult.errors,
+            };
         }
+
+        // Use validated data (type-safe)
+        const data = validationResult.data!;
 
         // Collect daily schedule keys that will be affected
         const dailyScheduleKeysToBackup: string[] = [];
@@ -365,6 +379,9 @@ export function importData(jsonString: string, mergeMode: 'replace' | 'merge' = 
         // Helper to perform all writes atomically (all succeed or rollback)
         const writeResults: boolean[] = [];
 
+        // Track merge statistics for merge mode
+        let mergeStats: ImportResult['merged'] | undefined;
+
         try {
             if (mergeMode === 'replace') {
                 // Replace all data
@@ -378,7 +395,7 @@ export function importData(jsonString: string, mergeMode: 'replace' | 'merge' = 
                     writeResults.push(safeSetItem(STORAGE_KEYS.CHILD_PROFILE, JSON.stringify(data.childProfile)));
                 }
             } else {
-                // Merge mode - add new entries, skip duplicates by ID
+                // Merge mode - add new entries, skip duplicates by ID, track counts
                 const existingLogs: LogEntry[] = safeJsonParse(STORAGE_KEYS.LOGS, []);
                 const existingCrisis: CrisisEvent[] = safeJsonParse(STORAGE_KEYS.CRISIS_EVENTS, []);
                 const existingSchedule: ScheduleEntry[] = safeJsonParse(STORAGE_KEYS.SCHEDULE_ENTRIES, []);
@@ -396,6 +413,16 @@ export function importData(jsonString: string, mergeMode: 'replace' | 'merge' = 
                 const newSchedule = data.scheduleEntries.filter(s => !existingScheduleIds.has(s.id));
                 const newTemplates = (data.scheduleTemplates || []).filter(t => !existingTemplateIds.has(t.id));
                 const newGoals = data.goals.filter(g => !existingGoalIds.has(g.id));
+
+                // Track merge statistics
+                mergeStats = {
+                    logsAdded: newLogs.length,
+                    logsSkipped: data.logs.length - newLogs.length,
+                    crisisAdded: newCrisis.length,
+                    crisisSkipped: data.crisisEvents.length - newCrisis.length,
+                    goalsAdded: newGoals.length,
+                    goalsSkipped: data.goals.length - newGoals.length,
+                };
 
                 writeResults.push(safeSetItem(STORAGE_KEYS.LOGS, JSON.stringify([...existingLogs, ...newLogs])));
                 writeResults.push(safeSetItem(STORAGE_KEYS.CRISIS_EVENTS, JSON.stringify([...existingCrisis, ...newCrisis])));
@@ -439,7 +466,8 @@ export function importData(jsonString: string, mergeMode: 'replace' | 'merge' = 
                     goals: data.goals.length,
                     childProfile: !!data.childProfile,
                     dailySchedules: dailySchedulesCount
-                }
+                },
+                ...(mergeStats && { merged: mergeStats }),
             };
         } catch (writeError) {
             // Rollback on any error during writes
