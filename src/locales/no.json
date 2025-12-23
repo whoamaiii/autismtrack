@@ -106,6 +106,9 @@
                 "subtitle": "Gjenopprett fra backup",
                 "desc": "Last opp en tidligere eksportert fil for å hente tilbake data.",
                 "button": "Velg Fil...",
+                "invalidFileType": "Vennligst velg en JSON-fil.",
+                "readError": "Kunne ikke lese filen. Prøv igjen.",
+                "readAborted": "Fillesing ble avbrutt.",
                 "modal": {
                     "title": "Bekreft Import",
                     "desc": "Du er i ferd med å importere data. Hvordan vil du håndtere eksisterende data?",
@@ -271,9 +274,25 @@
             "topTrigger": "Topp Trigger",
             "bestStrategy": "Beste Strategi"
         },
-        "generate": "Generer PDF Rapport",
+        "generate": "Generer PDF",
         "generating": "Genererer PDF...",
         "generated": "Rapport Lastet Ned",
+        "previewButton": "Forhåndsvis",
+        "previewModal": {
+            "title": "Rapportforhåndsvisning",
+            "stats": "Statistikk",
+            "totalLogs": "Totalt logger",
+            "incidents": "Krisehendelser",
+            "avgDuration": "Gj.snitt varighet",
+            "bestStrategy": "Beste strategi",
+            "aiAnalysis": "AI-analyse",
+            "loadingAnalysis": "Laster analyse...",
+            "recommendations": "{{count}} anbefalinger inkludert",
+            "notEnoughData": "Trenger minst 5 logger for AI-analyse.",
+            "noAnalysis": "AI-analyse ikke tilgjengelig.",
+            "sampleCrisis": "Krisehendelser (eksempler)",
+            "more": "flere"
+        },
         "error": {
             "noData": "Ingen data å generere rapport fra for denne perioden.",
             "failed": "Kunne ikke generere PDF. Prøv igjen."

@@ -106,6 +106,9 @@
                 "subtitle": "Restore from backup",
                 "desc": "Upload a previously exported file to restore data.",
                 "button": "Select File...",
+                "invalidFileType": "Please select a JSON file.",
+                "readError": "Could not read the file. Please try again.",
+                "readAborted": "File reading was aborted.",
                 "modal": {
                     "title": "Confirm Import",
                     "desc": "You are about to import data. How do you want to handle existing data?",
@@ -271,9 +274,25 @@
             "topTrigger": "Top Trigger",
             "bestStrategy": "Best Strategy"
         },
-        "generate": "Generate PDF Report",
+        "generate": "Generate PDF",
         "generating": "Generating PDF...",
         "generated": "Report Downloaded",
+        "previewButton": "Preview",
+        "previewModal": {
+            "title": "Report Preview",
+            "stats": "Statistics",
+            "totalLogs": "Total Logs",
+            "incidents": "Crisis Events",
+            "avgDuration": "Avg Duration",
+            "bestStrategy": "Best Strategy",
+            "aiAnalysis": "AI Analysis",
+            "loadingAnalysis": "Loading analysis...",
+            "recommendations": "{{count}} recommendations included",
+            "notEnoughData": "Need at least 5 logs for AI analysis.",
+            "noAnalysis": "AI analysis not available.",
+            "sampleCrisis": "Crisis Events (samples)",
+            "more": "more"
+        },
         "error": {
             "noData": "No data to generate report from for this period.",
             "failed": "Could not generate PDF. Please try again."

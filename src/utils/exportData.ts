@@ -244,7 +244,95 @@ export interface ImportResult {
 }
 
 /**
- * Validates and imports data from a backup file
+ * Backup structure for atomic import recovery
+ */
+interface ImportBackup {
+    logs: string | null;
+    crisisEvents: string | null;
+    scheduleEntries: string | null;
+    scheduleTemplates: string | null;
+    goals: string | null;
+    childProfile: string | null;
+    dailyScheduleKeys: string[];
+    dailyScheduleValues: (string | null)[];
+}
+
+/**
+ * Create a backup of current localStorage state before import
+ */
+function createBackup(dailyScheduleKeysToBackup: string[] = []): ImportBackup {
+    return {
+        logs: localStorage.getItem(STORAGE_KEYS.LOGS),
+        crisisEvents: localStorage.getItem(STORAGE_KEYS.CRISIS_EVENTS),
+        scheduleEntries: localStorage.getItem(STORAGE_KEYS.SCHEDULE_ENTRIES),
+        scheduleTemplates: localStorage.getItem(STORAGE_KEYS.SCHEDULE_TEMPLATES),
+        goals: localStorage.getItem(STORAGE_KEYS.GOALS),
+        childProfile: localStorage.getItem(STORAGE_KEYS.CHILD_PROFILE),
+        dailyScheduleKeys: dailyScheduleKeysToBackup,
+        dailyScheduleValues: dailyScheduleKeysToBackup.map(key => localStorage.getItem(key))
+    };
+}
+
+/**
+ * Restore localStorage from backup after failed import
+ */
+function restoreBackup(backup: ImportBackup): void {
+    try {
+        // Restore main data (set or remove based on backup state)
+        if (backup.logs !== null) {
+            localStorage.setItem(STORAGE_KEYS.LOGS, backup.logs);
+        } else {
+            localStorage.removeItem(STORAGE_KEYS.LOGS);
+        }
+
+        if (backup.crisisEvents !== null) {
+            localStorage.setItem(STORAGE_KEYS.CRISIS_EVENTS, backup.crisisEvents);
+        } else {
+            localStorage.removeItem(STORAGE_KEYS.CRISIS_EVENTS);
+        }
+
+        if (backup.scheduleEntries !== null) {
+            localStorage.setItem(STORAGE_KEYS.SCHEDULE_ENTRIES, backup.scheduleEntries);
+        } else {
+            localStorage.removeItem(STORAGE_KEYS.SCHEDULE_ENTRIES);
+        }
+
+        if (backup.scheduleTemplates !== null) {
+            localStorage.setItem(STORAGE_KEYS.SCHEDULE_TEMPLATES, backup.scheduleTemplates);
+        } else {
+            localStorage.removeItem(STORAGE_KEYS.SCHEDULE_TEMPLATES);
+        }
+
+        if (backup.goals !== null) {
+            localStorage.setItem(STORAGE_KEYS.GOALS, backup.goals);
+        } else {
+            localStorage.removeItem(STORAGE_KEYS.GOALS);
+        }
+
+        if (backup.childProfile !== null) {
+            localStorage.setItem(STORAGE_KEYS.CHILD_PROFILE, backup.childProfile);
+        } else {
+            localStorage.removeItem(STORAGE_KEYS.CHILD_PROFILE);
+        }
+
+        // Restore daily schedules
+        backup.dailyScheduleKeys.forEach((key, index) => {
+            const value = backup.dailyScheduleValues[index];
+            if (value !== null) {
+                localStorage.setItem(key, value);
+            } else {
+                localStorage.removeItem(key);
+            }
+        });
+    } catch (error) {
+        if (import.meta.env.DEV) {
+            console.error('Failed to restore backup:', error);
+        }
+    }
+}
+
+/**
+ * Validates and imports data from a backup file with atomic rollback on failure
  */
 export function importData(jsonString: string, mergeMode: 'replace' | 'merge' = 'replace'): ImportResult {
     try {
@@ -263,85 +351,101 @@ export function importData(jsonString: string, mergeMode: 'replace' | 'merge' = 
             return { success: false, error: 'Ugyldig filformat. Data mangler eller er korrupt.' };
         }
 
-        // Helper to perform all writes atomically (all succeed or report failure)
-        const writeResults: boolean[] = [];
-
-        if (mergeMode === 'replace') {
-            // Replace all data
-            writeResults.push(safeSetItem(STORAGE_KEYS.LOGS, JSON.stringify(data.logs)));
-            writeResults.push(safeSetItem(STORAGE_KEYS.CRISIS_EVENTS, JSON.stringify(data.crisisEvents)));
-            writeResults.push(safeSetItem(STORAGE_KEYS.SCHEDULE_ENTRIES, JSON.stringify(data.scheduleEntries)));
-            writeResults.push(safeSetItem(STORAGE_KEYS.SCHEDULE_TEMPLATES, JSON.stringify(data.scheduleTemplates || [])));
-            writeResults.push(safeSetItem(STORAGE_KEYS.GOALS, JSON.stringify(data.goals)));
-
-            if (data.childProfile) {
-                writeResults.push(safeSetItem(STORAGE_KEYS.CHILD_PROFILE, JSON.stringify(data.childProfile)));
-            }
-        } else {
-            // Merge mode - add new entries, skip duplicates by ID
-            const existingLogs: LogEntry[] = safeJsonParse(STORAGE_KEYS.LOGS, []);
-            const existingCrisis: CrisisEvent[] = safeJsonParse(STORAGE_KEYS.CRISIS_EVENTS, []);
-            const existingSchedule: ScheduleEntry[] = safeJsonParse(STORAGE_KEYS.SCHEDULE_ENTRIES, []);
-            const existingTemplates: DailyScheduleTemplate[] = safeJsonParse(STORAGE_KEYS.SCHEDULE_TEMPLATES, []);
-            const existingGoals: Goal[] = safeJsonParse(STORAGE_KEYS.GOALS, []);
-
-            const existingLogIds = new Set(existingLogs.map(l => l.id));
-            const existingCrisisIds = new Set(existingCrisis.map(c => c.id));
-            const existingScheduleIds = new Set(existingSchedule.map(s => s.id));
-            const existingTemplateIds = new Set(existingTemplates.map(t => t.id));
-            const existingGoalIds = new Set(existingGoals.map(g => g.id));
-
-            const newLogs = data.logs.filter(l => !existingLogIds.has(l.id));
-            const newCrisis = data.crisisEvents.filter(c => !existingCrisisIds.has(c.id));
-            const newSchedule = data.scheduleEntries.filter(s => !existingScheduleIds.has(s.id));
-            const newTemplates = (data.scheduleTemplates || []).filter(t => !existingTemplateIds.has(t.id));
-            const newGoals = data.goals.filter(g => !existingGoalIds.has(g.id));
-
-            writeResults.push(safeSetItem(STORAGE_KEYS.LOGS, JSON.stringify([...existingLogs, ...newLogs])));
-            writeResults.push(safeSetItem(STORAGE_KEYS.CRISIS_EVENTS, JSON.stringify([...existingCrisis, ...newCrisis])));
-            writeResults.push(safeSetItem(STORAGE_KEYS.SCHEDULE_ENTRIES, JSON.stringify([...existingSchedule, ...newSchedule])));
-            writeResults.push(safeSetItem(STORAGE_KEYS.SCHEDULE_TEMPLATES, JSON.stringify([...existingTemplates, ...newTemplates])));
-            writeResults.push(safeSetItem(STORAGE_KEYS.GOALS, JSON.stringify([...existingGoals, ...newGoals])));
-
-            // Child profile - only import if not already set
-            if (data.childProfile && !localStorage.getItem(STORAGE_KEYS.CHILD_PROFILE)) {
-                writeResults.push(safeSetItem(STORAGE_KEYS.CHILD_PROFILE, JSON.stringify(data.childProfile)));
+        // Collect daily schedule keys that will be affected
+        const dailyScheduleKeysToBackup: string[] = [];
+        if (data.dailySchedules && typeof data.dailySchedules === 'object') {
+            for (const suffix of Object.keys(data.dailySchedules)) {
+                dailyScheduleKeysToBackup.push(`${DAILY_SCHEDULE_PREFIX}${suffix}`);
             }
         }
 
-        // Import daily schedules if present
-        let dailySchedulesCount = 0;
-        if (data.dailySchedules && typeof data.dailySchedules === 'object') {
-            for (const [suffix, activities] of Object.entries(data.dailySchedules)) {
-                if (Array.isArray(activities) && activities.length > 0) {
-                    const key = `${DAILY_SCHEDULE_PREFIX}${suffix}`;
-                    if (mergeMode === 'replace' || !localStorage.getItem(key)) {
-                        // In replace mode, always overwrite
-                        // In merge mode, only add if key doesn't exist
-                        writeResults.push(safeSetItem(key, JSON.stringify(activities)));
-                        dailySchedulesCount++;
+        // Create backup BEFORE any writes
+        const backup = createBackup(dailyScheduleKeysToBackup);
+
+        // Helper to perform all writes atomically (all succeed or rollback)
+        const writeResults: boolean[] = [];
+
+        try {
+            if (mergeMode === 'replace') {
+                // Replace all data
+                writeResults.push(safeSetItem(STORAGE_KEYS.LOGS, JSON.stringify(data.logs)));
+                writeResults.push(safeSetItem(STORAGE_KEYS.CRISIS_EVENTS, JSON.stringify(data.crisisEvents)));
+                writeResults.push(safeSetItem(STORAGE_KEYS.SCHEDULE_ENTRIES, JSON.stringify(data.scheduleEntries)));
+                writeResults.push(safeSetItem(STORAGE_KEYS.SCHEDULE_TEMPLATES, JSON.stringify(data.scheduleTemplates || [])));
+                writeResults.push(safeSetItem(STORAGE_KEYS.GOALS, JSON.stringify(data.goals)));
+
+                if (data.childProfile) {
+                    writeResults.push(safeSetItem(STORAGE_KEYS.CHILD_PROFILE, JSON.stringify(data.childProfile)));
+                }
+            } else {
+                // Merge mode - add new entries, skip duplicates by ID
+                const existingLogs: LogEntry[] = safeJsonParse(STORAGE_KEYS.LOGS, []);
+                const existingCrisis: CrisisEvent[] = safeJsonParse(STORAGE_KEYS.CRISIS_EVENTS, []);
+                const existingSchedule: ScheduleEntry[] = safeJsonParse(STORAGE_KEYS.SCHEDULE_ENTRIES, []);
+                const existingTemplates: DailyScheduleTemplate[] = safeJsonParse(STORAGE_KEYS.SCHEDULE_TEMPLATES, []);
+                const existingGoals: Goal[] = safeJsonParse(STORAGE_KEYS.GOALS, []);
+
+                const existingLogIds = new Set(existingLogs.map(l => l.id));
+                const existingCrisisIds = new Set(existingCrisis.map(c => c.id));
+                const existingScheduleIds = new Set(existingSchedule.map(s => s.id));
+                const existingTemplateIds = new Set(existingTemplates.map(t => t.id));
+                const existingGoalIds = new Set(existingGoals.map(g => g.id));
+
+                const newLogs = data.logs.filter(l => !existingLogIds.has(l.id));
+                const newCrisis = data.crisisEvents.filter(c => !existingCrisisIds.has(c.id));
+                const newSchedule = data.scheduleEntries.filter(s => !existingScheduleIds.has(s.id));
+                const newTemplates = (data.scheduleTemplates || []).filter(t => !existingTemplateIds.has(t.id));
+                const newGoals = data.goals.filter(g => !existingGoalIds.has(g.id));
+
+                writeResults.push(safeSetItem(STORAGE_KEYS.LOGS, JSON.stringify([...existingLogs, ...newLogs])));
+                writeResults.push(safeSetItem(STORAGE_KEYS.CRISIS_EVENTS, JSON.stringify([...existingCrisis, ...newCrisis])));
+                writeResults.push(safeSetItem(STORAGE_KEYS.SCHEDULE_ENTRIES, JSON.stringify([...existingSchedule, ...newSchedule])));
+                writeResults.push(safeSetItem(STORAGE_KEYS.SCHEDULE_TEMPLATES, JSON.stringify([...existingTemplates, ...newTemplates])));
+                writeResults.push(safeSetItem(STORAGE_KEYS.GOALS, JSON.stringify([...existingGoals, ...newGoals])));
+
+                // Child profile - only import if not already set
+                if (data.childProfile && !localStorage.getItem(STORAGE_KEYS.CHILD_PROFILE)) {
+                    writeResults.push(safeSetItem(STORAGE_KEYS.CHILD_PROFILE, JSON.stringify(data.childProfile)));
+                }
+            }
+
+            // Import daily schedules if present
+            let dailySchedulesCount = 0;
+            if (data.dailySchedules && typeof data.dailySchedules === 'object') {
+                for (const [suffix, activities] of Object.entries(data.dailySchedules)) {
+                    if (Array.isArray(activities) && activities.length > 0) {
+                        const key = `${DAILY_SCHEDULE_PREFIX}${suffix}`;
+                        if (mergeMode === 'replace' || !localStorage.getItem(key)) {
+                            writeResults.push(safeSetItem(key, JSON.stringify(activities)));
+                            dailySchedulesCount++;
+                        }
                     }
                 }
             }
-        }
 
-        // Check if any writes failed
-        if (writeResults.some(result => !result)) {
-            return { success: false, error: 'Kunne ikke lagre all data. Prøv å frigjøre lagringsplass.' };
-        }
-
-        return {
-            success: true,
-            imported: {
-                logs: data.logs.length,
-                crisisEvents: data.crisisEvents.length,
-                scheduleEntries: data.scheduleEntries.length,
-                scheduleTemplates: (data.scheduleTemplates || []).length,
-                goals: data.goals.length,
-                childProfile: !!data.childProfile,
-                dailySchedules: dailySchedulesCount
+            // Check if any writes failed - rollback if so
+            if (writeResults.some(result => !result)) {
+                restoreBackup(backup);
+                return { success: false, error: 'Kunne ikke lagre all data. Prøv å frigjøre lagringsplass.' };
             }
-        };
+
+            return {
+                success: true,
+                imported: {
+                    logs: data.logs.length,
+                    crisisEvents: data.crisisEvents.length,
+                    scheduleEntries: data.scheduleEntries.length,
+                    scheduleTemplates: (data.scheduleTemplates || []).length,
+                    goals: data.goals.length,
+                    childProfile: !!data.childProfile,
+                    dailySchedules: dailySchedulesCount
+                }
+            };
+        } catch (writeError) {
+            // Rollback on any error during writes
+            restoreBackup(backup);
+            throw writeError;
+        }
     } catch (e) {
         if (import.meta.env.DEV) {
             console.error('Import failed:', e);

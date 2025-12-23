@@ -15,6 +15,7 @@ import type {
     ChildProfile
 } from './types';
 import { enrichLogEntry, enrichCrisisEvent } from './types';
+import { generateUUID } from './utils/uuid';
 
 // ============================================
 // STORAGE KEYS
@@ -223,7 +224,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (!prev) {
                 // If no profile exists, create a new one with the updates
                 const newProfile: ChildProfile = {
-                    id: crypto.randomUUID(),
+                    id: generateUUID(),
                     name: '',
                     diagnoses: [],
                     communicationStyle: 'verbal',
@@ -379,7 +380,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const addGoalProgress = useCallback((goalId: string, progress: Omit<GoalProgress, 'id' | 'goalId'>) => {
         const newProgress: GoalProgress = {
             ...progress,
-            id: crypto.randomUUID(),
+            id: generateUUID(),
             goalId
         };
         saveGoals(goals.map(g => {

@@ -1,10 +1,11 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileText, Download, Calendar, Check, Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
+import { FileText, Download, Calendar, Check, Loader2, AlertCircle, ArrowLeft, Eye, X, ChevronRight } from 'lucide-react';
 import { useLogs, useCrisis, useChildProfile } from '../store';
 import { generatePDF } from '../services/pdfGenerator';
 import { analyzeLogs } from '../services/ai';
-import { motion } from 'framer-motion';
+import type { AnalysisResult } from '../types';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 
 type Period = '30_days' | '3_months' | 'this_year';
@@ -22,6 +23,11 @@ export const Reports: React.FC = () => {
     const [isGenerated, setIsGenerated] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // Preview modal state
+    const [showPreview, setShowPreview] = useState(false);
+    const [previewAnalysis, setPreviewAnalysis] = useState<AnalysisResult | null>(null);
+    const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+
     // Track mounted state for async operations
     const isMountedRef = useRef(true);
     useEffect(() => {
@@ -31,22 +37,32 @@ export const Reports: React.FC = () => {
         };
     }, []);
 
-    // Filter data based on selection
+    // Filter data based on selection (DST-safe date calculations)
     const { filteredLogs, filteredCrisis, startDate } = useMemo(() => {
         const now = new Date();
-        let start = new Date();
+        // Normalize to start of day to avoid DST edge cases
+        now.setHours(0, 0, 0, 0);
+
+        let start: Date;
 
         switch (period) {
             case '30_days':
-                start.setDate(now.getDate() - 30);
+                // Use explicit date construction to handle month boundaries correctly
+                start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30);
                 break;
             case '3_months':
-                start.setMonth(now.getMonth() - 3);
+                // Use explicit date construction to handle year boundaries correctly
+                start = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
                 break;
             case 'this_year':
                 start = new Date(now.getFullYear(), 0, 1);
                 break;
+            default:
+                start = new Date(now);
         }
+
+        // Ensure start is also normalized to start of day
+        start.setHours(0, 0, 0, 0);
 
         return {
             filteredLogs: logs.filter(l => new Date(l.timestamp) >= start),
@@ -86,6 +102,41 @@ export const Reports: React.FC = () => {
         return { totalIncidents, avgDuration, topTrigger, bestStrategy };
     }, [filteredLogs, filteredCrisis, t]);
 
+    // Handle preview - loads AI analysis and shows modal
+    const handlePreview = async () => {
+        if (filteredLogs.length === 0) {
+            setError(t('reports.error.noData'));
+            return;
+        }
+
+        setShowPreview(true);
+        setError(null);
+
+        // Load AI analysis if we have enough data and don't already have it
+        if (filteredLogs.length >= 5 && !previewAnalysis) {
+            setIsLoadingPreview(true);
+            try {
+                const analysis = await analyzeLogs(filteredLogs, filteredCrisis, { childProfile });
+                if (isMountedRef.current) {
+                    setPreviewAnalysis(analysis);
+                }
+            } catch (e) {
+                if (import.meta.env.DEV) {
+                    console.warn('AI Analysis failed for preview', e);
+                }
+            } finally {
+                if (isMountedRef.current) {
+                    setIsLoadingPreview(false);
+                }
+            }
+        }
+    };
+
+    // Clear preview analysis when period changes
+    useEffect(() => {
+        setPreviewAnalysis(null);
+    }, [period]);
+
     const handleGenerate = async () => {
         if (filteredLogs.length === 0) {
             setError(t('reports.error.noData'));
@@ -94,19 +145,18 @@ export const Reports: React.FC = () => {
 
         setIsGenerating(true);
         setError(null);
+        setShowPreview(false); // Close preview modal if open
 
         try {
-            // 1. Get AI Analysis (cached or fresh)
-            // We use a shortened timeout effectively by not waiting forever if it fails
-            let analysis = null;
-            try {
-                // Only try analysis if we have meaningful data
-                if (filteredLogs.length >= 5) {
+            // 1. Get AI Analysis (use cached preview analysis if available, otherwise fetch fresh)
+            let analysis = previewAnalysis;
+            if (!analysis && filteredLogs.length >= 5) {
+                try {
                     analysis = await analyzeLogs(filteredLogs, filteredCrisis, { childProfile });
-                }
-            } catch (e) {
-                if (import.meta.env.DEV) {
-                    console.warn('AI Analysis failed, generating report without it', e);
+                } catch (e) {
+                    if (import.meta.env.DEV) {
+                        console.warn('AI Analysis failed, generating report without it', e);
+                    }
                 }
             }
 
@@ -221,35 +271,49 @@ export const Reports: React.FC = () => {
                     </div>
                 )}
 
-                {/* Generate Button */}
-                <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    onClick={handleGenerate}
-                    disabled={isGenerating || isGenerated}
-                    className={`w-full h-14 rounded-xl flex items-center justify-center gap-2 font-bold text-lg transition-all ${isGenerated
-                        ? 'bg-green-500 text-white shadow-lg shadow-green-500/25 neon-glow-green'
-                        : isGenerating
-                            ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
-                            : 'bg-primary text-white hover:bg-blue-600 shadow-lg shadow-primary/25 neon-glow-blue'
-                        }`}
-                >
-                    {isGenerated ? (
-                        <>
-                            <Check size={24} />
-                            {t('reports.generated')}
-                        </>
-                    ) : isGenerating ? (
-                        <>
-                            <Loader2 size={24} className="animate-spin" />
-                            {t('reports.generating')}
-                        </>
-                    ) : (
-                        <>
-                            <Download size={24} />
-                            {t('reports.generate')}
-                        </>
-                    )}
-                </motion.button>
+                {/* Action Buttons */}
+                <div className="flex gap-3">
+                    {/* Preview Button */}
+                    <motion.button
+                        whileTap={{ scale: 0.95 }}
+                        onClick={handlePreview}
+                        disabled={isGenerating || filteredLogs.length === 0}
+                        className="flex-1 h-14 rounded-xl flex items-center justify-center gap-2 font-bold text-lg transition-all bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 border border-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <Eye size={24} />
+                        {t('reports.previewButton')}
+                    </motion.button>
+
+                    {/* Generate Button */}
+                    <motion.button
+                        whileTap={{ scale: 0.95 }}
+                        onClick={handleGenerate}
+                        disabled={isGenerating || isGenerated}
+                        className={`flex-1 h-14 rounded-xl flex items-center justify-center gap-2 font-bold text-lg transition-all ${isGenerated
+                            ? 'bg-green-500 text-white shadow-lg shadow-green-500/25 neon-glow-green'
+                            : isGenerating
+                                ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                                : 'bg-primary text-white hover:bg-blue-600 shadow-lg shadow-primary/25 neon-glow-blue'
+                            }`}
+                    >
+                        {isGenerated ? (
+                            <>
+                                <Check size={24} />
+                                {t('reports.generated')}
+                            </>
+                        ) : isGenerating ? (
+                            <>
+                                <Loader2 size={24} className="animate-spin" />
+                                {t('reports.generating')}
+                            </>
+                        ) : (
+                            <>
+                                <Download size={24} />
+                                {t('reports.generate')}
+                            </>
+                        )}
+                    </motion.button>
+                </div>
 
                 {isGenerated && (
                     <motion.p
@@ -261,6 +325,149 @@ export const Reports: React.FC = () => {
                     </motion.p>
                 )}
             </motion.div>
+
+            {/* Preview Modal */}
+            <AnimatePresence>
+                {showPreview && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50"
+                        onClick={() => setShowPreview(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="liquid-glass-card p-6 rounded-3xl max-w-lg w-full max-h-[80vh] overflow-y-auto"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            {/* Modal Header */}
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                    <Eye className="text-purple-400" size={24} />
+                                    {t('reports.previewModal.title')}
+                                </h3>
+                                <button
+                                    onClick={() => setShowPreview(false)}
+                                    className="p-2 rounded-full hover:bg-white/10 transition-colors"
+                                >
+                                    <X size={20} className="text-slate-400" />
+                                </button>
+                            </div>
+
+                            {/* Stats Summary */}
+                            <div className="mb-6">
+                                <h4 className="text-sm font-bold text-slate-400 mb-3 uppercase tracking-wider">
+                                    {t('reports.previewModal.stats')}
+                                </h4>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="bg-white/5 p-3 rounded-xl">
+                                        <div className="text-2xl font-bold text-white">{filteredLogs.length}</div>
+                                        <div className="text-xs text-slate-400">{t('reports.previewModal.totalLogs')}</div>
+                                    </div>
+                                    <div className="bg-white/5 p-3 rounded-xl">
+                                        <div className="text-2xl font-bold text-white">{stats.totalIncidents}</div>
+                                        <div className="text-xs text-slate-400">{t('reports.previewModal.incidents')}</div>
+                                    </div>
+                                    <div className="bg-white/5 p-3 rounded-xl">
+                                        <div className="text-2xl font-bold text-white">{stats.avgDuration} min</div>
+                                        <div className="text-xs text-slate-400">{t('reports.previewModal.avgDuration')}</div>
+                                    </div>
+                                    <div className="bg-white/5 p-3 rounded-xl">
+                                        <div className="text-lg font-bold text-green-400 truncate">{stats.bestStrategy}</div>
+                                        <div className="text-xs text-slate-400">{t('reports.previewModal.bestStrategy')}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* AI Analysis Preview */}
+                            <div className="mb-6">
+                                <h4 className="text-sm font-bold text-slate-400 mb-3 uppercase tracking-wider">
+                                    {t('reports.previewModal.aiAnalysis')}
+                                </h4>
+                                <div className="bg-white/5 p-4 rounded-xl">
+                                    {isLoadingPreview ? (
+                                        <div className="flex items-center justify-center gap-2 py-4 text-slate-400">
+                                            <Loader2 size={20} className="animate-spin" />
+                                            {t('reports.previewModal.loadingAnalysis')}
+                                        </div>
+                                    ) : previewAnalysis ? (
+                                        <div className="space-y-2">
+                                            <p className="text-slate-300 text-sm line-clamp-4">
+                                                {previewAnalysis.summary}
+                                            </p>
+                                            {previewAnalysis.recommendations && previewAnalysis.recommendations.length > 0 && (
+                                                <div className="pt-2 border-t border-white/10">
+                                                    <span className="text-xs text-slate-500">
+                                                        {t('reports.previewModal.recommendations', { count: previewAnalysis.recommendations.length })}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : filteredLogs.length < 5 ? (
+                                        <p className="text-slate-500 text-sm text-center py-2">
+                                            {t('reports.previewModal.notEnoughData')}
+                                        </p>
+                                    ) : (
+                                        <p className="text-slate-500 text-sm text-center py-2">
+                                            {t('reports.previewModal.noAnalysis')}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Sample Data Preview */}
+                            {filteredCrisis.length > 0 && (
+                                <div className="mb-6">
+                                    <h4 className="text-sm font-bold text-slate-400 mb-3 uppercase tracking-wider">
+                                        {t('reports.previewModal.sampleCrisis')}
+                                    </h4>
+                                    <div className="space-y-2">
+                                        {filteredCrisis.slice(0, 3).map((crisis, idx) => (
+                                            <div key={idx} className="bg-white/5 p-3 rounded-xl flex items-center gap-3">
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="text-sm text-white truncate">{crisis.type}</div>
+                                                    <div className="text-xs text-slate-500">
+                                                        {new Date(crisis.timestamp).toLocaleDateString('nb-NO')} - {Math.round(crisis.durationSeconds / 60)} min
+                                                    </div>
+                                                </div>
+                                                <ChevronRight size={16} className="text-slate-600" />
+                                            </div>
+                                        ))}
+                                        {filteredCrisis.length > 3 && (
+                                            <p className="text-xs text-slate-500 text-center">
+                                                +{filteredCrisis.length - 3} {t('reports.previewModal.more')}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Generate from Preview Button */}
+                            <motion.button
+                                whileTap={{ scale: 0.98 }}
+                                onClick={handleGenerate}
+                                disabled={isGenerating}
+                                className="w-full py-4 rounded-xl bg-primary text-white font-bold flex items-center justify-center gap-2 hover:bg-blue-600 transition-colors disabled:opacity-50"
+                            >
+                                {isGenerating ? (
+                                    <>
+                                        <Loader2 size={20} className="animate-spin" />
+                                        {t('reports.generating')}
+                                    </>
+                                ) : (
+                                    <>
+                                        <Download size={20} />
+                                        {t('reports.generate')}
+                                    </>
+                                )}
+                            </motion.button>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

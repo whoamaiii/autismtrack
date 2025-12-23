@@ -30,8 +30,10 @@ import { downloadExport, importData, exportAllData, type ImportResult } from '..
 import { loadDemoData, clearDemoData } from '../utils/demoData';
 import { Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { generateUUID } from '../utils/uuid';
+import { useSettings } from '../store';
 
-// Multi-select chip component
+// Multi-select chip component with keyboard accessibility
 const ChipSelect: React.FC<{
     options: readonly { value: string; label: string }[] | string[];
     selected: string[];
@@ -47,23 +49,29 @@ const ChipSelect: React.FC<{
     };
 
     return (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2" role="group">
             {options.map(opt => {
                 const value = typeof opt === 'string' ? opt : opt.value;
                 const label = typeof opt === 'string' ? opt : opt.label;
                 const isSelected = selected.includes(value);
+                const isDisabled = !isSelected && maxSelect !== undefined && selected.length >= maxSelect;
 
                 return (
                     <button
                         key={value}
                         type="button"
                         onClick={() => toggleOption(value)}
+                        aria-pressed={isSelected}
+                        aria-label={label}
+                        disabled={isDisabled}
                         className={`
                             px-3 py-1.5 rounded-full text-sm font-medium transition-all
+                            focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:ring-offset-1 focus:ring-offset-slate-900
                             ${isSelected
                                 ? 'bg-primary text-white'
                                 : 'bg-white/10 text-slate-300 hover:bg-white/20'
                             }
+                            ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}
                         `}
                     >
                         {label}
@@ -77,6 +85,7 @@ const ChipSelect: React.FC<{
 export const Settings: React.FC = () => {
     const { t } = useTranslation();
     const { childProfile, setChildProfile, updateChildProfile, clearChildProfile } = useChildProfile();
+    const { refreshData } = useSettings();
 
     // Form state - initialized from childProfile
     const [name, setName] = useState(childProfile?.name || '');
@@ -126,7 +135,7 @@ export const Settings: React.FC = () => {
     const handleSave = () => {
         const now = new Date().toISOString();
         const profile: ChildProfile = {
-            id: childProfile?.id || crypto.randomUUID(),
+            id: childProfile?.id || generateUUID(),
             name: name || 'Mitt barn',
             age: age === '' ? undefined : age,
             diagnoses,
@@ -167,17 +176,37 @@ export const Settings: React.FC = () => {
         downloadExport();
     };
 
-    // Import file selection handler
+    // Import file selection handler with error handling
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
+        // Validate file type
+        if (!file.name.endsWith('.json')) {
+            setImportResult({ success: false, error: t('settings.import.invalidFileType') });
+            setShowImportModal(true);
+            e.target.value = '';
+            return;
+        }
+
         const reader = new FileReader();
+
         reader.onload = (event) => {
             const content = event.target?.result as string;
             setPendingImportData(content);
             setShowImportModal(true);
         };
+
+        reader.onerror = () => {
+            setImportResult({ success: false, error: t('settings.import.readError') });
+            setShowImportModal(true);
+        };
+
+        reader.onabort = () => {
+            setImportResult({ success: false, error: t('settings.import.readAborted') });
+            setShowImportModal(true);
+        };
+
         reader.readAsText(file);
 
         // Reset input so same file can be selected again
@@ -192,10 +221,13 @@ export const Settings: React.FC = () => {
         setImportResult(result);
 
         if (result.success) {
-            // Reload page after short delay to refresh all contexts
-            // (dataStats will be recomputed via useMemo after reload)
+            // Refresh all contexts from localStorage without page reload
+            refreshData();
+
+            // Close modal after brief delay to show success
             setTimeout(() => {
-                window.location.reload();
+                setShowImportModal(false);
+                setImportResult(null);
             }, 1500);
         }
 
