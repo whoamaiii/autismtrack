@@ -86,6 +86,11 @@ interface AnalysisCache {
     logsHash: string;
 }
 
+// Retry callback for UI visibility
+export interface RetryCallback {
+    onRetry?: (attempt: number, maxRetries: number, modelId: string) => void;
+}
+
 // =============================================================================
 // CACHING
 // =============================================================================
@@ -619,7 +624,8 @@ const callOpenRouter = async (
 const callWithRetry = async (
     messages: OpenRouterMessage[],
     modelId: string,
-    isPremium: boolean = false
+    isPremium: boolean = false,
+    callbacks?: RetryCallback
 ): Promise<OpenRouterResponse> => {
     let lastError: Error | null = null;
     let currentModelId = modelId;
@@ -639,6 +645,11 @@ const callWithRetry = async (
                     console.log('Switching to fallback model...');
                 }
                 currentModelId = FALLBACK_MODEL_ID;
+            }
+
+            // Notify UI of retry before sleeping
+            if (callbacks?.onRetry && attempt < API_CONFIG.maxRetries - 1) {
+                callbacks.onRetry(attempt + 2, API_CONFIG.maxRetries, currentModelId);
             }
 
             if (attempt < API_CONFIG.maxRetries - 1) {
@@ -793,7 +804,7 @@ utgjør en "perfekt storm" for overbelastning.`,
 export const analyzeLogs = async (
     logs: LogEntry[],
     crisisEvents: CrisisEvent[] = [],
-    options: { forceRefresh?: boolean; childProfile?: ChildProfile | null } = {}
+    options: { forceRefresh?: boolean; childProfile?: ChildProfile | null; onRetry?: RetryCallback['onRetry'] } = {}
 ): Promise<AnalysisResult> => {
     // Validate input
     if (!logs || logs.length === 0) {
@@ -835,21 +846,21 @@ export const analyzeLogs = async (
         return generateMockAnalysis();
     }
 
-    // Prepare data
-    const referenceDate = new Date(logs[logs.length - 1]?.timestamp || new Date());
-    const oldestLog = new Date(logs[0]?.timestamp || new Date());
-    const totalDays = Math.ceil((referenceDate.getTime() - oldestLog.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    // Prepare data (logs are sorted newest-first)
+    const newestDate = new Date(logs[0]?.timestamp || new Date());
+    const oldestDate = new Date(logs[logs.length - 1]?.timestamp || new Date());
+    const totalDays = Math.ceil((newestDate.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
-    const preparedLogs = prepareLogsForAnalysis(logs, referenceDate);
-    const preparedCrisis = prepareCrisisEventsForAnalysis(crisisEvents, referenceDate);
+    const preparedLogs = prepareLogsForAnalysis(logs, newestDate);
+    const preparedCrisis = prepareCrisisEventsForAnalysis(crisisEvents, newestDate);
 
     // Build prompts with child profile for personalization
     const systemPrompt = buildSystemPrompt(options.childProfile);
     const userPrompt = buildUserPrompt(preparedLogs, preparedCrisis, totalDays);
 
-    // Calculate date range for result
-    const dateRangeStart = logs[0]?.timestamp;
-    const dateRangeEnd = logs[logs.length - 1]?.timestamp;
+    // Calculate date range for result (logs are sorted newest-first)
+    const dateRangeStart = logs[logs.length - 1]?.timestamp;
+    const dateRangeEnd = logs[0]?.timestamp;
 
     try {
         if (import.meta.env.DEV) {
@@ -862,7 +873,8 @@ export const analyzeLogs = async (
                 { role: 'user', content: userPrompt }
             ],
             FREE_MODEL_ID,
-            false // Not premium
+            false, // Not premium
+            { onRetry: options.onRetry }
         );
 
         const content = response.choices[0]?.message?.content;
@@ -932,13 +944,13 @@ export const analyzeLogsDeep = async (
         return generateMockAnalysis();
     }
 
-    // Prepare data
-    const referenceDate = new Date(logs[logs.length - 1]?.timestamp || new Date());
-    const oldestLog = new Date(logs[0]?.timestamp || new Date());
-    const totalDays = Math.ceil((referenceDate.getTime() - oldestLog.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    // Prepare data (logs are sorted newest-first)
+    const newestDate = new Date(logs[0]?.timestamp || new Date());
+    const oldestDate = new Date(logs[logs.length - 1]?.timestamp || new Date());
+    const totalDays = Math.ceil((newestDate.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
-    const preparedLogs = prepareLogsForAnalysis(logs, referenceDate);
-    const preparedCrisis = prepareCrisisEventsForAnalysis(crisisEvents, referenceDate);
+    const preparedLogs = prepareLogsForAnalysis(logs, newestDate);
+    const preparedCrisis = prepareCrisisEventsForAnalysis(crisisEvents, newestDate);
 
     // Enhanced system prompt for deep analysis
     const systemPrompt = buildSystemPrompt(options.childProfile) + `
@@ -951,9 +963,9 @@ VIKTIG: Dette er en DYP ANALYSE. Bruk mer tid på å tenke gjennom sammenhenger.
 
     const userPrompt = buildUserPrompt(preparedLogs, preparedCrisis, totalDays);
 
-    // Calculate date range for result
-    const dateRangeStart = logs[0]?.timestamp;
-    const dateRangeEnd = logs[logs.length - 1]?.timestamp;
+    // Calculate date range for result (logs are sorted newest-first)
+    const dateRangeStart = logs[logs.length - 1]?.timestamp;
+    const dateRangeEnd = logs[0]?.timestamp;
 
     const messages: OpenRouterMessage[] = [
         { role: 'system', content: systemPrompt },

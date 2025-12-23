@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { useLogs, useCrisis } from '../store';
+import { useLogs, useCrisis, useChildProfile } from '../store';
 import { ArousalChart } from './ArousalChart';
 import { Plus, Calendar, Battery, BrainCircuit, Sparkles, Loader2, RefreshCw, AlertCircle, Zap } from 'lucide-react';
 import { format } from 'date-fns';
@@ -19,6 +19,7 @@ interface DeepAnalysisResult extends AnalysisResult {
 export const Dashboard: React.FC = () => {
     const { logs } = useLogs();
     const { crisisEvents } = useCrisis();
+    const { childProfile } = useChildProfile();
     const { showError, showSuccess } = useToast();
 
     // AI Analysis state
@@ -30,10 +31,19 @@ export const Dashboard: React.FC = () => {
     const [isStreaming, setIsStreaming] = useState(false);
     const [streamingText, setStreamingText] = useState('');
 
-    // Get today's logs (avoiding date mutation)
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
-    const todaysLogs = logs.filter(log => new Date(log.timestamp) >= startOfDay);
+    // Elapsed time tracking for progress indication
+    const [elapsedSeconds, setElapsedSeconds] = useState(0);
+    const analysisStartTimeRef = useRef<number | null>(null);
+
+    // Retry visibility state
+    const [retryInfo, setRetryInfo] = useState<{ attempt: number; maxRetries: number } | null>(null);
+
+    // Get today's logs - memoized to prevent unnecessary recalculations
+    const todaysLogs = useMemo(() => {
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+        return logs.filter(log => new Date(log.timestamp) >= startOfDay);
+    }, [logs]);
 
     // Calculate latest energy
     const latestLog = todaysLogs.length > 0 ? todaysLogs[0] : null;
@@ -41,6 +51,28 @@ export const Dashboard: React.FC = () => {
 
     // Track if deep analysis is running
     const [isDeepAnalyzing, setIsDeepAnalyzing] = useState(false);
+
+    // Track elapsed time during analysis
+    useEffect(() => {
+        let intervalId: ReturnType<typeof setInterval> | null = null;
+
+        if (isAnalyzing || isDeepAnalyzing) {
+            if (!analysisStartTimeRef.current) {
+                analysisStartTimeRef.current = Date.now();
+            }
+            intervalId = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - (analysisStartTimeRef.current || Date.now())) / 1000);
+                setElapsedSeconds(elapsed);
+            }, 1000);
+        } else {
+            analysisStartTimeRef.current = null;
+            setElapsedSeconds(0);
+        }
+
+        return () => {
+            if (intervalId) clearInterval(intervalId);
+        };
+    }, [isAnalyzing, isDeepAnalyzing]);
 
     // NO automatic analysis - only run when user clicks button
     // This saves API costs by using cached results
@@ -51,12 +83,19 @@ export const Dashboard: React.FC = () => {
 
         setIsAnalyzing(true);
         setAnalysisError(null);
+        setRetryInfo(null);
 
         try {
             const logsToAnalyze = logs.slice(0, 30);
             const crisisToAnalyze = crisisEvents.slice(0, 10);
 
-            const result = await analyzeLogs(logsToAnalyze, crisisToAnalyze, { forceRefresh: true });
+            const result = await analyzeLogs(logsToAnalyze, crisisToAnalyze, {
+                forceRefresh: true,
+                childProfile,
+                onRetry: (attempt, maxRetries) => {
+                    setRetryInfo({ attempt, maxRetries });
+                }
+            });
             setAnalysis(result);
             showSuccess('Analyse fullført', 'AI-analyse er klar til visning');
         } catch (error) {
@@ -68,6 +107,7 @@ export const Dashboard: React.FC = () => {
             showError('Analyse feilet', errorMessage);
         } finally {
             setIsAnalyzing(false);
+            setRetryInfo(null);
         }
     };
 
@@ -82,7 +122,7 @@ export const Dashboard: React.FC = () => {
             const logsToAnalyze = logs.slice(0, 50); // More logs for deep analysis
             const crisisToAnalyze = crisisEvents.slice(0, 20);
 
-            const result = await analyzeLogsDeep(logsToAnalyze, crisisToAnalyze);
+            const result = await analyzeLogsDeep(logsToAnalyze, crisisToAnalyze, { childProfile });
             setAnalysis(result);
             showSuccess('Dyp analyse fullført', 'Premium AI-analyse med detaljerte innsikter');
         } catch (error) {
@@ -105,6 +145,7 @@ export const Dashboard: React.FC = () => {
         setStreamingText('');
         setAnalysisError(null);
         setAnalysis(null);
+        setRetryInfo(null);
 
         try {
             const logsToAnalyze = logs.slice(0, 30);
@@ -123,8 +164,13 @@ export const Dashboard: React.FC = () => {
                     onError: (error) => {
                         setAnalysisError(error.message);
                         showError('Streaming feilet', error.message);
+                    },
+                    onRetry: (attempt, maxRetries) => {
+                        setRetryInfo({ attempt, maxRetries });
+                        setStreamingText(''); // Clear for retry
                     }
-                }
+                },
+                { childProfile }
             );
             setAnalysis(result);
             showSuccess('Streaming analyse fullført', 'AI-analyse med sanntidsvisning');
@@ -138,6 +184,7 @@ export const Dashboard: React.FC = () => {
         } finally {
             setIsStreaming(false);
             setStreamingText('');
+            setRetryInfo(null);
         }
     };
 
@@ -151,7 +198,7 @@ export const Dashboard: React.FC = () => {
         if (!hasAttemptedCacheLoad.current && logs.length >= 3 && !analysis) {
             hasAttemptedCacheLoad.current = true;
             // Try to get cached result without forcing refresh
-            analyzeLogs(logs.slice(0, 30), crisisEvents.slice(0, 10))
+            analyzeLogs(logs.slice(0, 30), crisisEvents.slice(0, 10), { childProfile })
                 .then((result) => {
                     if (isMounted) {
                         setAnalysis(result);
@@ -164,7 +211,7 @@ export const Dashboard: React.FC = () => {
             isMounted = false;
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- analysis intentionally excluded to prevent re-runs after setting
-    }, [logs, crisisEvents]);
+    }, [logs, crisisEvents, childProfile]);
 
     return (
         <div className="flex flex-col gap-6 pb-24">
@@ -214,7 +261,13 @@ export const Dashboard: React.FC = () => {
                             className={`px-3 py-1 rounded-full text-sm font-bold ${latestLog.arousal <= 3 ? 'bg-green-500/20 text-green-600 dark:text-green-400' :
                                 latestLog.arousal <= 7 ? 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400' :
                                     'bg-red-500/20 text-red-600 dark:text-red-400'
-                                }`}>
+                                }`}
+                            aria-label={`Spenningsnivå ${latestLog.arousal} av 10, ${
+                                latestLog.arousal <= 3 ? 'rolig' :
+                                latestLog.arousal <= 7 ? 'økt' : 'høy'
+                            }`}
+                            role="status"
+                        >
                             Nivå {latestLog.arousal}
                         </motion.div>
                     )}
@@ -313,7 +366,12 @@ export const Dashboard: React.FC = () => {
                                     <Sparkles size={20} className="text-purple-400 animate-pulse" />
                                     <div className="absolute inset-0 bg-purple-400/30 blur-lg animate-pulse" />
                                 </div>
-                                <span className="text-purple-400 text-sm font-medium">AI tenker i sanntid...</span>
+                                <span className="text-purple-400 text-sm font-medium">
+                                    {retryInfo
+                                        ? `Prøver på nytt (${retryInfo.attempt}/${retryInfo.maxRetries})...`
+                                        : 'AI tenker i sanntid...'
+                                    }
+                                </span>
                             </div>
                             <div className="bg-black/20 rounded-xl p-4 font-mono text-sm text-green-400 max-h-48 overflow-y-auto">
                                 <pre className="whitespace-pre-wrap break-words">
@@ -332,8 +390,18 @@ export const Dashboard: React.FC = () => {
                                 {isDeepAnalyzing ? 'Kjører dyp analyse...' : 'Analyserer logger...'}
                             </p>
                             <p className="text-slate-400 dark:text-slate-500 text-xs mt-1">
-                                {isDeepAnalyzing ? 'Dette kan ta opptil 30 sekunder' : 'Bruker gratis modell'}
+                                {retryInfo
+                                    ? `Forsøk ${retryInfo.attempt} av ${retryInfo.maxRetries}...`
+                                    : isDeepAnalyzing
+                                        ? 'Dette kan ta opptil 30 sekunder'
+                                        : 'Bruker gratis modell'
+                                }
                             </p>
+                            {elapsedSeconds > 0 && (
+                                <p className="text-slate-500 dark:text-slate-400 text-xs mt-2 font-mono">
+                                    {elapsedSeconds}s
+                                </p>
+                            )}
                         </div>
                     ) : analysis ? (
                         <div className="space-y-4">
@@ -369,7 +437,7 @@ export const Dashboard: React.FC = () => {
                             {/* Status and Link */}
                             <div className="flex items-center justify-between pt-3 border-t border-white/30 dark:border-white/10">
                                 <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" aria-hidden="true" />
                                     <span>
                                         {logs.length} logger
                                         {crisisEvents.length > 0 && ` • ${crisisEvents.length} kriser`}

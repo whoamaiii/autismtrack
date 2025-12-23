@@ -23,7 +23,12 @@ interface StreamCallbacks {
     onChunk?: (chunk: string) => void;
     onComplete?: (fullText: string) => void;
     onError?: (error: Error) => void;
+    onRetry?: (attempt: number, maxRetries: number) => void;
 }
+
+// Streaming retry configuration
+const MAX_STREAMING_RETRIES = 2;
+const STREAMING_RETRY_DELAY_MS = 1500;
 
 interface AnalysisCache {
     result: AnalysisResult;
@@ -516,13 +521,13 @@ export const analyzeLogsWithGemini = async (
         throw new Error('Gemini API key not configured');
     }
 
-    // Prepare data
-    const referenceDate = new Date(logs[logs.length - 1]?.timestamp || new Date());
-    const oldestLog = new Date(logs[0]?.timestamp || new Date());
-    const totalDays = Math.ceil((referenceDate.getTime() - oldestLog.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    // Prepare data (logs are sorted newest-first)
+    const newestDate = new Date(logs[0]?.timestamp || new Date());
+    const oldestDate = new Date(logs[logs.length - 1]?.timestamp || new Date());
+    const totalDays = Math.ceil((newestDate.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
-    const preparedLogs = prepareLogsForAnalysis(logs, referenceDate);
-    const preparedCrisis = prepareCrisisEventsForAnalysis(crisisEvents, referenceDate);
+    const preparedLogs = prepareLogsForAnalysis(logs, newestDate);
+    const preparedCrisis = prepareCrisisEventsForAnalysis(crisisEvents, newestDate);
 
     const systemPrompt = buildSystemPrompt(options.childProfile);
     const userPrompt = buildUserPrompt(preparedLogs, preparedCrisis, totalDays);
@@ -558,9 +563,9 @@ export const analyzeLogsWithGemini = async (
 
         const result = parseAnalysisResponse(content);
 
-        // Add metadata
-        result.dateRangeStart = logs[0]?.timestamp;
-        result.dateRangeEnd = logs[logs.length - 1]?.timestamp;
+        // Add metadata (logs are sorted newest-first)
+        result.dateRangeStart = logs[logs.length - 1]?.timestamp;
+        result.dateRangeEnd = logs[0]?.timestamp;
         result.isDeepAnalysis = false;
         result.modelUsed = MODEL_ID;
 
@@ -593,13 +598,13 @@ export const analyzeLogsDeepWithGemini = async (
         throw new Error('Gemini API key not configured');
     }
 
-    // Prepare data
-    const referenceDate = new Date(logs[logs.length - 1]?.timestamp || new Date());
-    const oldestLog = new Date(logs[0]?.timestamp || new Date());
-    const totalDays = Math.ceil((referenceDate.getTime() - oldestLog.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    // Prepare data (logs are sorted newest-first)
+    const newestDate = new Date(logs[0]?.timestamp || new Date());
+    const oldestDate = new Date(logs[logs.length - 1]?.timestamp || new Date());
+    const totalDays = Math.ceil((newestDate.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
-    const preparedLogs = prepareLogsForAnalysis(logs, referenceDate);
-    const preparedCrisis = prepareCrisisEventsForAnalysis(crisisEvents, referenceDate);
+    const preparedLogs = prepareLogsForAnalysis(logs, newestDate);
+    const preparedCrisis = prepareCrisisEventsForAnalysis(crisisEvents, newestDate);
 
     const systemPrompt = buildSystemPrompt(options.childProfile) + `
 
@@ -638,9 +643,9 @@ VIKTIG: Dette er en DYP ANALYSE. Bruk mer tid på å tenke gjennom sammenhenger.
 
         const result = parseAnalysisResponse(content);
 
-        // Add metadata
-        result.dateRangeStart = logs[0]?.timestamp;
-        result.dateRangeEnd = logs[logs.length - 1]?.timestamp;
+        // Add metadata (logs are sorted newest-first)
+        result.dateRangeStart = logs[logs.length - 1]?.timestamp;
+        result.dateRangeEnd = logs[0]?.timestamp;
         result.isDeepAnalysis = true;
         result.modelUsed = PREMIUM_MODEL_ID;
 
@@ -660,6 +665,7 @@ VIKTIG: Dette er en DYP ANALYSE. Bruk mer tid på å tenke gjennom sammenhenger.
 
 /**
  * Streaming analysis - Shows AI "thinking" in real-time for WOW factor
+ * Includes retry logic for resilience
  */
 export const analyzeLogsStreamingWithGemini = async (
     logs: LogEntry[],
@@ -675,72 +681,89 @@ export const analyzeLogsStreamingWithGemini = async (
         throw new Error('Gemini API key not configured');
     }
 
-    // Prepare data
-    const referenceDate = new Date(logs[logs.length - 1]?.timestamp || new Date());
-    const oldestLog = new Date(logs[0]?.timestamp || new Date());
-    const totalDays = Math.ceil((referenceDate.getTime() - oldestLog.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    // Prepare data (logs are sorted newest-first)
+    const newestDate = new Date(logs[0]?.timestamp || new Date());
+    const oldestDate = new Date(logs[logs.length - 1]?.timestamp || new Date());
+    const totalDays = Math.ceil((newestDate.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
-    const preparedLogs = prepareLogsForAnalysis(logs, referenceDate);
-    const preparedCrisis = prepareCrisisEventsForAnalysis(crisisEvents, referenceDate);
+    const preparedLogs = prepareLogsForAnalysis(logs, newestDate);
+    const preparedCrisis = prepareCrisisEventsForAnalysis(crisisEvents, newestDate);
 
     const systemPrompt = buildSystemPrompt(options.childProfile);
     const userPrompt = buildUserPrompt(preparedLogs, preparedCrisis, totalDays);
 
-    try {
-        if (import.meta.env.DEV) {
-            console.log(`[Gemini] Streaming analysis with ${MODEL_ID}...`);
-        }
+    let lastError: Error | null = null;
 
-        const response = await genAI.models.generateContentStream({
-            model: MODEL_ID,
-            contents: [
-                {
-                    role: 'user',
-                    parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }]
+    // Retry loop for streaming resilience
+    for (let attempt = 0; attempt < MAX_STREAMING_RETRIES; attempt++) {
+        try {
+            if (import.meta.env.DEV) {
+                console.log(`[Gemini] Streaming analysis with ${MODEL_ID} (attempt ${attempt + 1})...`);
+            }
+
+            const response = await genAI.models.generateContentStream({
+                model: MODEL_ID,
+                contents: [
+                    {
+                        role: 'user',
+                        parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }]
+                    }
+                ],
+                config: {
+                    temperature: 0.3,
+                    maxOutputTokens: 4000,
+                    responseMimeType: 'application/json'
                 }
-            ],
-            config: {
-                temperature: 0.3,
-                maxOutputTokens: 4000,
-                responseMimeType: 'application/json'
+            });
+
+            let fullText = '';
+
+            for await (const chunk of response) {
+                const chunkText = chunk.text || '';
+                fullText += chunkText;
+
+                if (callbacks.onChunk) {
+                    callbacks.onChunk(chunkText);
+                }
             }
-        });
 
-        let fullText = '';
+            if (callbacks.onComplete) {
+                callbacks.onComplete(fullText);
+            }
 
-        for await (const chunk of response) {
-            const chunkText = chunk.text || '';
-            fullText += chunkText;
+            const result = parseAnalysisResponse(fullText);
 
-            if (callbacks.onChunk) {
-                callbacks.onChunk(chunkText);
+            // Add metadata (logs are sorted newest-first)
+            result.dateRangeStart = logs[logs.length - 1]?.timestamp;
+            result.dateRangeEnd = logs[0]?.timestamp;
+            result.isDeepAnalysis = false;
+            result.modelUsed = MODEL_ID;
+
+            // Cache the result
+            const logsHash = generateLogsHash(logs, crisisEvents);
+            setCachedAnalysis(result, logsHash);
+
+            return result;
+
+        } catch (error) {
+            lastError = error as Error;
+            if (import.meta.env.DEV) {
+                console.warn(`[Gemini] Streaming attempt ${attempt + 1} failed:`, error);
+            }
+
+            // If not the last attempt, notify and retry
+            if (attempt < MAX_STREAMING_RETRIES - 1) {
+                callbacks.onRetry?.(attempt + 2, MAX_STREAMING_RETRIES);
+                await new Promise(resolve => setTimeout(resolve, STREAMING_RETRY_DELAY_MS));
             }
         }
-
-        if (callbacks.onComplete) {
-            callbacks.onComplete(fullText);
-        }
-
-        const result = parseAnalysisResponse(fullText);
-
-        // Add metadata
-        result.dateRangeStart = logs[0]?.timestamp;
-        result.dateRangeEnd = logs[logs.length - 1]?.timestamp;
-        result.isDeepAnalysis = false;
-        result.modelUsed = MODEL_ID;
-
-        // Cache the result
-        const logsHash = generateLogsHash(logs, crisisEvents);
-        setCachedAnalysis(result, logsHash);
-
-        return result;
-
-    } catch (error) {
-        if (callbacks.onError) {
-            callbacks.onError(error as Error);
-        }
-        throw error;
     }
+
+    // All retries failed
+    if (callbacks.onError && lastError) {
+        callbacks.onError(lastError);
+    }
+    throw lastError || new Error('Streaming failed after retries');
 };
 
 /**
