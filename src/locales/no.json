@@ -1,10 +1,14 @@
 {
+    "accessibility": {
+        "skipToMain": "Hopp til hovedinnhold"
+    },
     "home": {
         "title": "KREATIVIUM",
         "subtitle": "Mestre din energi. Spor ditt sinn.",
         "crisisMode": {
             "title": "Krisemodus",
-            "subtitle": "Trykk for å starte tidtaker"
+            "subtitle": "Trykk for å starte tidtaker",
+            "ariaLabel": "Krisemodus - Start krisetidtaker"
         },
         "newLog": {
             "title": "Ny Logg",

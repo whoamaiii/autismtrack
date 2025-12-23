@@ -1,10 +1,14 @@
 {
+    "accessibility": {
+        "skipToMain": "Skip to main content"
+    },
     "home": {
         "title": "KREATIVIUM",
         "subtitle": "Master your energy. Track your mind.",
         "crisisMode": {
             "title": "Crisis Mode",
-            "subtitle": "Tap to start timer"
+            "subtitle": "Tap to start timer",
+            "ariaLabel": "Crisis Mode - Start crisis timer"
         },
         "newLog": {
             "title": "New Log",
