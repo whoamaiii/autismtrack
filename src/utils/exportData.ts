@@ -12,6 +12,18 @@ import type {
     DailyScheduleTemplate
 } from '../types';
 
+// Activity type for daily schedules (matches DailyPlanComponents.tsx)
+interface DailyScheduleActivity {
+    id: string;
+    time: string;
+    endTime: string;
+    title: string;
+    status: 'completed' | 'current' | 'upcoming';
+    icon: string;
+    durationMinutes?: number;
+    color?: string;
+}
+
 // Storage keys - must match store.tsx
 const STORAGE_KEYS = {
     LOGS: 'kreativium_logs',
@@ -22,6 +34,9 @@ const STORAGE_KEYS = {
     CHILD_PROFILE: 'kreativium_child_profile',
 } as const;
 
+// Prefix for daily schedule keys
+const DAILY_SCHEDULE_PREFIX = 'kreativium_daily_schedule_';
+
 export interface ExportedData {
     version: string;
     exportedAt: string;
@@ -31,6 +46,8 @@ export interface ExportedData {
     scheduleTemplates: DailyScheduleTemplate[];
     goals: Goal[];
     childProfile: ChildProfile | null;
+    // Daily schedule modifications (keyed by "date_context", e.g., "2025-12-23_home")
+    dailySchedules?: Record<string, DailyScheduleActivity[]>;
     summary: {
         totalLogs: number;
         totalCrisisEvents: number;
@@ -65,6 +82,47 @@ function safeSetItem(key: string, value: string): boolean {
         }
         return false;
     }
+}
+
+// Collect all daily schedule keys from localStorage
+function collectDailySchedules(): Record<string, DailyScheduleActivity[]> {
+    const dailySchedules: Record<string, DailyScheduleActivity[]> = {};
+
+    try {
+        // Check if localStorage is accessible (may throw SecurityError in private browsing)
+        const storageLength = localStorage.length;
+
+        for (let i = 0; i < storageLength; i++) {
+            try {
+                const key = localStorage.key(i);
+                if (key && key.startsWith(DAILY_SCHEDULE_PREFIX)) {
+                    // Extract the "date_context" part (e.g., "2025-12-23_home")
+                    const suffix = key.slice(DAILY_SCHEDULE_PREFIX.length);
+                    const value = localStorage.getItem(key);
+                    if (value) {
+                        try {
+                            const activities = JSON.parse(value) as DailyScheduleActivity[];
+                            if (Array.isArray(activities) && activities.length > 0) {
+                                dailySchedules[suffix] = activities;
+                            }
+                        } catch {
+                            // Skip invalid entries
+                        }
+                    }
+                }
+            } catch {
+                // Skip individual key access errors
+            }
+        }
+    } catch (error) {
+        // Handle SecurityError in private browsing mode
+        if (import.meta.env.DEV) {
+            console.warn('localStorage access restricted:', error);
+        }
+        // Return partial results (may be empty)
+    }
+
+    return dailySchedules;
 }
 
 export function exportAllData(): ExportedData {
@@ -123,6 +181,9 @@ export function exportAllData(): ExportedData {
         }, 0) / goals.length)
         : 0;
 
+    // Collect daily schedule modifications
+    const dailySchedules = collectDailySchedules();
+
     return {
         version: EXPORT_VERSION,
         exportedAt: new Date().toISOString(),
@@ -132,6 +193,7 @@ export function exportAllData(): ExportedData {
         scheduleTemplates,
         goals,
         childProfile,
+        dailySchedules,
         summary: {
             totalLogs: logs.length,
             totalCrisisEvents: crisisEvents.length,
@@ -177,6 +239,7 @@ export interface ImportResult {
         scheduleTemplates: number;
         goals: number;
         childProfile: boolean;
+        dailySchedules: number;
     };
 }
 
@@ -246,6 +309,22 @@ export function importData(jsonString: string, mergeMode: 'replace' | 'merge' = 
             }
         }
 
+        // Import daily schedules if present
+        let dailySchedulesCount = 0;
+        if (data.dailySchedules && typeof data.dailySchedules === 'object') {
+            for (const [suffix, activities] of Object.entries(data.dailySchedules)) {
+                if (Array.isArray(activities) && activities.length > 0) {
+                    const key = `${DAILY_SCHEDULE_PREFIX}${suffix}`;
+                    if (mergeMode === 'replace' || !localStorage.getItem(key)) {
+                        // In replace mode, always overwrite
+                        // In merge mode, only add if key doesn't exist
+                        writeResults.push(safeSetItem(key, JSON.stringify(activities)));
+                        dailySchedulesCount++;
+                    }
+                }
+            }
+        }
+
         // Check if any writes failed
         if (writeResults.some(result => !result)) {
             return { success: false, error: 'Kunne ikke lagre all data. Prøv å frigjøre lagringsplass.' };
@@ -259,7 +338,8 @@ export function importData(jsonString: string, mergeMode: 'replace' | 'merge' = 
                 scheduleEntries: data.scheduleEntries.length,
                 scheduleTemplates: (data.scheduleTemplates || []).length,
                 goals: data.goals.length,
-                childProfile: !!data.childProfile
+                childProfile: !!data.childProfile,
+                dailySchedules: dailySchedulesCount
             }
         };
     } catch (e) {
