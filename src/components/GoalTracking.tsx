@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Target, TrendingUp, CheckCircle2, Plus, ArrowLeft, X } from 'lucide-react';
+import { Target, TrendingUp, CheckCircle2, Plus, ArrowLeft, X, Clock, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { v4 as uuidv4 } from 'uuid';
 import { useGoals, useAppContext } from '../store';
@@ -26,27 +26,44 @@ export const GoalTracking: React.FC = () => {
     const [newTargetUnit, setNewTargetUnit] = useState('ganger');
     const [newTargetDirection, setNewTargetDirection] = useState<'increase' | 'decrease'>('increase');
 
+    // Validation state
+    const [validationErrors, setValidationErrors] = useState<{ title?: string; targetValue?: string }>({});
+
     const overallProgress = getOverallProgress();
 
     const getProgressPercent = (goal: Goal) => {
-        if (goal.targetValue <= 0) return 0;
+        if (goal.targetValue < 0) return 0;
+        // Allow targetValue of 0 for decrease goals (e.g., "reduce incidents to 0")
+        if (goal.targetDirection === 'increase' && goal.targetValue === 0) return 0;
 
         if (goal.targetDirection === 'decrease') {
-            // For decrease goals, use first progress entry as baseline
-            // If no history, we can't calculate progress meaningfully
+            // For decrease goals: measure progress from baseline toward target
+            // Use first progress entry as baseline, or currentValue if no history yet
             const baseline = goal.progressHistory.length > 0
                 ? goal.progressHistory[0].value
                 : goal.currentValue;
-            const range = baseline - goal.targetValue;
 
-            // If currentValue already at or below target, 100% progress
+            // If currentValue already at or below target, goal achieved
             if (goal.currentValue <= goal.targetValue) return 100;
-            // If no valid range (baseline <= target), can't calculate progress
-            if (range <= 0) return 0;
-            // Calculate progress from baseline toward target
-            return Math.min(100, Math.max(0, (baseline - goal.currentValue) / range * 100));
+
+            // If baseline is at or below target, the goal was already met at start
+            // Return 100 if still at/below target, calculate regression otherwise
+            if (baseline <= goal.targetValue) {
+                // Started at/below target but regressed - show as 0% progress
+                return 0;
+            }
+
+            const range = baseline - goal.targetValue;
+            const reduction = baseline - goal.currentValue;
+
+            // Handle regression (current > baseline) - show 0% rather than negative
+            if (reduction < 0) return 0;
+
+            return Math.min(100, Math.max(0, (reduction / range) * 100));
         }
-        return Math.min(100, (goal.currentValue / goal.targetValue) * 100);
+
+        // Increase goals: simple ratio of current to target
+        return Math.min(100, Math.max(0, (goal.currentValue / goal.targetValue) * 100));
     };
 
     const getStatusColor = (goal: Goal) => {
@@ -59,8 +76,46 @@ export const GoalTracking: React.FC = () => {
         return 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]';
     };
 
+    const getDeadlineInfo = (goal: Goal): { daysLeft: number; label: string; urgent: boolean; overdue: boolean } => {
+        const now = new Date();
+        const target = new Date(goal.targetDate);
+        const diffTime = target.getTime() - now.getTime();
+        const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (daysLeft < 0) {
+            return { daysLeft, label: t('goals.deadline.overdue', { days: Math.abs(daysLeft) }), urgent: true, overdue: true };
+        }
+        if (daysLeft === 0) {
+            return { daysLeft, label: t('goals.deadline.today'), urgent: true, overdue: false };
+        }
+        if (daysLeft <= 7) {
+            return { daysLeft, label: t('goals.deadline.daysLeft', { days: daysLeft }), urgent: true, overdue: false };
+        }
+        return { daysLeft, label: t('goals.deadline.daysLeft', { days: daysLeft }), urgent: false, overdue: false };
+    };
+
     const handleAddGoal = () => {
-        if (!newTitle.trim()) return;
+        const errors: { title?: string; targetValue?: string } = {};
+
+        // Validate title
+        if (!newTitle.trim()) {
+            errors.title = t('goals.validation.titleRequired');
+        }
+
+        // Validate target value
+        // For increase goals, must be > 0
+        // For decrease goals, can be 0 (e.g., "reduce incidents to 0")
+        if (newTargetDirection === 'increase' && newTargetValue <= 0) {
+            errors.targetValue = t('goals.validation.targetInvalid');
+        } else if (newTargetDirection === 'decrease' && newTargetValue < 0) {
+            errors.targetValue = t('goals.validation.targetInvalid');
+        }
+
+        // If there are errors, show them and don't submit
+        if (Object.keys(errors).length > 0) {
+            setValidationErrors(errors);
+            return;
+        }
 
         const goal: Goal = {
             id: uuidv4(),
@@ -85,6 +140,7 @@ export const GoalTracking: React.FC = () => {
         setNewTargetValue(10);
         setNewTargetUnit('ganger');
         setNewTargetDirection('increase');
+        setValidationErrors({});
     };
 
     const handleLogProgress = (goalId: string) => {
@@ -231,10 +287,31 @@ export const GoalTracking: React.FC = () => {
                         >
                             <div className="flex justify-between items-start mb-3">
                                 <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-2">
+                                    <div className="flex items-center gap-2 mb-2 flex-wrap">
                                         <span className="text-[10px] uppercase font-bold px-2 py-1 rounded-full bg-white/10 text-white/70 border border-white/5">
                                             {getCategoryLabel(goal.category)}
                                         </span>
+                                        {(() => {
+                                            const deadlineInfo = getDeadlineInfo(goal);
+                                            const isCompleted = getProgressPercent(goal) >= 100;
+                                            if (isCompleted) return null; // Don't show deadline for completed goals
+                                            return (
+                                                <span className={`text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1 ${
+                                                    deadlineInfo.overdue
+                                                        ? 'bg-red-500/20 text-red-300 border border-red-500/30'
+                                                        : deadlineInfo.urgent
+                                                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                                                            : 'bg-white/5 text-slate-400 border border-white/5'
+                                                }`}>
+                                                    {deadlineInfo.overdue ? (
+                                                        <AlertTriangle size={10} />
+                                                    ) : (
+                                                        <Clock size={10} />
+                                                    )}
+                                                    {deadlineInfo.label}
+                                                </span>
+                                            );
+                                        })()}
                                     </div>
                                     <h4 className="font-bold text-white text-lg leading-tight mb-1">{goal.title}</h4>
                                     <p className="text-slate-400 text-sm leading-relaxed">{goal.description}</p>
@@ -272,14 +349,31 @@ export const GoalTracking: React.FC = () => {
                                         setShowProgressModal(goal.id);
                                         setProgressValue(goal.currentValue);
                                     }}
-                                    className="mt-4 w-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2"
+                                    className="mt-4 w-full bg-primary/10 hover:bg-primary/20 focus:bg-primary/20 text-primary border border-primary/20 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
+                                    aria-label={`${t('goals.logProgress')} - ${goal.title}`}
                                 >
-                                    <Plus size={16} />
+                                    <Plus size={16} aria-hidden="true" />
                                     {t('goals.logProgress')}
                                 </motion.button>
                             )}
                         </motion.div>
                     ))}
+
+                    {/* Add Another Goal button - visible when goals exist */}
+                    {goals.length > 0 && (
+                        <motion.button
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: displayGoals.length * 0.1 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => setShowAddGoal(true)}
+                            className="w-full border-2 border-dashed border-white/20 hover:border-primary/50 bg-white/5 hover:bg-primary/10 text-slate-400 hover:text-primary py-4 rounded-2xl font-medium text-sm transition-all flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
+                            aria-label={t('goals.addGoal')}
+                        >
+                            <Plus size={18} aria-hidden="true" />
+                            {t('goals.addGoal')}
+                        </motion.button>
+                    )}
                 </div>
 
                 {goals.length === 0 && (
@@ -319,7 +413,7 @@ export const GoalTracking: React.FC = () => {
                         >
                             <div className="flex justify-between items-center mb-6">
                                 <h3 className="text-xl font-bold text-white">{t('goals.newGoal')}</h3>
-                                <button onClick={() => setShowAddGoal(false)} className="text-slate-400 hover:text-white transition-colors">
+                                <button onClick={() => { setShowAddGoal(false); setValidationErrors({}); }} className="text-slate-400 hover:text-white transition-colors">
                                     <X size={24} />
                                 </button>
                             </div>
@@ -330,10 +424,27 @@ export const GoalTracking: React.FC = () => {
                                     <input
                                         type="text"
                                         value={newTitle}
-                                        onChange={(e) => setNewTitle(e.target.value)}
+                                        onChange={(e) => {
+                                            setNewTitle(e.target.value);
+                                            if (validationErrors.title && e.target.value.trim()) {
+                                                setValidationErrors(prev => ({ ...prev, title: undefined }));
+                                            }
+                                        }}
                                         placeholder="f.eks. Bruk pusteøvelser daglig"
-                                        className="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-white placeholder-slate-600 focus:outline-none focus:border-primary/50 transition-colors"
+                                        className={`w-full bg-black/20 border rounded-xl p-3 text-white placeholder-slate-600 focus:outline-none transition-colors ${
+                                            validationErrors.title
+                                                ? 'border-red-500/50 focus:border-red-500'
+                                                : 'border-white/10 focus:border-primary/50'
+                                        }`}
+                                        aria-invalid={!!validationErrors.title}
+                                        aria-describedby={validationErrors.title ? 'title-error' : undefined}
                                     />
+                                    {validationErrors.title && (
+                                        <p id="title-error" className="text-red-400 text-xs mt-1.5 flex items-center gap-1">
+                                            <AlertTriangle size={12} />
+                                            {validationErrors.title}
+                                        </p>
+                                    )}
                                 </div>
 
                                 <div>
@@ -370,9 +481,28 @@ export const GoalTracking: React.FC = () => {
                                         <input
                                             type="number"
                                             value={newTargetValue}
-                                            onChange={(e) => setNewTargetValue(Number(e.target.value))}
-                                            className="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-primary/50 transition-colors"
+                                            onChange={(e) => {
+                                                const val = Number(e.target.value);
+                                                setNewTargetValue(val);
+                                                if (validationErrors.targetValue && val > 0) {
+                                                    setValidationErrors(prev => ({ ...prev, targetValue: undefined }));
+                                                }
+                                            }}
+                                            min={newTargetDirection === 'decrease' ? 0 : 1}
+                                            className={`w-full bg-black/20 border rounded-xl p-3 text-white focus:outline-none transition-colors ${
+                                                validationErrors.targetValue
+                                                    ? 'border-red-500/50 focus:border-red-500'
+                                                    : 'border-white/10 focus:border-primary/50'
+                                            }`}
+                                            aria-invalid={!!validationErrors.targetValue}
+                                            aria-describedby={validationErrors.targetValue ? 'target-error' : undefined}
                                         />
+                                        {validationErrors.targetValue && (
+                                            <p id="target-error" className="text-red-400 text-xs mt-1.5 flex items-center gap-1">
+                                                <AlertTriangle size={12} />
+                                                {validationErrors.targetValue}
+                                            </p>
+                                        )}
                                     </div>
                                     <div className="flex-1">
                                         <label className="text-sm font-medium text-slate-400 block mb-2">{t('goals.form.unit')}</label>

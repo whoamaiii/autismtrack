@@ -350,6 +350,15 @@
             "newValue": "Ny Verdi",
             "note": "Notat (valgfritt)",
             "save": "Lagre Fremgang"
+        },
+        "deadline": {
+            "overdue": "{{days}}d forsinket",
+            "today": "Forfall i dag",
+            "daysLeft": "{{days}}d igjen"
+        },
+        "validation": {
+            "titleRequired": "Tittel er påkrevd",
+            "targetInvalid": "Målverdi må være større enn 0"
         }
     },
     "logExplorer": {

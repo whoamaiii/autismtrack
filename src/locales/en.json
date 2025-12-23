@@ -350,6 +350,15 @@
             "newValue": "New Value",
             "note": "Note (Optional)",
             "save": "Save Progress"
+        },
+        "deadline": {
+            "overdue": "{{days}}d overdue",
+            "today": "Due today",
+            "daysLeft": "{{days}}d left"
+        },
+        "validation": {
+            "titleRequired": "Title is required",
+            "targetInvalid": "Target value must be greater than 0"
         }
     },
     "logExplorer": {
