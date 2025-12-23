@@ -8,6 +8,7 @@ import {
     buildSystemPrompt,
     buildUserPrompt,
     parseAnalysisResponse,
+    getLogsDateRange,
     AI_CONFIG,
     type StreamCallbacks
 } from './aiCommon';
@@ -76,9 +77,8 @@ export const analyzeLogsWithGemini = async (
         throw new Error('Gemini API key not configured');
     }
 
-    // Prepare data (logs are sorted newest-first)
-    const newestDate = new Date(logs[0]?.timestamp || new Date());
-    const oldestDate = new Date(logs[logs.length - 1]?.timestamp || new Date());
+    // Prepare data (using safe date range calculation)
+    const { oldest: oldestDate, newest: newestDate } = getLogsDateRange(logs);
     const totalDays = Math.ceil((newestDate.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
     const preparedLogs = prepareLogsForAnalysis(logs, newestDate);
@@ -118,9 +118,9 @@ export const analyzeLogsWithGemini = async (
 
         const result = parseAnalysisResponse(content);
 
-        // Add metadata (logs are sorted newest-first)
-        result.dateRangeStart = logs[logs.length - 1]?.timestamp;
-        result.dateRangeEnd = logs[0]?.timestamp;
+        // Add metadata (using safe date range)
+        result.dateRangeStart = oldestDate.toISOString();
+        result.dateRangeEnd = newestDate.toISOString();
         result.isDeepAnalysis = false;
         result.modelUsed = MODEL_ID;
 
@@ -153,9 +153,8 @@ export const analyzeLogsDeepWithGemini = async (
         throw new Error('Gemini API key not configured');
     }
 
-    // Prepare data (logs are sorted newest-first)
-    const newestDate = new Date(logs[0]?.timestamp || new Date());
-    const oldestDate = new Date(logs[logs.length - 1]?.timestamp || new Date());
+    // Prepare data (using safe date range calculation)
+    const { oldest: oldestDate, newest: newestDate } = getLogsDateRange(logs);
     const totalDays = Math.ceil((newestDate.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
     const preparedLogs = prepareLogsForAnalysis(logs, newestDate);
@@ -198,9 +197,9 @@ VIKTIG: Dette er en DYP ANALYSE. Bruk mer tid på å tenke gjennom sammenhenger.
 
         const result = parseAnalysisResponse(content);
 
-        // Add metadata (logs are sorted newest-first)
-        result.dateRangeStart = logs[logs.length - 1]?.timestamp;
-        result.dateRangeEnd = logs[0]?.timestamp;
+        // Add metadata (using safe date range from earlier)
+        result.dateRangeStart = oldestDate.toISOString();
+        result.dateRangeEnd = newestDate.toISOString();
         result.isDeepAnalysis = true;
         result.modelUsed = PREMIUM_MODEL_ID;
 
@@ -236,9 +235,8 @@ export const analyzeLogsStreamingWithGemini = async (
         throw new Error('Gemini API key not configured');
     }
 
-    // Prepare data (logs are sorted newest-first)
-    const newestDate = new Date(logs[0]?.timestamp || new Date());
-    const oldestDate = new Date(logs[logs.length - 1]?.timestamp || new Date());
+    // Prepare data (using safe date range calculation)
+    const { oldest: oldestDate, newest: newestDate } = getLogsDateRange(logs);
     const totalDays = Math.ceil((newestDate.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
     const preparedLogs = prepareLogsForAnalysis(logs, newestDate);
@@ -288,9 +286,9 @@ export const analyzeLogsStreamingWithGemini = async (
 
             const result = parseAnalysisResponse(fullText);
 
-            // Add metadata (logs are sorted newest-first)
-            result.dateRangeStart = logs[logs.length - 1]?.timestamp;
-            result.dateRangeEnd = logs[0]?.timestamp;
+            // Add metadata (using safe date range)
+            result.dateRangeStart = oldestDate.toISOString();
+            result.dateRangeEnd = newestDate.toISOString();
             result.isDeepAnalysis = false;
             result.modelUsed = MODEL_ID;
 

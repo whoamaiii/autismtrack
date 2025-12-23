@@ -361,6 +361,11 @@ export function enrichLogEntry(log: Omit<LogEntry, 'dayOfWeek' | 'timeOfDay' | '
     const date = new Date(log.timestamp);
     // Validate timestamp - use current date as fallback if invalid
     const isValidDate = !isNaN(date.getTime());
+
+    if (!isValidDate && import.meta.env.DEV) {
+        console.warn(`[enrichLogEntry] Invalid timestamp "${log.timestamp}" corrected to current date (id: ${log.id})`);
+    }
+
     const safeDate = isValidDate ? date : new Date();
     return {
         ...log,
@@ -374,6 +379,11 @@ export function enrichCrisisEvent(event: Omit<CrisisEvent, 'dayOfWeek' | 'timeOf
     const date = new Date(event.timestamp);
     // Validate timestamp - use current date as fallback if invalid
     const isValidDate = !isNaN(date.getTime());
+
+    if (!isValidDate && import.meta.env.DEV) {
+        console.warn(`[enrichCrisisEvent] Invalid timestamp "${event.timestamp}" corrected to current date (id: ${event.id})`);
+    }
+
     const safeDate = isValidDate ? date : new Date();
     return {
         ...event,

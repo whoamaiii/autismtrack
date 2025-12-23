@@ -125,7 +125,7 @@ describe('Store - LogsContext', () => {
         // Add logs one by one
         act(() => {
             result.current.addLog({
-                id: '1',
+                id: '11111111-1111-4111-a111-111111111111',
                 timestamp: '2024-01-10T10:00:00',
                 context: 'home',
                 arousal: 5, valence: 5, energy: 5,
@@ -136,7 +136,7 @@ describe('Store - LogsContext', () => {
 
         act(() => {
             result.current.addLog({
-                id: '2',
+                id: '22222222-2222-4222-a222-222222222222',
                 timestamp: '2024-01-15T10:00:00',
                 context: 'school',
                 arousal: 6, valence: 6, energy: 6,
@@ -147,7 +147,7 @@ describe('Store - LogsContext', () => {
 
         act(() => {
             result.current.addLog({
-                id: '3',
+                id: '33333333-3333-4333-a333-333333333333',
                 timestamp: '2024-01-20T10:00:00',
                 context: 'home',
                 arousal: 7, valence: 7, energy: 7,
@@ -165,7 +165,7 @@ describe('Store - LogsContext', () => {
         );
 
         expect(filtered).toHaveLength(1);
-        expect(filtered[0].id).toBe('2');
+        expect(filtered[0].id).toBe('22222222-2222-4222-a222-222222222222');
     });
 
     it('filters logs by context', () => {
@@ -173,7 +173,7 @@ describe('Store - LogsContext', () => {
 
         act(() => {
             result.current.addLog({
-                id: '1',
+                id: '44444444-4444-4444-a444-444444444444',
                 timestamp: '2024-01-10T10:00:00',
                 context: 'home',
                 arousal: 5, valence: 5, energy: 5,
@@ -184,7 +184,7 @@ describe('Store - LogsContext', () => {
 
         act(() => {
             result.current.addLog({
-                id: '2',
+                id: '55555555-5555-4555-a555-555555555555',
                 timestamp: '2024-01-15T10:00:00',
                 context: 'school',
                 arousal: 6, valence: 6, energy: 6,
@@ -215,7 +215,7 @@ describe('Store - CrisisContext', () => {
         const { result } = renderHook(() => useCrisis(), { wrapper });
 
         const crisisEvent: Omit<CrisisEvent, 'dayOfWeek' | 'timeOfDay' | 'hourOfDay'> = {
-            id: 'crisis-1',
+            id: 'c1111111-1111-4111-a111-111111111111',
             timestamp: '2024-01-15T14:30:00',
             context: 'school',
             type: 'meltdown',
@@ -244,7 +244,7 @@ describe('Store - CrisisContext', () => {
 
         act(() => {
             result.current.addCrisisEvent({
-                id: 'c1', timestamp: '2024-01-15T10:00:00', context: 'home',
+                id: 'c2222222-2222-4222-a222-222222222222', timestamp: '2024-01-15T10:00:00', context: 'home',
                 type: 'meltdown', durationSeconds: 300, peakIntensity: 7,
                 warningSignsObserved: [], sensoryTriggers: [], contextTriggers: [],
                 strategiesUsed: [], resolution: 'self_regulated', hasAudioRecording: false, notes: '',
@@ -253,7 +253,7 @@ describe('Store - CrisisContext', () => {
 
         act(() => {
             result.current.addCrisisEvent({
-                id: 'c2', timestamp: '2024-01-16T10:00:00', context: 'school',
+                id: 'c3333333-3333-4333-a333-333333333333', timestamp: '2024-01-16T10:00:00', context: 'school',
                 type: 'shutdown', durationSeconds: 600, peakIntensity: 6,
                 warningSignsObserved: [], sensoryTriggers: [], contextTriggers: [],
                 strategiesUsed: [], resolution: 'timed_out', hasAudioRecording: false, notes: '',
@@ -269,7 +269,7 @@ describe('Store - CrisisContext', () => {
 
         act(() => {
             result.current.addCrisisEvent({
-                id: 'c1', timestamp: '2024-01-15T10:00:00', context: 'home',
+                id: 'c4444444-4444-4444-a444-444444444444', timestamp: '2024-01-15T10:00:00', context: 'home',
                 type: 'meltdown', durationSeconds: 300, peakIntensity: 7,
                 warningSignsObserved: [], sensoryTriggers: [], contextTriggers: [],
                 strategiesUsed: [], resolution: 'self_regulated', hasAudioRecording: false, notes: '',
@@ -278,7 +278,7 @@ describe('Store - CrisisContext', () => {
 
         act(() => {
             result.current.addCrisisEvent({
-                id: 'c2', timestamp: '2024-01-16T10:00:00', context: 'school',
+                id: 'c5555555-5555-4555-a555-555555555555', timestamp: '2024-01-16T10:00:00', context: 'school',
                 type: 'meltdown', durationSeconds: 600, peakIntensity: 6,
                 warningSignsObserved: [], sensoryTriggers: [], contextTriggers: [],
                 strategiesUsed: [], resolution: 'timed_out', hasAudioRecording: false, notes: '',
@@ -287,7 +287,7 @@ describe('Store - CrisisContext', () => {
 
         act(() => {
             result.current.addCrisisEvent({
-                id: 'c3', timestamp: '2024-01-17T10:00:00', context: 'home',
+                id: 'c6666666-6666-4666-a666-666666666666', timestamp: '2024-01-17T10:00:00', context: 'home',
                 type: 'anxiety', durationSeconds: 200, peakIntensity: 5,
                 warningSignsObserved: [], sensoryTriggers: [], contextTriggers: [],
                 strategiesUsed: [], resolution: 'co_regulated', hasAudioRecording: false, notes: '',

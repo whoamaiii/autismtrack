@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useLogs } from '../store';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { format } from 'date-fns';
@@ -16,6 +17,7 @@ import { motion } from 'framer-motion';
 
 export const EnergyRegulation: React.FC = () => {
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const { logs } = useLogs();
 
     // 1. Get Today's Logs for Energy Curve
@@ -58,10 +60,10 @@ export const EnergyRegulation: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 className="sticky top-0 z-10 flex items-center bg-background-dark/80 p-4 pb-2 backdrop-blur-sm justify-between rounded-b-xl -mx-4 -mt-4 mb-2 border-b border-white/10"
             >
-                <button onClick={() => navigate(-1)} className="flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-white/10 transition-colors text-white" aria-label="Gå tilbake">
+                <button onClick={() => navigate(-1)} className="flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-white/10 transition-colors text-white" aria-label={t('energyRegulation.goBack')}>
                     <ArrowLeft size={20} />
                 </button>
-                <h2 className="text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">Energi & Regulering</h2>
+                <h2 className="text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">{t('energyRegulation.title')}</h2>
                 <div className="flex w-10 items-center justify-end">
                     {/* Placeholder */}
                 </div>
@@ -78,11 +80,11 @@ export const EnergyRegulation: React.FC = () => {
                     <div className="flex gap-6 justify-between items-center mb-4">
                         <div className="flex items-center gap-2 text-green-400">
                             <BatteryCharging size={24} />
-                            <p className="text-lg font-bold text-white">Skje-batteriet</p>
+                            <p className="text-lg font-bold text-white">{t('energyRegulation.spoonsTitle')}</p>
                         </div>
                         <div className="px-3 py-1 rounded-full bg-green-500/20 border border-green-500/30">
                             <p className="text-green-400 text-sm font-bold">
-                                {todayLogs.length > 0 ? `${currentStatus.spoons}/12 Skjeer` : 'Ingen Data'}
+                                {todayLogs.length > 0 ? t('energyRegulation.spoonsCount', { count: currentStatus.spoons }) : t('energyRegulation.noData')}
                             </p>
                         </div>
                     </div>
@@ -105,7 +107,7 @@ export const EnergyRegulation: React.FC = () => {
                     </div>
                     <p className="text-slate-400 text-sm mt-3 flex items-center gap-2">
                         <Zap size={14} className={currentStatus.energy < 4 ? 'text-red-400' : 'text-yellow-400'} />
-                        Basert på nåværende energinivå ({currentStatus.energy}/10)
+                        {t('energyRegulation.basedOn', { level: currentStatus.energy })}
                     </p>
                 </motion.div>
 
@@ -119,21 +121,25 @@ export const EnergyRegulation: React.FC = () => {
                     <div className="flex flex-col gap-1 mb-6">
                         <div className="flex items-center gap-2 text-blue-400 mb-1">
                             <TrendingUp size={18} />
-                            <span className="text-xs font-bold uppercase tracking-wider">Energi Kurve</span>
+                            <span className="text-xs font-bold uppercase tracking-wider">{t('energyRegulation.energyCurve')}</span>
                         </div>
                         <div className="flex justify-between items-end">
                             <p className="text-white text-3xl font-bold leading-none tracking-tight">
-                                {currentStatus.energy >= 7 ? 'Høy' : currentStatus.energy >= 4 ? 'Moderat' : 'Lav'}
+                                {currentStatus.energy >= 7 ? t('energyRegulation.levelHigh') : currentStatus.energy >= 4 ? t('energyRegulation.levelModerate') : t('energyRegulation.levelLow')}
                             </p>
                             {currentStatus.trend !== 0 && (
                                 <div className={`flex items-center gap-1 px-2 py-1 rounded-lg ${currentStatus.trend > 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                                    <span className="text-sm font-bold">{currentStatus.trend > 0 ? '+' : ''}{currentStatus.trend}% i dag</span>
+                                    <span className="text-sm font-bold">{currentStatus.trend > 0 ? '+' : ''}{currentStatus.trend}% {t('energyRegulation.today')}</span>
                                 </div>
                             )}
                         </div>
                     </div>
 
-                    <div className="flex-1 w-full -ml-4">
+                    <div
+                        className="flex-1 w-full -ml-4"
+                        role="img"
+                        aria-label={t('energyRegulation.chartDescription', { count: todayLogs.length })}
+                    >
                         {todayLogs.length > 0 ? (
                             <ResponsiveContainer width="100%" height="100%">
                                 <AreaChart data={chartData}>
@@ -177,7 +183,7 @@ export const EnergyRegulation: React.FC = () => {
                         ) : (
                             <div className="flex flex-col items-center justify-center h-full text-slate-500 gap-2">
                                 <Battery size={32} className="opacity-30" />
-                                <span className="font-medium">Ingen energidata for i dag</span>
+                                <span className="font-medium">{t('energyRegulation.noDataToday')}</span>
                             </div>
                         )}
                     </div>
@@ -194,12 +200,12 @@ export const EnergyRegulation: React.FC = () => {
                         <div className="p-2 rounded-xl bg-primary/20 text-primary">
                             <Brain size={20} />
                         </div>
-                        <h3 className="text-white font-bold text-lg">Energi Innsikt</h3>
+                        <h3 className="text-white font-bold text-lg">{t('energyRegulation.insights')}</h3>
                     </div>
                     <p className="text-slate-300 text-sm leading-relaxed">
                         {todayLogs.length > 0
-                            ? "Basert på loggene dine varierer energien. Vurder å planlegge 'Stilletid' når du ser fall under nivå 4."
-                            : "Logg energinivået ditt gjennom dagen for å motta personlige innsikter her."}
+                            ? t('energyRegulation.insightWithData')
+                            : t('energyRegulation.insightNoData')}
                     </p>
                 </motion.div>
             </div>
@@ -210,7 +216,7 @@ export const EnergyRegulation: React.FC = () => {
                 whileTap={{ scale: 0.9 }}
                 onClick={() => navigate('/log')}
                 className="fixed bottom-6 right-6 size-14 bg-gradient-to-br from-primary to-blue-600 rounded-full shadow-lg shadow-primary/40 flex items-center justify-center z-20 text-white"
-                aria-label="Logg ny hendelse"
+                aria-label={t('energyRegulation.logEvent')}
             >
                 <Plus size={32} />
             </motion.button>

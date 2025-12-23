@@ -63,6 +63,25 @@
             "subtitle": "Analyse av vanskelige overganger og effektive tiltak"
         }
     },
+    "energyRegulation": {
+        "title": "Energi & Regulering",
+        "goBack": "Gå tilbake",
+        "spoonsTitle": "Skje-batteriet",
+        "spoonsCount": "{{count}}/12 Skjeer",
+        "noData": "Ingen Data",
+        "basedOn": "Basert på nåværende energinivå ({{level}}/10)",
+        "energyCurve": "Energi Kurve",
+        "levelHigh": "Høy",
+        "levelModerate": "Moderat",
+        "levelLow": "Lav",
+        "today": "i dag",
+        "noDataToday": "Ingen energidata for i dag",
+        "insights": "Energi Innsikt",
+        "insightWithData": "Basert på loggene dine varierer energien. Vurder å planlegge 'Stilletid' når du ser fall under nivå 4.",
+        "insightNoData": "Logg energinivået ditt gjennom dagen for å motta personlige innsikter her.",
+        "logEvent": "Logg ny hendelse",
+        "chartDescription": "Energikurve som viser {{count}} logger fra i dag"
+    },
     "transitions": {
         "goBack": "Gå tilbake",
         "analysis": {

@@ -2,7 +2,8 @@
 // This file exports both the DataProvider component and associated hooks.
 // This is a valid React pattern for context providers.
 
-import React, { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect, type ReactNode } from 'react';
+import { z } from 'zod';
 import type {
     LogEntry,
     CrisisEvent,
@@ -17,13 +18,23 @@ import type {
 import { enrichLogEntry, enrichCrisisEvent } from './types';
 import { generateUUID } from './utils/uuid';
 import { STORAGE_KEYS } from './constants/storage';
+import {
+    LogEntrySchema,
+    CrisisEventSchema,
+    ScheduleEntrySchema,
+    DailyScheduleTemplateSchema,
+    GoalSchema,
+    ChildProfileSchema,
+    validateLogEntryInput,
+    validateCrisisEvent
+} from './utils/validation';
 
 // ============================================
 // LOGS CONTEXT
 // ============================================
 interface LogsContextType {
     logs: LogEntry[];
-    addLog: (log: Omit<LogEntry, 'dayOfWeek' | 'timeOfDay' | 'hourOfDay'>) => void;
+    addLog: (log: Omit<LogEntry, 'dayOfWeek' | 'timeOfDay' | 'hourOfDay'>) => boolean;
     updateLog: (id: string, updates: Partial<LogEntry>) => void;
     deleteLog: (id: string) => void;
     getLogsByDateRange: (startDate: Date, endDate: Date) => LogEntry[];
@@ -37,7 +48,7 @@ const LogsContext = createContext<LogsContextType | undefined>(undefined);
 // ============================================
 interface CrisisContextType {
     crisisEvents: CrisisEvent[];
-    addCrisisEvent: (event: Omit<CrisisEvent, 'dayOfWeek' | 'timeOfDay' | 'hourOfDay'>) => void;
+    addCrisisEvent: (event: Omit<CrisisEvent, 'dayOfWeek' | 'timeOfDay' | 'hourOfDay'>) => boolean;
     updateCrisisEvent: (id: string, updates: Partial<CrisisEvent>) => void;
     deleteCrisisEvent: (id: string) => void;
     getCrisisByDateRange: (startDate: Date, endDate: Date) => CrisisEvent[];
@@ -114,13 +125,61 @@ interface SettingsContextType {
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 // ============================================
-// HELPER: Safe localStorage getter with parsing
+// HELPER: Safe localStorage getter with parsing and optional Zod validation
 // ============================================
-function getStorageItem<T>(key: string, fallback: T): T {
+function getStorageItem<T>(key: string, fallback: T, schema?: z.ZodType<T>): T {
     try {
         const item = localStorage.getItem(key);
-        return item ? JSON.parse(item) : fallback;
-    } catch {
+        if (!item) return fallback;
+
+        const parsed = JSON.parse(item);
+
+        // If schema provided, validate the data
+        if (schema) {
+            const result = schema.safeParse(parsed);
+            if (result.success) {
+                return result.data;
+            }
+
+            // For arrays, try to filter out only invalid items
+            if (Array.isArray(parsed) && Array.isArray(fallback)) {
+                // Try to validate each item individually
+                const validItems: unknown[] = [];
+                for (const item of parsed) {
+                    // Create a single-item array and test with the full schema
+                    // to see if items match the expected element type
+                    try {
+                        const singleItemResult = schema.safeParse([item]);
+                        if (singleItemResult.success && Array.isArray(singleItemResult.data) && singleItemResult.data.length === 1) {
+                            validItems.push(singleItemResult.data[0]);
+                        } else if (import.meta.env.DEV) {
+                            console.warn(`[getStorageItem] Invalid item in ${key}:`, item);
+                        }
+                    } catch {
+                        if (import.meta.env.DEV) {
+                            console.warn(`[getStorageItem] Invalid item in ${key}:`, item);
+                        }
+                    }
+                }
+
+                if (import.meta.env.DEV && validItems.length !== parsed.length) {
+                    console.warn(`[getStorageItem] Filtered ${parsed.length - validItems.length} invalid items from ${key}`);
+                }
+                return validItems as T;
+            }
+
+            // For non-array invalid data, log and return fallback
+            if (import.meta.env.DEV) {
+                console.warn(`[getStorageItem] Invalid data in ${key}, using fallback:`, result.error.issues[0]);
+            }
+            return fallback;
+        }
+
+        return parsed;
+    } catch (e) {
+        if (import.meta.env.DEV) {
+            console.warn(`[getStorageItem] Failed to parse ${key}:`, e);
+        }
         return fallback;
     }
 }
@@ -137,30 +196,59 @@ function getStorageString(key: string, fallback: ContextType): ContextType {
     }
 }
 
+// Helper: Safe localStorage setter with quota error handling
+function safeSetItem(key: string, value: string): boolean {
+    try {
+        localStorage.setItem(key, value);
+        return true;
+    } catch (error) {
+        if (error instanceof DOMException &&
+            (error.name === 'QuotaExceededError' ||
+             error.name === 'NS_ERROR_DOM_QUOTA_REACHED')) {
+            console.error(`localStorage quota exceeded when saving ${key}`);
+        } else {
+            console.error(`Failed to save ${key} to localStorage:`, error);
+        }
+        return false;
+    }
+}
+
 // ============================================
 // COMBINED PROVIDER
 // ============================================
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    // State with lazy initializers - loads from localStorage during initial render
-    const [logs, setLogs] = useState<LogEntry[]>(() => getStorageItem(STORAGE_KEYS.LOGS, []));
-    const [crisisEvents, setCrisisEvents] = useState<CrisisEvent[]>(() => getStorageItem(STORAGE_KEYS.CRISIS_EVENTS, []));
-    const [scheduleEntries, setScheduleEntries] = useState<ScheduleEntry[]>(() => getStorageItem(STORAGE_KEYS.SCHEDULE_ENTRIES, []));
-    const [scheduleTemplates, setScheduleTemplates] = useState<DailyScheduleTemplate[]>(() => getStorageItem(STORAGE_KEYS.SCHEDULE_TEMPLATES, []));
-    const [goals, setGoals] = useState<Goal[]>(() => getStorageItem(STORAGE_KEYS.GOALS, []));
+    // State with lazy initializers - loads from localStorage during initial render with Zod validation
+    const [logs, setLogs] = useState<LogEntry[]>(() =>
+        getStorageItem(STORAGE_KEYS.LOGS, [], z.array(LogEntrySchema))
+    );
+    const [crisisEvents, setCrisisEvents] = useState<CrisisEvent[]>(() =>
+        getStorageItem(STORAGE_KEYS.CRISIS_EVENTS, [], z.array(CrisisEventSchema))
+    );
+    const [scheduleEntries, setScheduleEntries] = useState<ScheduleEntry[]>(() =>
+        getStorageItem(STORAGE_KEYS.SCHEDULE_ENTRIES, [], z.array(ScheduleEntrySchema))
+    );
+    const [scheduleTemplates, setScheduleTemplates] = useState<DailyScheduleTemplate[]>(() =>
+        getStorageItem(STORAGE_KEYS.SCHEDULE_TEMPLATES, [], z.array(DailyScheduleTemplateSchema))
+    );
+    const [goals, setGoals] = useState<Goal[]>(() =>
+        getStorageItem(STORAGE_KEYS.GOALS, [], z.array(GoalSchema))
+    );
     const [currentContext, setCurrentContextState] = useState<ContextType>(() => getStorageString(STORAGE_KEYS.CURRENT_CONTEXT, 'home'));
-    const [childProfile, setChildProfileState] = useState<ChildProfile | null>(() => getStorageItem(STORAGE_KEYS.CHILD_PROFILE, null));
+    const [childProfile, setChildProfileState] = useState<ChildProfile | null>(() =>
+        getStorageItem(STORAGE_KEYS.CHILD_PROFILE, null, ChildProfileSchema.nullable())
+    );
     const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(() => getStorageItem(STORAGE_KEYS.ONBOARDING_COMPLETED, false));
 
-    // Refresh function to reload from localStorage (for external sync)
+    // Refresh function to reload from localStorage (for external sync) with Zod validation
     const loadFromStorage = useCallback(() => {
         try {
-            setLogs(getStorageItem(STORAGE_KEYS.LOGS, []));
-            setCrisisEvents(getStorageItem(STORAGE_KEYS.CRISIS_EVENTS, []));
-            setScheduleEntries(getStorageItem(STORAGE_KEYS.SCHEDULE_ENTRIES, []));
-            setScheduleTemplates(getStorageItem(STORAGE_KEYS.SCHEDULE_TEMPLATES, []));
-            setGoals(getStorageItem(STORAGE_KEYS.GOALS, []));
+            setLogs(getStorageItem(STORAGE_KEYS.LOGS, [], z.array(LogEntrySchema)));
+            setCrisisEvents(getStorageItem(STORAGE_KEYS.CRISIS_EVENTS, [], z.array(CrisisEventSchema)));
+            setScheduleEntries(getStorageItem(STORAGE_KEYS.SCHEDULE_ENTRIES, [], z.array(ScheduleEntrySchema)));
+            setScheduleTemplates(getStorageItem(STORAGE_KEYS.SCHEDULE_TEMPLATES, [], z.array(DailyScheduleTemplateSchema)));
+            setGoals(getStorageItem(STORAGE_KEYS.GOALS, [], z.array(GoalSchema)));
             setCurrentContextState(getStorageString(STORAGE_KEYS.CURRENT_CONTEXT, 'home'));
-            setChildProfileState(getStorageItem(STORAGE_KEYS.CHILD_PROFILE, null));
+            setChildProfileState(getStorageItem(STORAGE_KEYS.CHILD_PROFILE, null, ChildProfileSchema.nullable()));
             setHasCompletedOnboarding(getStorageItem(STORAGE_KEYS.ONBOARDING_COMPLETED, false));
         } catch (e) {
             if (import.meta.env.DEV) {
@@ -169,41 +257,41 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     }, []);
 
-    // Save functions
+    // Save functions with quota error handling
     const saveLogs = useCallback((newLogs: LogEntry[]) => {
         setLogs(newLogs);
-        localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(newLogs));
+        safeSetItem(STORAGE_KEYS.LOGS, JSON.stringify(newLogs));
     }, []);
 
     const saveCrisisEvents = useCallback((newEvents: CrisisEvent[]) => {
         setCrisisEvents(newEvents);
-        localStorage.setItem(STORAGE_KEYS.CRISIS_EVENTS, JSON.stringify(newEvents));
+        safeSetItem(STORAGE_KEYS.CRISIS_EVENTS, JSON.stringify(newEvents));
     }, []);
 
     const saveScheduleEntries = useCallback((newEntries: ScheduleEntry[]) => {
         setScheduleEntries(newEntries);
-        localStorage.setItem(STORAGE_KEYS.SCHEDULE_ENTRIES, JSON.stringify(newEntries));
+        safeSetItem(STORAGE_KEYS.SCHEDULE_ENTRIES, JSON.stringify(newEntries));
     }, []);
 
     const saveScheduleTemplates = useCallback((newTemplates: DailyScheduleTemplate[]) => {
         setScheduleTemplates(newTemplates);
-        localStorage.setItem(STORAGE_KEYS.SCHEDULE_TEMPLATES, JSON.stringify(newTemplates));
+        safeSetItem(STORAGE_KEYS.SCHEDULE_TEMPLATES, JSON.stringify(newTemplates));
     }, []);
 
     const saveGoals = useCallback((newGoals: Goal[]) => {
         setGoals(newGoals);
-        localStorage.setItem(STORAGE_KEYS.GOALS, JSON.stringify(newGoals));
+        safeSetItem(STORAGE_KEYS.GOALS, JSON.stringify(newGoals));
     }, []);
 
     const setCurrentContext = useCallback((context: ContextType) => {
         setCurrentContextState(context);
-        localStorage.setItem(STORAGE_KEYS.CURRENT_CONTEXT, context);
+        safeSetItem(STORAGE_KEYS.CURRENT_CONTEXT, context);
     }, []);
 
     // Child Profile save functions
     const setChildProfile = useCallback((profile: ChildProfile) => {
         setChildProfileState(profile);
-        localStorage.setItem(STORAGE_KEYS.CHILD_PROFILE, JSON.stringify(profile));
+        safeSetItem(STORAGE_KEYS.CHILD_PROFILE, JSON.stringify(profile));
     }, []);
 
     const updateChildProfile = useCallback((updates: Partial<ChildProfile>) => {
@@ -222,11 +310,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     updatedAt: new Date().toISOString(),
                     ...updates
                 };
-                localStorage.setItem(STORAGE_KEYS.CHILD_PROFILE, JSON.stringify(newProfile));
+                safeSetItem(STORAGE_KEYS.CHILD_PROFILE, JSON.stringify(newProfile));
                 return newProfile;
             }
             const updated = { ...prev, ...updates, updatedAt: new Date().toISOString() };
-            localStorage.setItem(STORAGE_KEYS.CHILD_PROFILE, JSON.stringify(updated));
+            safeSetItem(STORAGE_KEYS.CHILD_PROFILE, JSON.stringify(updated));
             return updated;
         });
     }, []);
@@ -239,15 +327,25 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Settings methods
     const completeOnboarding = useCallback(() => {
         setHasCompletedOnboarding(true);
-        localStorage.setItem(STORAGE_KEYS.ONBOARDING_COMPLETED, JSON.stringify(true));
+        safeSetItem(STORAGE_KEYS.ONBOARDING_COMPLETED, JSON.stringify(true));
     }, []);
 
     // ============================================
     // LOGS METHODS
     // ============================================
-    const addLog = useCallback((log: Omit<LogEntry, 'dayOfWeek' | 'timeOfDay' | 'hourOfDay'>) => {
+    const addLog = useCallback((log: Omit<LogEntry, 'dayOfWeek' | 'timeOfDay' | 'hourOfDay'>): boolean => {
+        // Pre-save validation
+        const validation = validateLogEntryInput(log);
+        if (!validation.success) {
+            if (import.meta.env.DEV) {
+                console.error('[addLog] Validation failed:', validation.errors);
+            }
+            return false;
+        }
+
         const enrichedLog = enrichLogEntry(log);
         saveLogs([enrichedLog, ...logs]);
+        return true;
     }, [logs, saveLogs]);
 
     const updateLog = useCallback((id: string, updates: Partial<LogEntry>) => {
@@ -272,9 +370,19 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // ============================================
     // CRISIS METHODS
     // ============================================
-    const addCrisisEvent = useCallback((event: Omit<CrisisEvent, 'dayOfWeek' | 'timeOfDay' | 'hourOfDay'>) => {
+    const addCrisisEvent = useCallback((event: Omit<CrisisEvent, 'dayOfWeek' | 'timeOfDay' | 'hourOfDay'>): boolean => {
+        // Pre-save validation
+        const validation = validateCrisisEvent(event);
+        if (!validation.success) {
+            if (import.meta.env.DEV) {
+                console.error('[addCrisisEvent] Validation failed:', validation.errors);
+            }
+            return false;
+        }
+
         const enrichedEvent = enrichCrisisEvent(event);
         saveCrisisEvents([enrichedEvent, ...crisisEvents]);
+        return true;
     }, [crisisEvents, saveCrisisEvents]);
 
     const updateCrisisEvent = useCallback((id: string, updates: Partial<CrisisEvent>) => {
@@ -453,18 +561,18 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, [goals]);
 
     // ============================================
-    // CONTEXT VALUES
+    // CONTEXT VALUES (memoized to prevent unnecessary re-renders)
     // ============================================
-    const logsValue: LogsContextType = {
+    const logsValue = useMemo<LogsContextType>(() => ({
         logs,
         addLog,
         updateLog,
         deleteLog,
         getLogsByDateRange,
         getLogsByContext
-    };
+    }), [logs, addLog, updateLog, deleteLog, getLogsByDateRange, getLogsByContext]);
 
-    const crisisValue: CrisisContextType = {
+    const crisisValue = useMemo<CrisisContextType>(() => ({
         crisisEvents,
         addCrisisEvent,
         updateCrisisEvent,
@@ -472,9 +580,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         getCrisisByDateRange,
         getAverageCrisisDuration,
         getCrisisCountByType
-    };
+    }), [crisisEvents, addCrisisEvent, updateCrisisEvent, deleteCrisisEvent, getCrisisByDateRange, getAverageCrisisDuration, getCrisisCountByType]);
 
-    const scheduleValue: ScheduleContextType = {
+    const scheduleValue = useMemo<ScheduleContextType>(() => ({
         scheduleEntries,
         scheduleTemplates,
         addScheduleEntry,
@@ -485,9 +593,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         updateTemplate,
         deleteTemplate,
         getCompletionRate
-    };
+    }), [scheduleEntries, scheduleTemplates, addScheduleEntry, updateScheduleEntry, deleteScheduleEntry, getEntriesByDate, addTemplate, updateTemplate, deleteTemplate, getCompletionRate]);
 
-    const goalsValue: GoalsContextType = {
+    const goalsValue = useMemo<GoalsContextType>(() => ({
         goals,
         addGoal,
         updateGoal,
@@ -495,25 +603,67 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         addGoalProgress,
         getGoalProgress,
         getOverallProgress
-    };
+    }), [goals, addGoal, updateGoal, deleteGoal, addGoalProgress, getGoalProgress, getOverallProgress]);
 
-    const appValue: AppContextType = {
+    const appValue = useMemo<AppContextType>(() => ({
         currentContext,
         setCurrentContext
-    };
+    }), [currentContext, setCurrentContext]);
 
-    const childProfileValue: ChildProfileContextType = {
+    const childProfileValue = useMemo<ChildProfileContextType>(() => ({
         childProfile,
         setChildProfile,
         updateChildProfile,
         clearChildProfile
-    };
+    }), [childProfile, setChildProfile, updateChildProfile, clearChildProfile]);
 
-    const settingsValue: SettingsContextType = {
+    const settingsValue = useMemo<SettingsContextType>(() => ({
         hasCompletedOnboarding,
         completeOnboarding,
         refreshData: loadFromStorage
-    };
+    }), [hasCompletedOnboarding, completeOnboarding, loadFromStorage]);
+
+    // ============================================
+    // MULTI-TAB SYNC (listen for storage events)
+    // ============================================
+    useEffect(() => {
+        const handleStorageChange = (e: StorageEvent) => {
+            if (!e.key || !e.newValue) return;
+
+            try {
+                switch (e.key) {
+                    case STORAGE_KEYS.LOGS:
+                        setLogs(JSON.parse(e.newValue));
+                        break;
+                    case STORAGE_KEYS.CRISIS_EVENTS:
+                        setCrisisEvents(JSON.parse(e.newValue));
+                        break;
+                    case STORAGE_KEYS.SCHEDULE_ENTRIES:
+                        setScheduleEntries(JSON.parse(e.newValue));
+                        break;
+                    case STORAGE_KEYS.SCHEDULE_TEMPLATES:
+                        setScheduleTemplates(JSON.parse(e.newValue));
+                        break;
+                    case STORAGE_KEYS.GOALS:
+                        setGoals(JSON.parse(e.newValue));
+                        break;
+                    case STORAGE_KEYS.CHILD_PROFILE:
+                        setChildProfileState(JSON.parse(e.newValue));
+                        break;
+                    case STORAGE_KEYS.CURRENT_CONTEXT:
+                        if (e.newValue === 'home' || e.newValue === 'school') {
+                            setCurrentContextState(e.newValue);
+                        }
+                        break;
+                }
+            } catch {
+                // Ignore parse errors from other tabs
+            }
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+        return () => window.removeEventListener('storage', handleStorageChange);
+    }, []);
 
     return (
         <AppContext.Provider value={appValue}>

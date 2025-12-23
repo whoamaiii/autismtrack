@@ -72,6 +72,25 @@
             "loaded": "Loaded!"
         }
     },
+    "energyRegulation": {
+        "title": "Energy & Regulation",
+        "goBack": "Go back",
+        "spoonsTitle": "Spoon Battery",
+        "spoonsCount": "{{count}}/12 Spoons",
+        "noData": "No Data",
+        "basedOn": "Based on current energy level ({{level}}/10)",
+        "energyCurve": "Energy Curve",
+        "levelHigh": "High",
+        "levelModerate": "Moderate",
+        "levelLow": "Low",
+        "today": "today",
+        "noDataToday": "No energy data for today",
+        "insights": "Energy Insights",
+        "insightWithData": "Based on your logs, energy varies. Consider scheduling 'Quiet Time' when you see drops below level 4.",
+        "insightNoData": "Log your energy levels throughout the day to receive personalized insights here.",
+        "logEvent": "Log new event",
+        "chartDescription": "Energy curve showing {{count}} logs from today"
+    },
     "transitions": {
         "goBack": "Go back",
         "analysis": {
