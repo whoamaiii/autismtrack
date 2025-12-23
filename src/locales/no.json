@@ -354,8 +354,22 @@
         },
         "foundLogs": "{{count}} logger funnet",
         "noLogs": "Ingen logger funnet med valgte filtre.",
+        "loadMore": "Vis flere ({{remaining}} igjen)",
         "deleteConfirm": "Er du sikker på at du vil slette denne loggen?",
         "deleteTitle": "Slett logg",
+        "deleteModal": {
+            "title": "Slett logg?",
+            "description": "Er du sikker? Dette kan ikke angres.",
+            "cancel": "Avbryt",
+            "confirm": "Slett"
+        },
+        "deleteSuccess": "Loggen ble slettet",
+        "empty": {
+            "noLogs": "Du har ingen logger ennå. Start med å registrere din første observasjon.",
+            "createFirst": "Opprett Første Logg",
+            "noMatch": "Ingen logger matcher filtrene dine.",
+            "clearFilters": "Nullstill filtre"
+        },
         "valence": "Valens:",
         "energy": "Energi:"
     },

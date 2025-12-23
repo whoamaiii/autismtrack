@@ -354,8 +354,22 @@
         },
         "foundLogs": "{{count}} logs found",
         "noLogs": "No logs found with selected filters.",
+        "loadMore": "Load more ({{remaining}} remaining)",
         "deleteConfirm": "Are you sure you want to delete this log?",
         "deleteTitle": "Delete log",
+        "deleteModal": {
+            "title": "Delete log?",
+            "description": "Are you sure? This cannot be undone.",
+            "cancel": "Cancel",
+            "confirm": "Delete"
+        },
+        "deleteSuccess": "Log deleted",
+        "empty": {
+            "noLogs": "You have no logs yet. Start by recording your first observation.",
+            "createFirst": "Create First Log",
+            "noMatch": "No logs match your filters.",
+            "clearFilters": "Clear filters"
+        },
         "valence": "Valence:",
         "energy": "Energy:"
     },
