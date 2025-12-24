@@ -39,6 +39,8 @@ interface LogsContextType {
     deleteLog: (id: string) => void;
     getLogsByDateRange: (startDate: Date, endDate: Date) => LogEntry[];
     getLogsByContext: (context: ContextType) => LogEntry[];
+    getLogsNearTimestamp: (timestamp: string, windowMinutes: number) => LogEntry[];
+    getLogsByContextAndDateRange: (context: ContextType, startDate: Date, endDate: Date) => LogEntry[];
 }
 
 const LogsContext = createContext<LogsContextType | undefined>(undefined);
@@ -54,6 +56,8 @@ interface CrisisContextType {
     getCrisisByDateRange: (startDate: Date, endDate: Date) => CrisisEvent[];
     getAverageCrisisDuration: () => number;
     getCrisisCountByType: () => Record<string, number>;
+    getCrisisEventsByContext: (context: ContextType) => CrisisEvent[];
+    updateCrisisRecoveryTime: (id: string, recoveryMinutes: number) => void;
 }
 
 const CrisisContext = createContext<CrisisContextType | undefined>(undefined);
@@ -367,6 +371,22 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return logs.filter(log => log.context === context);
     }, [logs]);
 
+    const getLogsNearTimestamp = useCallback((timestamp: string, windowMinutes: number) => {
+        const targetTime = new Date(timestamp).getTime();
+        const windowMs = windowMinutes * 60 * 1000;
+        return logs.filter(log => {
+            const logTime = new Date(log.timestamp).getTime();
+            return Math.abs(logTime - targetTime) <= windowMs;
+        }).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    }, [logs]);
+
+    const getLogsByContextAndDateRange = useCallback((context: ContextType, startDate: Date, endDate: Date) => {
+        return logs.filter(log => {
+            const logDate = new Date(log.timestamp);
+            return log.context === context && logDate >= startDate && logDate <= endDate;
+        });
+    }, [logs]);
+
     // ============================================
     // CRISIS METHODS
     // ============================================
@@ -412,6 +432,16 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return acc;
         }, {} as Record<string, number>);
     }, [crisisEvents]);
+
+    const getCrisisEventsByContext = useCallback((context: ContextType) => {
+        return crisisEvents.filter(event => event.context === context);
+    }, [crisisEvents]);
+
+    const updateCrisisRecoveryTime = useCallback((id: string, recoveryMinutes: number) => {
+        saveCrisisEvents(crisisEvents.map(e =>
+            e.id === id ? { ...e, recoveryTimeMinutes: recoveryMinutes } : e
+        ));
+    }, [crisisEvents, saveCrisisEvents]);
 
     // ============================================
     // SCHEDULE METHODS
@@ -569,8 +599,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         updateLog,
         deleteLog,
         getLogsByDateRange,
-        getLogsByContext
-    }), [logs, addLog, updateLog, deleteLog, getLogsByDateRange, getLogsByContext]);
+        getLogsByContext,
+        getLogsNearTimestamp,
+        getLogsByContextAndDateRange
+    }), [logs, addLog, updateLog, deleteLog, getLogsByDateRange, getLogsByContext, getLogsNearTimestamp, getLogsByContextAndDateRange]);
 
     const crisisValue = useMemo<CrisisContextType>(() => ({
         crisisEvents,
@@ -579,8 +611,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         deleteCrisisEvent,
         getCrisisByDateRange,
         getAverageCrisisDuration,
-        getCrisisCountByType
-    }), [crisisEvents, addCrisisEvent, updateCrisisEvent, deleteCrisisEvent, getCrisisByDateRange, getAverageCrisisDuration, getCrisisCountByType]);
+        getCrisisCountByType,
+        getCrisisEventsByContext,
+        updateCrisisRecoveryTime
+    }), [crisisEvents, addCrisisEvent, updateCrisisEvent, deleteCrisisEvent, getCrisisByDateRange, getAverageCrisisDuration, getCrisisCountByType, getCrisisEventsByContext, updateCrisisRecoveryTime]);
 
     const scheduleValue = useMemo<ScheduleContextType>(() => ({
         scheduleEntries,

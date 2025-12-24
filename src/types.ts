@@ -392,3 +392,143 @@ export function enrichCrisisEvent(event: Omit<CrisisEvent, 'dayOfWeek' | 'timeOf
         hourOfDay: safeDate.getHours()
     };
 }
+
+// ============================================
+// MULTI-FACTOR CORRELATION TYPES
+// ============================================
+export type PatternFactorType = 'time' | 'energy' | 'trigger' | 'context' | 'transition' | 'strategy';
+export type PatternOutcome = 'high_arousal' | 'crisis' | 'escalation' | 'recovery';
+export type ConfidenceLevel = 'low' | 'medium' | 'high';
+
+export interface PatternFactor {
+    type: PatternFactorType;
+    value: string | number | boolean;
+    operator: 'equals' | 'greater_than' | 'less_than' | 'contains';
+    label: string; // Human-readable label
+}
+
+export interface MultiFactorPattern {
+    id: string;
+    factors: PatternFactor[];
+    outcome: PatternOutcome;
+    occurrenceCount: number;
+    totalOccasions: number;
+    probability: number;
+    pValue: number;
+    confidence: ConfidenceLevel;
+    description: string;
+}
+
+export interface StrategyComboEffectiveness {
+    strategies: string[];
+    usageCount: number;
+    successRate: number;
+    noChangeRate: number;
+    escalationRate: number;
+    avgArousalBefore: number;
+    avgArousalAfter: number;
+    comparedToSingleStrategy: number; // % improvement over best single strategy
+}
+
+// ============================================
+// CONTEXT COMPARISON TYPES
+// ============================================
+export interface TriggerStat {
+    trigger: string;
+    count: number;
+    percentage: number;
+}
+
+export interface StrategyStat {
+    strategy: string;
+    count: number;
+    successRate: number;
+}
+
+export interface HourlyArousal {
+    hour: number;
+    avgArousal: number;
+    logCount: number;
+}
+
+export interface ContextMetrics {
+    logCount: number;
+    crisisCount: number;
+    avgArousal: number;
+    avgEnergy: number;
+    avgValence: number;
+    topTriggers: TriggerStat[];
+    topStrategies: StrategyStat[];
+    peakArousalTimes: HourlyArousal[];
+    crisisFrequencyPerDay: number;
+}
+
+export interface ContextDifference {
+    metric: string;
+    homeValue: number | string;
+    schoolValue: number | string;
+    significance: ConfidenceLevel;
+    insight: string;
+}
+
+export interface ContextComparison {
+    home: ContextMetrics;
+    school: ContextMetrics;
+    significantDifferences: ContextDifference[];
+    dateRange: {
+        start: string;
+        end: string;
+    };
+}
+
+// ============================================
+// RECOVERY ANALYSIS TYPES
+// ============================================
+export interface RecoveryFactor {
+    factor: string;
+    factorType: 'strategy' | 'time' | 'context' | 'crisis_type';
+    avgRecoveryWithFactor: number;
+    avgRecoveryWithoutFactor: number;
+    impactMinutes: number; // Positive = delays, Negative = accelerates
+    sampleSize: number;
+    pValue?: number;
+}
+
+export interface VulnerabilityWindow {
+    durationMinutes: number;
+    elevatedRiskPeriod: number;
+    recommendedBuffer: number;
+    reEscalationRate: number; // % of crises followed by another within window
+}
+
+export interface RecoveryStats {
+    avgMinutes: number;
+    minMinutes: number;
+    maxMinutes: number;
+    medianMinutes: number;
+    count: number;
+    trend: 'improving' | 'worsening' | 'stable';
+}
+
+export interface RecoveryAnalysis {
+    avgRecoveryTime: number;
+    recoveryTrend: 'improving' | 'worsening' | 'stable';
+    factorsAcceleratingRecovery: RecoveryFactor[];
+    factorsDelayingRecovery: RecoveryFactor[];
+    vulnerabilityWindow: VulnerabilityWindow;
+    recoveryByType: Partial<Record<CrisisType, RecoveryStats>>;
+    totalCrisesAnalyzed: number;
+    crisesWithRecoveryData: number;
+}
+
+// ============================================
+// RECOVERY INDICATOR (for auto-detection)
+// ============================================
+export interface RecoveryIndicator {
+    crisisId: string;
+    detectedRecoveryTime?: number;
+    manualRecoveryTime?: number;
+    recoveryConfidence: 'confirmed' | 'estimated' | 'unknown';
+    firstNormalLogId?: string;
+    detectedAt?: string;
+}

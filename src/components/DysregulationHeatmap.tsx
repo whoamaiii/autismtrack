@@ -1,8 +1,9 @@
-import React, { useMemo } from 'react';
-import { motion } from 'framer-motion';
+import React, { useMemo, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useLogs, useCrisis } from '../store';
-import { ArrowLeft, Info, AlertTriangle, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Info, AlertTriangle, TrendingUp, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 // Time blocks for the heatmap (Norwegian labels)
 const TIME_BLOCKS = [
@@ -55,9 +56,22 @@ const getArousalEmoji = (arousal: number, logCount: number): string => {
     return '😰';
 };
 
+interface SelectedCell {
+    day: string;
+    dayLabel: string;
+    timeBlock: string;
+    timeLabel: string;
+    avgArousal: number;
+    logCount: number;
+    crisisCount: number;
+    maxArousal: number;
+}
+
 export const DysregulationHeatmap: React.FC = () => {
+    const { t } = useTranslation();
     const { logs } = useLogs();
     const { crisisEvents } = useCrisis();
+    const [selectedCell, setSelectedCell] = useState<SelectedCell | null>(null);
 
     // Process logs and crisis events into heatmap data
     const heatmapData = useMemo(() => {
@@ -163,7 +177,7 @@ export const DysregulationHeatmap: React.FC = () => {
                 <Link to="/" className="flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-white/10 transition-colors text-white" aria-label="Gå tilbake">
                     <ArrowLeft size={20} />
                 </Link>
-                <h1 className="text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">Dysreguleringskart</h1>
+                <h1 className="text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">{t('heatmap.title', 'Dysregulation Heatmap')}</h1>
                 <div className="size-10"></div>
             </div>
 
@@ -232,6 +246,20 @@ export const DysregulationHeatmap: React.FC = () => {
                                     key={key}
                                     whileHover={{ scale: 1.1 }}
                                     whileTap={{ scale: 0.95 }}
+                                    onClick={() => {
+                                        if (count > 0) {
+                                            setSelectedCell({
+                                                day: day.id,
+                                                dayLabel: day.fullLabel,
+                                                timeBlock: block.id,
+                                                timeLabel: block.label,
+                                                avgArousal: arousal,
+                                                logCount: count,
+                                                crisisCount: crises,
+                                                maxArousal: cell?.maxArousal || 0
+                                            });
+                                        }
+                                    }}
                                     className={`
                                         h-12 rounded-lg flex flex-col items-center justify-center cursor-pointer
                                         transition-all relative
@@ -355,16 +383,77 @@ export const DysregulationHeatmap: React.FC = () => {
                     className="text-center py-12"
                 >
                     <div className="text-6xl mb-4">📊</div>
-                    <h3 className="text-xl font-bold text-white mb-2">Ingen data ennå</h3>
-                    <p className="text-slate-400 mb-6">Start med å logge noen hendelser for å se mønstre.</p>
+                    <h3 className="text-xl font-bold text-white mb-2">{t('heatmap.noData', 'Ingen data ennå')}</h3>
+                    <p className="text-slate-400 mb-6">{t('heatmap.noDataHint', 'Start med å logge noen hendelser for å se mønstre.')}</p>
                     <Link
                         to="/log"
                         className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-xl font-medium"
                     >
-                        Opprett første logg
+                        {t('heatmap.createFirst', 'Opprett første logg')}
                     </Link>
                 </motion.div>
             )}
+
+            {/* Cell Details Modal */}
+            <AnimatePresence>
+                {selectedCell && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+                        onClick={() => setSelectedCell(null)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-slate-900 rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-white/10"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-white text-lg font-bold">
+                                    {selectedCell.dayLabel} {selectedCell.timeLabel}
+                                </h3>
+                                <button
+                                    onClick={() => setSelectedCell(null)}
+                                    className="p-2 rounded-full hover:bg-white/10 transition-colors"
+                                    aria-label={t('common.close', 'Lukk')}
+                                >
+                                    <X size={20} className="text-slate-400" />
+                                </button>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3 mb-4">
+                                <div className={`p-4 rounded-xl ${getArousalColor(selectedCell.avgArousal, selectedCell.logCount)}`}>
+                                    <p className="text-white/80 text-xs mb-1">{t('heatmap.avgArousal', 'Snitt Arousal')}</p>
+                                    <p className="text-white text-2xl font-bold">{selectedCell.avgArousal.toFixed(1)}</p>
+                                </div>
+                                <div className="p-4 rounded-xl bg-white/5">
+                                    <p className="text-slate-400 text-xs mb-1">{t('heatmap.maxArousal', 'Maks Arousal')}</p>
+                                    <p className="text-white text-2xl font-bold">{selectedCell.maxArousal.toFixed(1)}</p>
+                                </div>
+                                <div className="p-4 rounded-xl bg-white/5">
+                                    <p className="text-slate-400 text-xs mb-1">{t('heatmap.logs', 'Logger')}</p>
+                                    <p className="text-white text-2xl font-bold">{selectedCell.logCount}</p>
+                                </div>
+                                <div className={`p-4 rounded-xl ${selectedCell.crisisCount > 0 ? 'bg-red-500/20' : 'bg-white/5'}`}>
+                                    <p className={`text-xs mb-1 ${selectedCell.crisisCount > 0 ? 'text-red-300' : 'text-slate-400'}`}>
+                                        {t('heatmap.crises', 'Kriser')}
+                                    </p>
+                                    <p className={`text-2xl font-bold ${selectedCell.crisisCount > 0 ? 'text-red-400' : 'text-white'}`}>
+                                        {selectedCell.crisisCount}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="text-center">
+                                <span className="text-4xl">{getArousalEmoji(selectedCell.avgArousal, selectedCell.logCount)}</span>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

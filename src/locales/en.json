@@ -332,7 +332,16 @@
         "micUnknownError": "Could not start recording. Try again later.",
         "audioEmptyError": "The recording is empty. Try recording again.",
         "audioEncodingError": "Could not process the audio recording.",
-        "retryEncoding": "Try again"
+        "retryEncoding": "Try again",
+        "recovery": {
+            "title": "Recovery Phase",
+            "subtitle": "When did the child return to baseline?",
+            "timerLabel": "Time since crisis ended",
+            "quickOptions": "Quick Select",
+            "customTime": "Enter minutes...",
+            "markRecovered": "Recovered now",
+            "skip": "Skip (log later)"
+        }
     },
     "reports": {
         "title": "Reports",
@@ -423,7 +432,8 @@
         "title": "IEP Goals",
         "addGoal": "Add New Goal",
         "empty": {
-            "title": "No goals yet"
+            "title": "No goals yet",
+            "summary": "No goals added yet. Add your first goal to start tracking."
         },
         "progression": "Goal Progression",
         "summary": "You are tracking {{count}} of {{total}} goals this week.",
@@ -470,6 +480,7 @@
     "logExplorer": {
         "title": "Log Explorer",
         "subtitle": "History and management",
+        "compare": "Compare",
         "chartTitle": "Arousal Patterns (Last 24h)",
         "searchPlaceholder": "Search notes, triggers...",
         "filters": {
@@ -585,7 +596,78 @@
                 "moderate": "Moderate",
                 "weak": "Weak"
             }
+        },
+        "multiFactorPatterns": {
+            "title": "Multi-Factor Patterns",
+            "subtitle": "Complex correlations in the data",
+            "noPatterns": "Not enough data yet",
+            "factors": "Factors",
+            "probability": "Probability",
+            "occurrences": "Occurrences",
+            "pValue": "p-value",
+            "confidence": {
+                "low": "Low",
+                "medium": "Medium",
+                "high": "High"
+            }
+        },
+        "strategyCombinations": {
+            "title": "Strategy Combinations",
+            "subtitle": "Do combinations work better than single strategies?",
+            "successRate": "Success rate",
+            "vsAlone": "vs. alone",
+            "usedCount": "Used {{count}}x"
+        },
+        "recoveryPatterns": {
+            "title": "Recovery Patterns",
+            "subtitle": "Insights into post-crisis recovery time",
+            "avgTime": "Avg Time",
+            "trend": "Trend",
+            "improving": "Improving",
+            "worsening": "Worsening",
+            "stable": "Stable",
+            "vulnerabilityWindow": "Vulnerability Window",
+            "vulnerabilityDesc": "Elevated risk for new crisis for {{minutes}} min after recovery",
+            "accelerators": "Accelerates recovery",
+            "delayers": "Delays recovery",
+            "impactMinutes": "{{minutes}} min impact",
+            "noData": "No recovery data yet",
+            "noDataHint": "Log recovery time after crises to see patterns"
         }
+    },
+    "contextComparison": {
+        "title": "Home vs. School",
+        "subtitle": "Compare patterns across contexts",
+        "sideBySide": "Side by Side",
+        "differences": "Differences",
+        "home": "Home",
+        "school": "School",
+        "metrics": {
+            "logs": "Logs",
+            "crises": "Crises",
+            "avgArousal": "Avg Arousal",
+            "avgEnergy": "Avg Energy",
+            "avgValence": "Avg Valence",
+            "crisisFrequency": "Crises/day"
+        },
+        "topTriggers": "Top Triggers",
+        "topStrategies": "Top Strategies",
+        "successRate": "Success",
+        "arousalByHour": "Arousal throughout the day",
+        "triggerComparison": "Trigger comparison",
+        "significantDifferences": "Significant differences",
+        "significance": {
+            "low": "Low",
+            "medium": "Medium",
+            "high": "High"
+        },
+        "noDifferences": "No significant differences found",
+        "noData": "Not enough data for comparison",
+        "noDataHint": "Log data in both contexts (home and school) to see comparison",
+        "notEnoughData": "Not enough data",
+        "notEnoughDataDesc": "Log at least 5 events in both home and school contexts to see comparison.",
+        "noSignificantDiff": "No significant differences",
+        "patternsMatch": "Patterns are relatively similar in both contexts"
     },
     "sensoryProfile": {
         "title": "Sensory Profile",
@@ -615,6 +697,55 @@
             "highStressText": "{{trigger}} is present in {{percentage}}% of high arousal cases.",
             "logMoreData": "Log More Data",
             "logMoreDataText": "More data needed to identify clear sensory patterns."
+        }
+    },
+    "heatmap": {
+        "title": "Dysregulation Heatmap",
+        "noData": "No data yet",
+        "noDataHint": "Start by logging some events to see patterns.",
+        "createFirst": "Create first log",
+        "tapForDetails": "Tap a cell for details",
+        "avgArousal": "Avg Arousal",
+        "maxArousal": "Max Arousal",
+        "logs": "Logs",
+        "crises": "Crises",
+        "vulnerableTimes": "Vulnerable Times",
+        "insights": "Insights",
+        "mainFinding": "Main Finding",
+        "tip": "Tip"
+    },
+    "domain": {
+        "triggers": {
+            "Auditiv": "Auditory",
+            "Visuell": "Visual",
+            "Taktil": "Tactile",
+            "Vestibulær": "Vestibular",
+            "Interosepsjon": "Interoception",
+            "Kjemisk": "Chemical",
+            "Krav": "Demands",
+            "Overgang": "Transition",
+            "Uforutsigbarhet": "Unpredictability",
+            "Sosial": "Social",
+            "Ventetid": "Waiting",
+            "Trengsel": "Crowding",
+            "Temperatur": "Temperature",
+            "Lys": "Light"
+        },
+        "strategies": {
+            "Skjerming": "Shielding",
+            "Hodetelefoner": "Headphones",
+            "Dypt Trykk": "Deep Pressure",
+            "Kjent Aktivitet": "Familiar Activity",
+            "Musikk": "Music",
+            "Timer/Visuell Støtte": "Timer/Visual Support",
+            "Bevegelse": "Movement",
+            "Pustøvelser": "Breathing Exercises",
+            "Fidget": "Fidget",
+            "Tyngdedyne": "Weighted Blanket",
+            "Avledning": "Distraction",
+            "Forutsigbar Plan": "Predictable Plan",
+            "Reduserte Krav": "Reduced Demands",
+            "Validering": "Validation"
         }
     },
     "notFound": {

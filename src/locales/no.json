@@ -332,7 +332,16 @@
         "micUnknownError": "Kunne ikke starte opptak. Prøv igjen senere.",
         "audioEmptyError": "Opptaket er tomt. Prøv å ta opp på nytt.",
         "audioEncodingError": "Kunne ikke behandle lydopptaket.",
-        "retryEncoding": "Prøv igjen"
+        "retryEncoding": "Prøv igjen",
+        "recovery": {
+            "title": "Gjenopprettingsfase",
+            "subtitle": "Når var barnet tilbake til normalt?",
+            "timerLabel": "Tid siden krise slutt",
+            "quickOptions": "Hurtigvalg",
+            "customTime": "Angi minutter...",
+            "markRecovered": "Gjenopprettet nå",
+            "skip": "Hopp over (logg senere)"
+        }
     },
     "reports": {
         "title": "Rapporter",
@@ -423,7 +432,8 @@
         "title": "IEP Mål",
         "addGoal": "Legg til nytt mål",
         "empty": {
-            "title": "Ingen mål ennå"
+            "title": "Ingen mål ennå",
+            "summary": "Ingen mål lagt til ennå. Legg til ditt første mål for å starte sporing."
         },
         "progression": "Målprogresjon",
         "summary": "Du følger {{count}} av {{total}} mål denne uken.",
@@ -470,6 +480,7 @@
     "logExplorer": {
         "title": "Loggutforsker",
         "subtitle": "Historikk og administrasjon",
+        "compare": "Sammenlign",
         "chartTitle": "Spenningsmønstre (Siste 24t)",
         "searchPlaceholder": "Søk i notater, triggere...",
         "filters": {
@@ -585,7 +596,78 @@
                 "moderate": "Moderat",
                 "weak": "Svak"
             }
+        },
+        "multiFactorPatterns": {
+            "title": "Multi-Faktor Mønstre",
+            "subtitle": "Komplekse sammenhenger i dataene",
+            "noPatterns": "Ikke nok data ennå",
+            "factors": "Faktorer",
+            "probability": "Sannsynlighet",
+            "occurrences": "Forekomster",
+            "pValue": "p-verdi",
+            "confidence": {
+                "low": "Lav",
+                "medium": "Moderat",
+                "high": "Høy"
+            }
+        },
+        "strategyCombinations": {
+            "title": "Strategi-Kombinasjoner",
+            "subtitle": "Fungerer kombinasjoner bedre enn enkeltstrategier?",
+            "successRate": "Suksessrate",
+            "vsAlone": "vs. alene",
+            "usedCount": "Brukt {{count}}x"
+        },
+        "recoveryPatterns": {
+            "title": "Gjenopprettingsmønstre",
+            "subtitle": "Innsikt i restitusjonstid etter kriser",
+            "avgTime": "Gj.snitt Tid",
+            "trend": "Trend",
+            "improving": "Bedring",
+            "worsening": "Forverring",
+            "stable": "Stabil",
+            "vulnerabilityWindow": "Sårbarhetsvindu",
+            "vulnerabilityDesc": "Forhøyet risiko for ny krise i {{minutes}} min etter gjenoppretting",
+            "accelerators": "Fremskynder gjenoppretting",
+            "delayers": "Forsinker gjenoppretting",
+            "impactMinutes": "{{minutes}} min effekt",
+            "noData": "Ingen gjenopprettingsdata ennå",
+            "noDataHint": "Logg gjenopprettingstid etter kriser for å se mønstre"
         }
+    },
+    "contextComparison": {
+        "title": "Hjemme vs. Skole",
+        "subtitle": "Sammenlign mønstre på tvers av kontekster",
+        "sideBySide": "Side om Side",
+        "differences": "Forskjeller",
+        "home": "Hjemme",
+        "school": "Skole",
+        "metrics": {
+            "logs": "Logger",
+            "crises": "Kriser",
+            "avgArousal": "Snitt Arousal",
+            "avgEnergy": "Snitt Energi",
+            "avgValence": "Snitt Valens",
+            "crisisFrequency": "Kriser/dag"
+        },
+        "topTriggers": "Topp Utløsere",
+        "topStrategies": "Topp Strategier",
+        "successRate": "Suksess",
+        "arousalByHour": "Arousal gjennom dagen",
+        "triggerComparison": "Trigger-sammenligning",
+        "significantDifferences": "Betydelige forskjeller",
+        "significance": {
+            "low": "Lav",
+            "medium": "Moderat",
+            "high": "Høy"
+        },
+        "noDifferences": "Ingen betydelige forskjeller funnet",
+        "noData": "Ikke nok data for sammenligning",
+        "noDataHint": "Logg data i begge kontekster (hjemme og skole) for å se sammenligning",
+        "notEnoughData": "Ikke nok data",
+        "notEnoughDataDesc": "Logg minst 5 hendelser i både hjemme- og skolekontekst for å se sammenligning.",
+        "noSignificantDiff": "Ingen vesentlige forskjeller",
+        "patternsMatch": "Mønstrene er relativt like i begge kontekster"
     },
     "sensoryProfile": {
         "title": "Sensorisk Profil",
@@ -615,6 +697,55 @@
             "highStressText": "{{trigger}} er tilstede i {{percentage}}% av tilfeller med høy arousal.",
             "logMoreData": "Logg Mer Data",
             "logMoreDataText": "Mer data trengs for å identifisere tydelige sensoriske mønstre."
+        }
+    },
+    "heatmap": {
+        "title": "Dysreguleringskart",
+        "noData": "Ingen data ennå",
+        "noDataHint": "Start med å logge noen hendelser for å se mønstre.",
+        "createFirst": "Opprett første logg",
+        "tapForDetails": "Trykk på en celle for detaljer",
+        "avgArousal": "Snitt Arousal",
+        "maxArousal": "Maks Arousal",
+        "logs": "Logger",
+        "crises": "Kriser",
+        "vulnerableTimes": "Sårbare Tidspunkt",
+        "insights": "Innsikt",
+        "mainFinding": "Hovedfunn",
+        "tip": "Tips"
+    },
+    "domain": {
+        "triggers": {
+            "Auditiv": "Auditiv",
+            "Visuell": "Visuell",
+            "Taktil": "Taktil",
+            "Vestibulær": "Vestibulær",
+            "Interosepsjon": "Interosepsjon",
+            "Kjemisk": "Kjemisk",
+            "Krav": "Krav",
+            "Overgang": "Overgang",
+            "Uforutsigbarhet": "Uforutsigbarhet",
+            "Sosial": "Sosial",
+            "Ventetid": "Ventetid",
+            "Trengsel": "Trengsel",
+            "Temperatur": "Temperatur",
+            "Lys": "Lys"
+        },
+        "strategies": {
+            "Skjerming": "Skjerming",
+            "Hodetelefoner": "Hodetelefoner",
+            "Dypt Trykk": "Dypt Trykk",
+            "Kjent Aktivitet": "Kjent Aktivitet",
+            "Musikk": "Musikk",
+            "Timer/Visuell Støtte": "Timer/Visuell Støtte",
+            "Bevegelse": "Bevegelse",
+            "Pustøvelser": "Pustøvelser",
+            "Fidget": "Fidget",
+            "Tyngdedyne": "Tyngdedyne",
+            "Avledning": "Avledning",
+            "Forutsigbar Plan": "Forutsigbar Plan",
+            "Reduserte Krav": "Reduserte Krav",
+            "Validering": "Validering"
         }
     },
     "notFound": {

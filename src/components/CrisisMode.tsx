@@ -41,6 +41,12 @@ export const CrisisMode: React.FC = () => {
     const [resolution, setResolution] = useState<CrisisResolution>('co_regulated');
     const [notes, setNotes] = useState('');
 
+    // Recovery capture state
+    const [showRecoveryCapture, setShowRecoveryCapture] = useState(false);
+    const [recoveryTime, setRecoveryTime] = useState<number | undefined>(undefined);
+    const [recoveryStartTime, setRecoveryStartTime] = useState<Date | null>(null);
+    const [recoveryElapsed, setRecoveryElapsed] = useState(0);
+
     // Audio Recording refs - declared early so cleanup effect can access them
     const mediaRecorderRef = React.useRef<MediaRecorder | null>(null);
     const audioChunksRef = React.useRef<Blob[]>([]);
@@ -127,6 +133,18 @@ export const CrisisMode: React.FC = () => {
         const remainingSeconds = totalSeconds % 60;
         return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
     };
+
+    // Recovery timer effect
+    useEffect(() => {
+        if (!showRecoveryCapture || !recoveryStartTime) return;
+
+        const interval = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - recoveryStartTime.getTime()) / 1000);
+            setRecoveryElapsed(elapsed);
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [showRecoveryCapture, recoveryStartTime]);
 
     // Audio Recording Logic
     const blobToBase64 = (blob: Blob): Promise<string> => {
@@ -261,7 +279,42 @@ export const CrisisMode: React.FC = () => {
     };
 
     const handleSave = () => {
-        // Save crisis event to store
+        // Transition to recovery capture phase
+        setShowDetailsForm(false);
+        setShowRecoveryCapture(true);
+        setRecoveryStartTime(new Date());
+    };
+
+    const handleSaveWithRecovery = () => {
+        // Validate recovery time (must be between 1 and 240 minutes)
+        const validRecoveryTime = recoveryTime !== undefined
+            ? Math.max(1, Math.min(240, Math.round(recoveryTime)))
+            : undefined;
+
+        // Save crisis event with recovery time
+        addCrisisEvent({
+            id: uuidv4(),
+            timestamp: startTime,
+            context: currentContext,
+            type: crisisType,
+            durationSeconds: seconds,
+            peakIntensity,
+            warningSignsObserved,
+            sensoryTriggers,
+            contextTriggers,
+            strategiesUsed,
+            resolution,
+            hasAudioRecording: !!audioUrl,
+            audioUrl: audioUrl || undefined,
+            notes,
+            recoveryTimeMinutes: validRecoveryTime
+        });
+
+        navigate('/');
+    };
+
+    const handleSkipRecovery = () => {
+        // Save without recovery time
         addCrisisEvent({
             id: uuidv4(),
             timestamp: startTime,
@@ -279,6 +332,31 @@ export const CrisisMode: React.FC = () => {
             notes
         });
 
+        navigate('/');
+    };
+
+    const handleMarkRecoveredNow = () => {
+        // Use elapsed time since crisis end as recovery time
+        const recoveryMins = Math.max(1, Math.round(recoveryElapsed / 60));
+        setRecoveryTime(recoveryMins);
+        // Then save
+        addCrisisEvent({
+            id: uuidv4(),
+            timestamp: startTime,
+            context: currentContext,
+            type: crisisType,
+            durationSeconds: seconds,
+            peakIntensity,
+            warningSignsObserved,
+            sensoryTriggers,
+            contextTriggers,
+            strategiesUsed,
+            resolution,
+            hasAudioRecording: !!audioUrl,
+            audioUrl: audioUrl || undefined,
+            notes,
+            recoveryTimeMinutes: recoveryMins
+        });
         navigate('/');
     };
 
@@ -346,7 +424,7 @@ export const CrisisMode: React.FC = () => {
 
                 {/* Main Content */}
                 <AnimatePresence mode="wait">
-                    {!showDetailsForm ? (
+                    {!showDetailsForm && !showRecoveryCapture ? (
                         // Timer View
                         <motion.div
                             key="timer"
@@ -354,7 +432,7 @@ export const CrisisMode: React.FC = () => {
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             transition={{ duration: prefersReducedMotion ? 0 : 0.15 }}
-                            className="flex-1 flex flex-col items-center justify-center gap-8"
+                            className="flex-1 flex flex-col items-center justify-center gap-8 pb-24"
                         >
                             <motion.div
                                 initial={prefersReducedMotion ? { opacity: 1 } : { scale: 0.9, opacity: 0 }}
@@ -446,7 +524,7 @@ export const CrisisMode: React.FC = () => {
                                 {t('crisis.recordingActive')}
                             </p>
                         </motion.div>
-                    ) : (
+                    ) : showDetailsForm && !showRecoveryCapture ? (
                         // Details Form
                         <motion.div
                             key="details"
@@ -597,7 +675,115 @@ export const CrisisMode: React.FC = () => {
                                 </div>
                             </div>
                         </motion.div>
-                    )}
+                    ) : showRecoveryCapture ? (
+                        // Recovery Capture Phase
+                        <motion.div
+                            key="recovery"
+                            initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0 }}
+                            transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.2 }}
+                            className="flex-1 flex flex-col items-center justify-center gap-6 px-4"
+                        >
+                            {/* Recovery Timer */}
+                            <div className="text-center mb-4">
+                                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-green-500/20 border-2 border-green-500/50 flex items-center justify-center">
+                                    <CheckCircle size={40} className="text-green-400" />
+                                </div>
+                                <h2 className="text-xl font-bold text-white mb-2">
+                                    {t('crisis.recovery.title', 'Gjenopprettingsfase')}
+                                </h2>
+                                <p className="text-slate-400 text-sm mb-4">
+                                    {t('crisis.recovery.subtitle', 'Når var barnet tilbake til normalt?')}
+                                </p>
+
+                                {/* Elapsed time since crisis end */}
+                                <div className="bg-slate-800/50 rounded-xl p-4 mb-6">
+                                    <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">
+                                        {t('crisis.recovery.timerLabel', 'Tid siden krise slutt')}
+                                    </p>
+                                    <p className="text-3xl font-bold text-white tabular-nums">
+                                        {formatTime(recoveryElapsed)}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Quick Select Buttons */}
+                            <div className="w-full max-w-sm">
+                                <p className="text-slate-400 text-sm mb-3 text-center">
+                                    {t('crisis.recovery.quickOptions', 'Hurtigvalg')}
+                                </p>
+                                <div className="grid grid-cols-3 gap-2 mb-4">
+                                    {[5, 10, 15, 20, 30, 45].map(mins => (
+                                        <button
+                                            key={mins}
+                                            onClick={() => {
+                                                // Save directly with selected recovery time
+                                                addCrisisEvent({
+                                                    id: uuidv4(),
+                                                    timestamp: startTime,
+                                                    context: currentContext,
+                                                    type: crisisType,
+                                                    durationSeconds: seconds,
+                                                    peakIntensity,
+                                                    warningSignsObserved,
+                                                    sensoryTriggers,
+                                                    contextTriggers,
+                                                    strategiesUsed,
+                                                    resolution,
+                                                    hasAudioRecording: !!audioUrl,
+                                                    audioUrl: audioUrl || undefined,
+                                                    notes,
+                                                    recoveryTimeMinutes: mins
+                                                });
+                                                navigate('/');
+                                            }}
+                                            className="py-3 px-4 rounded-xl text-sm font-medium transition-all bg-slate-800 text-slate-300 hover:bg-slate-700 active:bg-green-500 active:text-white"
+                                        >
+                                            {mins} min
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* Manual Input */}
+                                <div className="flex gap-2 mb-6">
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        max="240"
+                                        value={recoveryTime || ''}
+                                        onChange={(e) => setRecoveryTime(e.target.value ? Number(e.target.value) : undefined)}
+                                        placeholder={t('crisis.recovery.customTime', 'Angi minutter...')}
+                                        className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-green-500"
+                                    />
+                                    {recoveryTime && (
+                                        <button
+                                            onClick={handleSaveWithRecovery}
+                                            className="px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-medium transition-colors"
+                                        >
+                                            OK
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="flex flex-col gap-3">
+                                    <button
+                                        onClick={handleMarkRecoveredNow}
+                                        className="w-full py-4 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold transition-colors shadow-lg shadow-green-500/30"
+                                    >
+                                        {t('crisis.recovery.markRecovered', 'Gjenopprettet nå')} ({Math.max(1, Math.round(recoveryElapsed / 60))} min)
+                                    </button>
+                                    <button
+                                        onClick={handleSkipRecovery}
+                                        className="w-full py-4 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-medium transition-colors"
+                                    >
+                                        {t('crisis.recovery.skip', 'Hopp over (logg senere)')}
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    ) : null}
                 </AnimatePresence>
 
                 {/* Bottom Actions (when showing details form) */}

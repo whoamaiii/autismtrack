@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useLogs } from '../store';
 import { ArousalChart } from './ArousalChart';
 import {
@@ -12,7 +12,8 @@ import {
     Heart,
     MessageSquare,
     Activity,
-    Check
+    Check,
+    GitCompare
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
@@ -21,6 +22,9 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useToast } from './Toast';
 import { STORAGE_KEYS } from '../constants/storage';
+
+// Lazy load ContextComparison
+const ContextComparison = lazy(() => import('./ContextComparison'));
 
 // Constants
 const LOGS_PER_PAGE = 20;
@@ -65,6 +69,9 @@ export const Analysis: React.FC = () => {
 
     // Delete modal state
     const [logToDelete, setLogToDelete] = useState<string | null>(null);
+
+    // Context comparison modal state
+    const [showComparison, setShowComparison] = useState(false);
 
     // Derived state for convenience
     const searchTerm = filters.searchTerm;
@@ -232,6 +239,14 @@ export const Analysis: React.FC = () => {
                             }`}
                     >
                         {t('logExplorer.filters.school')}
+                    </button>
+                    <div className="w-px h-8 bg-white/10 mx-2 self-center" />
+                    <button
+                        onClick={() => setShowComparison(true)}
+                        className="px-4 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-white border border-white/10 hover:border-white/30"
+                    >
+                        <GitCompare size={14} />
+                        {t('logExplorer.compare', 'Sammenlign')}
                     </button>
                 </div>
             </motion.div>
@@ -453,6 +468,19 @@ export const Analysis: React.FC = () => {
                             </div>
                         </motion.div>
                     </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Context Comparison Overlay */}
+            <AnimatePresence>
+                {showComparison && (
+                    <Suspense fallback={
+                        <div className="fixed inset-0 z-50 bg-background-dark flex items-center justify-center">
+                            <div className="animate-pulse text-white">Loading...</div>
+                        </div>
+                    }>
+                        <ContextComparison onClose={() => setShowComparison(false)} />
+                    </Suspense>
                 )}
             </AnimatePresence>
         </div>

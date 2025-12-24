@@ -263,7 +263,7 @@ export const GoalTracking: React.FC = () => {
                                     count: displayGoals.filter(g => getProgressPercent(g) >= 80).length,
                                     total: displayGoals.length
                                 })
-                                : t('goals.empty')}
+                                : t('goals.empty.summary', 'No goals added yet. Add your first goal to start tracking.')}
                         </p>
 
                         <div className="flex justify-between items-end">

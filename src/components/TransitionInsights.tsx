@@ -52,16 +52,31 @@ export const TransitionInsights: React.FC = () => {
                 </div>
 
                 {/* Empty state content */}
-                <div className="flex-1 flex flex-col items-center justify-center text-center py-12">
-                    <div className="w-16 h-16 rounded-full bg-slate-800/50 flex items-center justify-center mb-4">
-                        <BarChart3 className="w-8 h-8 text-slate-500" />
-                    </div>
-                    <p className="text-slate-400 text-lg font-medium mb-2">
+                <div className="flex flex-col items-center justify-center text-center py-20">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.3 }}
+                        className="w-20 h-20 rounded-full bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center mb-6 shadow-lg"
+                    >
+                        <BarChart3 className="w-10 h-10 text-slate-400" />
+                    </motion.div>
+                    <motion.p
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 }}
+                        className="text-slate-300 text-xl font-semibold mb-3"
+                    >
                         {t('transitions.emptyState.noData')}
-                    </p>
-                    <p className="text-sm text-slate-500 max-w-xs">
+                    </motion.p>
+                    <motion.p
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 }}
+                        className="text-sm text-slate-500 max-w-xs leading-relaxed"
+                    >
                         {t('transitions.emptyState.howToStart')}
-                    </p>
+                    </motion.p>
                 </div>
             </div>
         );

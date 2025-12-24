@@ -294,10 +294,12 @@ export const LogEntryForm: React.FC<LogEntryFormProps> = ({ onClose }) => {
 
                     <form
                         onSubmit={handleSubmit}
-                        className="flex-1 overflow-y-auto p-6 flex flex-col gap-8"
+                        className="flex-1 overflow-y-auto flex flex-col"
                         aria-labelledby={`${formId}-title`}
                         noValidate
                     >
+                        {/* Scrollable content area */}
+                        <div className="p-6 flex flex-col gap-8 pb-24">
                         {/* Date & Time with fallback for unsupported browsers */}
                         <div className="flex flex-col gap-2">
                             <label
@@ -533,8 +535,11 @@ export const LogEntryForm: React.FC<LogEntryFormProps> = ({ onClose }) => {
                                 className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl p-4 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary h-32 resize-y transition-all"
                             />
                         </div>
+                        </div>
+                        {/* End scrollable content */}
 
-                        <div className="p-6 border-t border-slate-100 dark:border-white/5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl sticky bottom-0 z-10">
+                        {/* Fixed button at bottom */}
+                        <div className="p-6 border-t border-slate-100 dark:border-white/5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl">
                             <motion.button
                                 type="submit"
                                 whileTap={{ scale: 0.98 }}

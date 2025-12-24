@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Play, AlertTriangle, Brain, Calendar, Loader2, RefreshCw, TrendingUp, Shield, Zap } from 'lucide-react';
+import { ArrowLeft, Play, AlertTriangle, Brain, Calendar, Loader2, RefreshCw, TrendingUp, Shield, Zap, Layers, ChevronDown, ChevronUp, Combine, Clock, Heart, TrendingDown, Minus, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import { useLogs, useCrisis, useChildProfile } from '../store';
 import { analyzeLogs, analyzeLogsDeep } from '../services/ai';
 import type { AnalysisResult, LogEntry } from '../types';
 import { getModelDisplayName } from '../utils/modelUtils';
+import { analyzeMultiFactorPatterns, analyzeStrategyCombinations } from '../utils/multiFactorAnalysis';
+import { analyzeRecoveryPatterns } from '../utils/recoveryAnalysis';
 
 // Helper to calculate strategy effectiveness from logs
 const calculateStrategyEffectiveness = (logs: LogEntry[]) => {
@@ -99,6 +101,13 @@ export const BehaviorInsights: React.FC = () => {
     const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [dateRange, setDateRange] = useState<'7' | '30' | '90'>('30');
+    const [isInitialLoading, setIsInitialLoading] = useState(true);
+
+    // Brief loading state for perceived performance
+    useEffect(() => {
+        const timer = setTimeout(() => setIsInitialLoading(false), 100);
+        return () => clearTimeout(timer);
+    }, []);
 
     // Filter logs by date range
     const filteredLogs = useMemo(() => {
@@ -120,6 +129,27 @@ export const BehaviorInsights: React.FC = () => {
     // Calculate derived data
     const strategyData = useMemo(() => calculateStrategyEffectiveness(filteredLogs), [filteredLogs]);
     const heatmapData = useMemo(() => buildHeatmapData(filteredLogs), [filteredLogs]);
+
+    // Calculate multi-factor patterns
+    const multiFactorPatterns = useMemo(() =>
+        analyzeMultiFactorPatterns(filteredLogs, filteredCrisis),
+        [filteredLogs, filteredCrisis]
+    );
+
+    // Calculate strategy combinations
+    const strategyCombos = useMemo(() =>
+        analyzeStrategyCombinations(filteredLogs),
+        [filteredLogs]
+    );
+
+    // Calculate recovery patterns
+    const recoveryAnalysis = useMemo(() =>
+        analyzeRecoveryPatterns(filteredCrisis, filteredLogs),
+        [filteredCrisis, filteredLogs]
+    );
+
+    // State for expandable pattern cards
+    const [expandedPatterns, setExpandedPatterns] = useState<Set<string>>(new Set());
 
     // Track mounted state for async operations
     const isMountedRef = React.useRef(true);
@@ -211,6 +241,32 @@ export const BehaviorInsights: React.FC = () => {
     // Time period labels and keys (including night)
     const timeKeys = ['morning', 'midday', 'afternoon', 'evening', 'night'] as const;
     const getTimeLabel = (time: string) => t(`behaviorInsights.heatmap.times.${time}`);
+
+    // Loading skeleton component
+    if (isInitialLoading) {
+        return (
+            <div className="flex flex-col gap-4 animate-pulse">
+                {/* Header skeleton */}
+                <div className="sticky top-0 z-10 flex items-center p-4 pb-2 justify-between rounded-b-xl -mx-4 -mt-4 mb-2 border-b border-white/10">
+                    <div className="w-10 h-10 rounded-full bg-slate-700" />
+                    <div className="h-6 w-48 bg-slate-700 rounded" />
+                    <div className="w-10 h-10" />
+                </div>
+                {/* Filter skeleton */}
+                <div className="flex gap-2 px-4">
+                    <div className="h-8 w-20 bg-slate-700 rounded-full" />
+                    <div className="h-8 w-20 bg-slate-700 rounded-full" />
+                    <div className="h-8 w-20 bg-slate-700 rounded-full" />
+                </div>
+                {/* Content skeleton */}
+                <div className="px-4 space-y-4">
+                    <div className="h-40 bg-slate-800 rounded-2xl" />
+                    <div className="h-32 bg-slate-800 rounded-2xl" />
+                    <div className="h-48 bg-slate-800 rounded-2xl" />
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col gap-4">
@@ -627,6 +683,343 @@ export const BehaviorInsights: React.FC = () => {
                     </div>
                 </motion.div>
             )}
+
+            {/* Multi-Factor Patterns Section */}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.55 }}
+            >
+                <div className="liquid-glass-card p-6 rounded-3xl">
+                    <div className="flex items-center gap-2 mb-1">
+                        <Layers size={22} className="text-indigo-400" />
+                        <h2 className="text-white text-[22px] font-bold leading-tight tracking-[-0.015em]">
+                            {t('behaviorInsights.multiFactorPatterns.title', 'Multi-Faktor Mønstre')}
+                        </h2>
+                    </div>
+                    <p className="text-slate-400 text-base font-normal leading-normal">
+                        {t('behaviorInsights.multiFactorPatterns.subtitle', 'Komplekse sammenhenger i dataene')}
+                    </p>
+
+                    {multiFactorPatterns.length > 0 ? (
+                        <div className="space-y-3 mt-5">
+                            {multiFactorPatterns.slice(0, 5).map((pattern, i) => {
+                                const isExpanded = expandedPatterns.has(pattern.id);
+                                const confidenceColors = {
+                                    high: 'bg-green-500/20 text-green-400 ring-green-500/30',
+                                    medium: 'bg-yellow-500/20 text-yellow-400 ring-yellow-500/30',
+                                    low: 'bg-slate-500/20 text-slate-400 ring-slate-500/30'
+                                };
+
+                                return (
+                                    <motion.div
+                                        key={pattern.id}
+                                        initial={{ opacity: 0, x: -20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: 0.55 + i * 0.08 }}
+                                        className="bg-indigo-500/10 ring-1 ring-indigo-500/20 rounded-xl overflow-hidden"
+                                    >
+                                        <button
+                                            onClick={() => {
+                                                setExpandedPatterns(prev => {
+                                                    const next = new Set(prev);
+                                                    if (next.has(pattern.id)) {
+                                                        next.delete(pattern.id);
+                                                    } else {
+                                                        next.add(pattern.id);
+                                                    }
+                                                    return next;
+                                                });
+                                            }}
+                                            className="w-full p-4 text-left flex items-start justify-between gap-3"
+                                            aria-expanded={isExpanded}
+                                            aria-controls={`pattern-details-${pattern.id}`}
+                                            aria-label={`${pattern.description}. ${isExpanded ? 'Collapse' : 'Expand'} for details`}
+                                        >
+                                            <div className="flex-1">
+                                                <p className="text-white font-medium text-sm leading-relaxed">
+                                                    {pattern.description}
+                                                </p>
+                                                <div className="flex items-center gap-2 mt-2">
+                                                    <span className={`text-xs px-2 py-0.5 rounded-full ring-1 ${confidenceColors[pattern.confidence]}`}>
+                                                        {t(`behaviorInsights.multiFactorPatterns.confidence.${pattern.confidence}`, pattern.confidence)}
+                                                    </span>
+                                                    <span className="text-xs text-slate-500">
+                                                        {Math.round(pattern.probability * 100)}% {t('behaviorInsights.multiFactorPatterns.probability', 'sannsynlighet')}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="text-slate-400 mt-1">
+                                                {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                                            </div>
+                                        </button>
+
+                                        <AnimatePresence>
+                                            {isExpanded && (
+                                                <motion.div
+                                                    initial={{ height: 0, opacity: 0 }}
+                                                    animate={{ height: 'auto', opacity: 1 }}
+                                                    exit={{ height: 0, opacity: 0 }}
+                                                    transition={{ duration: 0.2 }}
+                                                    className="overflow-hidden"
+                                                    id={`pattern-details-${pattern.id}`}
+                                                >
+                                                    <div className="px-4 pb-4 pt-0 border-t border-indigo-500/20">
+                                                        <div className="grid grid-cols-2 gap-3 mt-3 text-xs">
+                                                            <div className="bg-white/5 rounded-lg p-2">
+                                                                <span className="text-slate-400">{t('behaviorInsights.multiFactorPatterns.occurrences', 'Forekomster')}</span>
+                                                                <p className="text-white font-medium">{pattern.occurrenceCount} / {pattern.totalOccasions}</p>
+                                                            </div>
+                                                            <div className="bg-white/5 rounded-lg p-2">
+                                                                <span className="text-slate-400">{t('behaviorInsights.multiFactorPatterns.pValue', 'p-verdi')}</span>
+                                                                <p className="text-white font-medium">{pattern.pValue.toFixed(4)}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="mt-3">
+                                                            <span className="text-slate-400 text-xs">{t('behaviorInsights.multiFactorPatterns.factors', 'Faktorer')}:</span>
+                                                            <div className="flex flex-wrap gap-1.5 mt-1">
+                                                                {pattern.factors.map((factor, fi) => (
+                                                                    <span
+                                                                        key={fi}
+                                                                        className="text-xs px-2 py-1 rounded bg-indigo-500/20 text-indigo-300"
+                                                                    >
+                                                                        {factor.type}: {String(factor.value)}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </motion.div>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <div className="py-8 text-center text-slate-500">
+                            <Layers size={32} className="mx-auto mb-2 opacity-50" />
+                            <p>{t('behaviorInsights.multiFactorPatterns.noPatterns', 'Ikke nok data ennå')}</p>
+                        </div>
+                    )}
+                </div>
+            </motion.div>
+
+            {/* Strategy Combinations Section */}
+            {strategyCombos.length > 0 && (
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6 }}
+                >
+                    <div className="liquid-glass-card p-6 rounded-3xl">
+                        <div className="flex items-center gap-2 mb-1">
+                            <Combine size={22} className="text-purple-400" />
+                            <h2 className="text-white text-[22px] font-bold leading-tight tracking-[-0.015em]">
+                                {t('behaviorInsights.strategyCombinations.title', 'Strategi-Kombinasjoner')}
+                            </h2>
+                        </div>
+                        <p className="text-slate-400 text-base font-normal leading-normal">
+                            {t('behaviorInsights.strategyCombinations.subtitle', 'Fungerer kombinasjoner bedre enn enkeltstrategier?')}
+                        </p>
+
+                        <div className="space-y-4 mt-5">
+                            {strategyCombos.slice(0, 4).map((combo, i) => {
+                                const improvement = combo.comparedToSingleStrategy;
+                                const isPositive = improvement > 0;
+
+                                return (
+                                    <motion.div
+                                        key={combo.strategies.join('-')}
+                                        initial={{ opacity: 0, x: -20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: 0.6 + i * 0.08 }}
+                                        className="bg-purple-500/10 ring-1 ring-purple-500/20 rounded-xl p-4"
+                                    >
+                                        <div className="flex flex-wrap gap-1.5 mb-3">
+                                            {combo.strategies.map((strategy, si) => (
+                                                <span
+                                                    key={si}
+                                                    className="text-xs px-2 py-1 rounded-full bg-purple-500/20 text-purple-300 ring-1 ring-purple-500/30"
+                                                >
+                                                    {strategy}
+                                                </span>
+                                            ))}
+                                        </div>
+                                        <div className="flex items-center justify-between text-sm">
+                                            <div>
+                                                <span className="text-slate-400">{t('behaviorInsights.strategyCombinations.successRate', 'Suksessrate')}: </span>
+                                                <span className="text-white font-medium">{combo.successRate}%</span>
+                                            </div>
+                                            <div className={`flex items-center gap-1 ${isPositive ? 'text-green-400' : 'text-orange-400'}`}>
+                                                {isPositive ? <TrendingUp size={14} /> : null}
+                                                <span className="text-xs">
+                                                    {isPositive ? '+' : ''}{improvement}% {t('behaviorInsights.strategyCombinations.vsAlone', 'vs. alene')}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <p className="text-xs text-slate-500 mt-1">
+                                            {t('behaviorInsights.strategyCombinations.usedCount', { count: combo.usageCount })}
+                                        </p>
+                                    </motion.div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </motion.div>
+            )}
+
+            {/* Recovery Patterns Section */}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.65 }}
+            >
+                <div className="liquid-glass-card p-6 rounded-3xl">
+                    <div className="flex items-center gap-2 mb-1">
+                        <Heart size={22} className="text-rose-400" />
+                        <h2 className="text-white text-[22px] font-bold leading-tight tracking-[-0.015em]">
+                            {t('behaviorInsights.recoveryPatterns.title', 'Gjenopprettingsmønstre')}
+                        </h2>
+                    </div>
+                    <p className="text-slate-400 text-base font-normal leading-normal">
+                        {t('behaviorInsights.recoveryPatterns.subtitle', 'Innsikt i restitusjonstid etter kriser')}
+                    </p>
+
+                    {recoveryAnalysis.crisesWithRecoveryData > 0 ? (
+                        <div className="mt-5 space-y-4">
+                            {/* Stats Grid */}
+                            <div className="grid grid-cols-2 gap-3">
+                                {/* Average Recovery Time */}
+                                <div className="bg-rose-500/10 ring-1 ring-rose-500/20 rounded-xl p-4">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Clock size={16} className="text-rose-400" />
+                                        <span className="text-slate-400 text-xs">
+                                            {t('behaviorInsights.recoveryPatterns.avgTime', 'Gj.snitt Tid')}
+                                        </span>
+                                    </div>
+                                    <p className="text-white text-2xl font-bold">
+                                        {Math.round(recoveryAnalysis.avgRecoveryTime)} <span className="text-sm font-normal text-slate-400">min</span>
+                                    </p>
+                                </div>
+
+                                {/* Trend */}
+                                <div className="bg-rose-500/10 ring-1 ring-rose-500/20 rounded-xl p-4">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        {recoveryAnalysis.recoveryTrend === 'improving' ? (
+                                            <TrendingDown size={16} className="text-green-400" />
+                                        ) : recoveryAnalysis.recoveryTrend === 'worsening' ? (
+                                            <TrendingUp size={16} className="text-red-400" />
+                                        ) : (
+                                            <Minus size={16} className="text-slate-400" />
+                                        )}
+                                        <span className="text-slate-400 text-xs">
+                                            {t('behaviorInsights.recoveryPatterns.trend', 'Trend')}
+                                        </span>
+                                    </div>
+                                    <p className={`text-lg font-bold ${
+                                        recoveryAnalysis.recoveryTrend === 'improving' ? 'text-green-400' :
+                                        recoveryAnalysis.recoveryTrend === 'worsening' ? 'text-red-400' :
+                                        'text-slate-300'
+                                    }`}>
+                                        {recoveryAnalysis.recoveryTrend === 'improving'
+                                            ? t('behaviorInsights.recoveryPatterns.improving', 'Bedring')
+                                            : recoveryAnalysis.recoveryTrend === 'worsening'
+                                            ? t('behaviorInsights.recoveryPatterns.worsening', 'Forverring')
+                                            : t('behaviorInsights.recoveryPatterns.stable', 'Stabil')}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Vulnerability Window */}
+                            {recoveryAnalysis.vulnerabilityWindow.durationMinutes > 0 && (
+                                <div className="bg-amber-500/10 ring-1 ring-amber-500/20 rounded-xl p-4">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <AlertCircle size={16} className="text-amber-400" />
+                                        <span className="text-amber-300 font-medium text-sm">
+                                            {t('behaviorInsights.recoveryPatterns.vulnerabilityWindow', 'Sårbarhetsvindu')}
+                                        </span>
+                                    </div>
+                                    <p className="text-slate-300 text-sm">
+                                        {t('behaviorInsights.recoveryPatterns.vulnerabilityDesc', {
+                                            minutes: recoveryAnalysis.vulnerabilityWindow.elevatedRiskPeriod,
+                                            defaultValue: `Forhøyet risiko for ny krise i ${recoveryAnalysis.vulnerabilityWindow.elevatedRiskPeriod} min etter gjenoppretting`
+                                        })}
+                                    </p>
+                                    <p className="text-xs text-slate-500 mt-2">
+                                        Anbefalt buffer: {recoveryAnalysis.vulnerabilityWindow.recommendedBuffer} min
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Factors that accelerate recovery */}
+                            {recoveryAnalysis.factorsAcceleratingRecovery.length > 0 && (
+                                <div>
+                                    <h3 className="text-white text-sm font-bold mb-2 flex items-center gap-2">
+                                        <TrendingDown size={14} className="text-green-400" />
+                                        {t('behaviorInsights.recoveryPatterns.accelerators', 'Fremskynder gjenoppretting')}
+                                    </h3>
+                                    <div className="space-y-2">
+                                        {recoveryAnalysis.factorsAcceleratingRecovery.slice(0, 3).map((factor, i) => (
+                                            <motion.div
+                                                key={factor.factor}
+                                                initial={{ opacity: 0, x: -10 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                transition={{ delay: 0.7 + i * 0.05 }}
+                                                className="flex items-center justify-between bg-green-500/10 ring-1 ring-green-500/20 rounded-lg p-3"
+                                            >
+                                                <span className="text-white text-sm">{factor.factor}</span>
+                                                <span className="text-green-400 text-xs font-medium">
+                                                    -{Math.abs(factor.impactMinutes)} min
+                                                </span>
+                                            </motion.div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Factors that delay recovery */}
+                            {recoveryAnalysis.factorsDelayingRecovery.length > 0 && (
+                                <div>
+                                    <h3 className="text-white text-sm font-bold mb-2 flex items-center gap-2">
+                                        <TrendingUp size={14} className="text-red-400" />
+                                        {t('behaviorInsights.recoveryPatterns.delayers', 'Forsinker gjenoppretting')}
+                                    </h3>
+                                    <div className="space-y-2">
+                                        {recoveryAnalysis.factorsDelayingRecovery.slice(0, 3).map((factor, i) => (
+                                            <motion.div
+                                                key={factor.factor}
+                                                initial={{ opacity: 0, x: -10 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                transition={{ delay: 0.75 + i * 0.05 }}
+                                                className="flex items-center justify-between bg-red-500/10 ring-1 ring-red-500/20 rounded-lg p-3"
+                                            >
+                                                <span className="text-white text-sm">{factor.factor}</span>
+                                                <span className="text-red-400 text-xs font-medium">
+                                                    +{Math.abs(factor.impactMinutes)} min
+                                                </span>
+                                            </motion.div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Data summary */}
+                            <p className="text-xs text-slate-500 text-center pt-2">
+                                Basert på {recoveryAnalysis.crisesWithRecoveryData} av {recoveryAnalysis.totalCrisesAnalyzed} kriser med gjenopprettingsdata
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="py-8 text-center text-slate-500">
+                            <Heart size={32} className="mx-auto mb-2 opacity-50" />
+                            <p>{t('behaviorInsights.recoveryPatterns.noData', 'Ingen gjenopprettingsdata ennå')}</p>
+                            <p className="text-xs mt-1">
+                                {t('behaviorInsights.recoveryPatterns.noDataHint', 'Logg gjenopprettingstid etter kriser for å se mønstre')}
+                            </p>
+                        </div>
+                    )}
+                </div>
+            </motion.div>
 
             <div className="h-5"></div>
         </div>

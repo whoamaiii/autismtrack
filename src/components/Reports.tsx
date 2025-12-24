@@ -7,6 +7,7 @@ import { analyzeLogs } from '../services/ai';
 import type { AnalysisResult } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { translateTrigger, translateStrategy } from '../utils/translateDomain';
 
 type Period = '30_days' | '3_months' | 'this_year';
 
@@ -27,6 +28,13 @@ export const Reports: React.FC = () => {
     const [showPreview, setShowPreview] = useState(false);
     const [previewAnalysis, setPreviewAnalysis] = useState<AnalysisResult | null>(null);
     const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+    const [isInitialLoading, setIsInitialLoading] = useState(true);
+
+    // Brief loading state for perceived performance
+    useEffect(() => {
+        const timer = setTimeout(() => setIsInitialLoading(false), 100);
+        return () => clearTimeout(timer);
+    }, []);
 
     // Track mounted state for async operations
     const isMountedRef = useRef(true);
@@ -83,7 +91,8 @@ export const Reports: React.FC = () => {
         filteredLogs.forEach(l => {
             [...l.sensoryTriggers, ...l.contextTriggers].forEach(trigger => triggers[trigger] = (triggers[trigger] || 0) + 1);
         });
-        const topTrigger = Object.entries(triggers).sort((a, b) => b[1] - a[1])[0]?.[0] || t('reports.noData');
+        const topTriggerRaw = Object.entries(triggers).sort((a, b) => b[1] - a[1])[0]?.[0];
+        const topTrigger = topTriggerRaw ? translateTrigger(topTriggerRaw) : t('reports.noData');
 
         // Find most effective strategy
         const strategies: Record<string, { total: number, helped: number }> = {};
@@ -95,9 +104,10 @@ export const Reports: React.FC = () => {
             });
         });
 
-        const bestStrategy = Object.entries(strategies)
+        const bestStrategyRaw = Object.entries(strategies)
             .filter(([, data]) => data.total >= 3) // Min 3 uses to be significant
-            .sort((a, b) => (b[1].helped / b[1].total) - (a[1].helped / a[1].total))[0]?.[0] || t('reports.noData');
+            .sort((a, b) => (b[1].helped / b[1].total) - (a[1].helped / a[1].total))[0]?.[0];
+        const bestStrategy = bestStrategyRaw ? translateStrategy(bestStrategyRaw) : t('reports.noData');
 
         return { totalIncidents, avgDuration, topTrigger, bestStrategy };
     }, [filteredLogs, filteredCrisis, t]);
@@ -188,6 +198,22 @@ export const Reports: React.FC = () => {
             }
         }
     };
+
+    // Loading skeleton
+    if (isInitialLoading) {
+        return (
+            <div className="flex flex-col gap-6 px-4 py-4 min-h-screen pb-24 animate-pulse">
+                <div className="sticky top-0 z-10 flex items-center p-4 pb-2 justify-between rounded-b-xl -mx-4 -mt-4 mb-2 border-b border-white/10">
+                    <div className="w-10 h-10 rounded-full bg-slate-700" />
+                    <div className="h-6 w-32 bg-slate-700 rounded" />
+                    <div className="w-10 h-10" />
+                </div>
+                <div className="h-40 bg-slate-800 rounded-3xl" />
+                <div className="h-48 bg-slate-800 rounded-3xl" />
+                <div className="h-16 bg-slate-800 rounded-2xl" />
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col gap-6 px-4 py-4 min-h-screen pb-24">

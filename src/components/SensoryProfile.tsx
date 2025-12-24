@@ -12,6 +12,7 @@ import {
     Lightbulb
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { translateTrigger } from '../utils/translateDomain';
 
 // Constants for hexagon chart
 const NUM_AXES = 6;
@@ -153,7 +154,7 @@ export const SensoryProfile: React.FC = () => {
             result.push({
                 icon: <Eye size={24} />,
                 title: t('sensoryProfile.insights.mostFrequent'),
-                text: t('sensoryProfile.insights.mostFrequentText', { trigger: topTrigger[0], percentage }),
+                text: t('sensoryProfile.insights.mostFrequentText', { trigger: translateTrigger(topTrigger[0]), percentage }),
                 color: 'text-primary',
                 bg: 'bg-primary/20',
                 ring: 'ring-primary/30'
@@ -170,7 +171,7 @@ export const SensoryProfile: React.FC = () => {
                 result.push({
                     icon: <AlertTriangle size={24} />,
                     title: t('sensoryProfile.insights.highStress'),
-                    text: t('sensoryProfile.insights.highStressText', { trigger: topCorrelation[0], percentage }),
+                    text: t('sensoryProfile.insights.highStressText', { trigger: translateTrigger(topCorrelation[0]), percentage }),
                     color: 'text-orange-400',
                     bg: 'bg-orange-500/20',
                     ring: 'ring-orange-500/30'
