@@ -165,6 +165,7 @@ function drawTriggerFrequencyChart(doc: jsPDF, logs: LogEntry[], startY: number,
         .sort((a, b) => b[1] - a[1])
         .slice(0, 5);
 
+    if (topTriggers.length === 0) return startY;
     const maxCount = topTriggers[0][1];
 
     // Check page break

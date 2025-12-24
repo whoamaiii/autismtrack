@@ -141,7 +141,9 @@ export function calculateVulnerabilityWindow(
         }
     }
 
-    const reEscalationRate = Math.round((reEscalations / (sortedCrises.length - 1)) * 100);
+    const reEscalationRate = sortedCrises.length > 1
+        ? Math.round((reEscalations / (sortedCrises.length - 1)) * 100)
+        : 0;
 
     // Calculate median time between crises for those that re-escalated quickly
     const quickReescalations = timeBetweenCrises.filter(t => t <= cfg.vulnerabilityWindowMinutes * 2);
