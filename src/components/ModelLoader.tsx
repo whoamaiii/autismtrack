@@ -8,6 +8,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Download, AlertTriangle, CheckCircle, Cpu, Wifi, WifiOff, X, Sparkles } from 'lucide-react';
 import { useModel } from '../contexts/ModelContext';
+import { useTranslation } from 'react-i18next';
 
 // =============================================================================
 // TYPES
@@ -28,6 +29,7 @@ export const ModelLoader: React.FC<ModelLoaderProps> = ({
     onComplete,
     showSkip = true
 }) => {
+    const { t } = useTranslation();
     const {
         isLoaded,
         isLoading,
@@ -70,11 +72,11 @@ export const ModelLoader: React.FC<ModelLoaderProps> = ({
                     </div>
 
                     <h2 className="text-xl font-bold text-white mb-3">
-                        Nettleser ikke støttet
+                        {t('modelLoader.browserNotSupported')}
                     </h2>
 
                     <p className="text-gray-400 mb-6">
-                        {webGPUError || 'WebGPU er ikke tilgjengelig i denne nettleseren. Vennligst bruk Chrome 113+ eller Edge 113+.'}
+                        {webGPUError || t('modelLoader.webGPUNotAvailable')}
                     </p>
 
                     {showSkip && onSkip && (
@@ -82,7 +84,7 @@ export const ModelLoader: React.FC<ModelLoaderProps> = ({
                             onClick={onSkip}
                             className="liquid-glass-active px-6 py-3 rounded-xl text-white font-medium"
                         >
-                            Fortsett uten AI-modell
+                            {t('modelLoader.continueWithoutAI')}
                         </button>
                     )}
                 </motion.div>
@@ -104,18 +106,18 @@ export const ModelLoader: React.FC<ModelLoaderProps> = ({
                     </div>
 
                     <h2 className="text-xl font-bold text-white mb-3">
-                        AI-modell klar!
+                        {t('modelLoader.modelReady')}
                     </h2>
 
                     <p className="text-gray-400 mb-6">
-                        Lokal analyse er aktivert og fungerer offline.
+                        {t('modelLoader.localAnalysisEnabled')}
                     </p>
 
                     <button
                         onClick={onComplete}
                         className="liquid-glass-active px-6 py-3 rounded-xl text-white font-medium"
                     >
-                        Fortsett til appen
+                        {t('modelLoader.continueToApp')}
                     </button>
                 </motion.div>
             </div>
@@ -143,11 +145,11 @@ export const ModelLoader: React.FC<ModelLoaderProps> = ({
                         </div>
 
                         <h2 className="text-xl font-bold text-white mb-2">
-                            Laster AI-modell...
+                            {t('modelLoader.loadingModel')}
                         </h2>
 
                         <p className="text-gray-400 text-sm">
-                            {progressText || 'Initialiserer...'}
+                            {progressText || t('modelLoader.initializing')}
                         </p>
                     </div>
 
@@ -171,7 +173,7 @@ export const ModelLoader: React.FC<ModelLoaderProps> = ({
                     <div className="flex items-center gap-3 p-3 rounded-lg bg-white/5">
                         <Wifi className="w-5 h-5 text-cyan-400 flex-shrink-0" />
                         <p className="text-sm text-gray-400">
-                            Modellen lastes ned en gang og lagres lokalt for offline bruk.
+                            {t('modelLoader.downloadingModel')}
                         </p>
                     </div>
                 </motion.div>
@@ -192,7 +194,7 @@ export const ModelLoader: React.FC<ModelLoaderProps> = ({
                     <button
                         onClick={onSkip}
                         className="absolute top-4 right-4 p-2 rounded-lg text-gray-500 hover:text-white hover:bg-white/10 transition-colors"
-                        aria-label="Hopp over"
+                        aria-label={t('modelLoader.skip')}
                     >
                         <X className="w-5 h-5" />
                     </button>
@@ -205,11 +207,11 @@ export const ModelLoader: React.FC<ModelLoaderProps> = ({
                     </div>
 
                     <h1 className="text-2xl font-bold text-white mb-3">
-                        Last ned AI-modell
+                        {t('modelLoader.downloadAIModel')}
                     </h1>
 
                     <p className="text-gray-400">
-                        For å bruke atferdsanalyse offline, last ned den lokale AI-modellen.
+                        {t('modelLoader.offlineAnalysis')}
                     </p>
                 </div>
 
@@ -225,7 +227,7 @@ export const ModelLoader: React.FC<ModelLoaderProps> = ({
                             <div className="flex items-start gap-3">
                                 <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
                                 <div>
-                                    <p className="text-red-400 font-medium">Nedlasting feilet</p>
+                                    <p className="text-red-400 font-medium">{t('modelLoader.downloadFailed')}</p>
                                     <p className="text-red-400/70 text-sm mt-1">{error}</p>
                                 </div>
                             </div>
@@ -236,34 +238,34 @@ export const ModelLoader: React.FC<ModelLoaderProps> = ({
                 {/* Model info */}
                 <div className="space-y-3 mb-8">
                     <div className="flex items-center justify-between p-3 rounded-lg bg-white/5">
-                        <span className="text-gray-400 text-sm">Modell</span>
-                        <span className="text-white text-sm font-medium">Gemma 2B (optimalisert)</span>
+                        <span className="text-gray-400 text-sm">{t('modelLoader.modelInfo.model')}</span>
+                        <span className="text-white text-sm font-medium">{t('modelLoader.modelInfo.modelName')}</span>
                     </div>
                     <div className="flex items-center justify-between p-3 rounded-lg bg-white/5">
-                        <span className="text-gray-400 text-sm">Størrelse</span>
-                        <span className="text-white text-sm font-medium">~600 MB</span>
+                        <span className="text-gray-400 text-sm">{t('modelLoader.modelInfo.size')}</span>
+                        <span className="text-white text-sm font-medium">{t('modelLoader.modelInfo.sizeValue')}</span>
                     </div>
                     <div className="flex items-center justify-between p-3 rounded-lg bg-white/5">
-                        <span className="text-gray-400 text-sm">VRAM krav</span>
+                        <span className="text-gray-400 text-sm">{t('modelLoader.modelInfo.vramRequired')}</span>
                         <span className="text-white text-sm font-medium">{modelInfo.vramRequired}</span>
                     </div>
                 </div>
 
                 {/* Features */}
                 <div className="mb-8 p-4 rounded-xl bg-gradient-to-r from-cyan-500/10 to-purple-500/10 border border-cyan-500/20">
-                    <h3 className="text-white font-medium mb-3">Fordeler med lokal modell:</h3>
+                    <h3 className="text-white font-medium mb-3">{t('modelLoader.benefits.title')}</h3>
                     <ul className="space-y-2">
                         <li className="flex items-center gap-2 text-sm text-gray-300">
                             <WifiOff className="w-4 h-4 text-cyan-400" />
-                            Fungerer helt offline
+                            {t('modelLoader.benefits.offline')}
                         </li>
                         <li className="flex items-center gap-2 text-sm text-gray-300">
                             <CheckCircle className="w-4 h-4 text-cyan-400" />
-                            Data forblir på enheten
+                            {t('modelLoader.benefits.privacy')}
                         </li>
                         <li className="flex items-center gap-2 text-sm text-gray-300">
                             <Sparkles className="w-4 h-4 text-cyan-400" />
-                            Optimalisert for norsk
+                            {t('modelLoader.benefits.optimized')}
                         </li>
                     </ul>
                 </div>
@@ -275,7 +277,7 @@ export const ModelLoader: React.FC<ModelLoaderProps> = ({
                     className="w-full py-4 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-500 text-white font-semibold flex items-center justify-center gap-3 hover:opacity-90 transition-opacity disabled:opacity-50"
                 >
                     <Download className="w-5 h-5" />
-                    Last ned AI-modell
+                    {t('modelLoader.downloadButton')}
                 </button>
 
                 {/* Skip link */}
@@ -284,7 +286,7 @@ export const ModelLoader: React.FC<ModelLoaderProps> = ({
                         onClick={onSkip}
                         className="w-full mt-4 py-3 text-gray-500 hover:text-gray-300 text-sm transition-colors"
                     >
-                        Hopp over for nå
+                        {t('modelLoader.skipForNow')}
                     </button>
                 )}
             </motion.div>

@@ -1,4 +1,3 @@
-import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { registerSW } from 'virtual:pwa-register'
 import './index.css';
@@ -21,8 +20,7 @@ if ('serviceWorker' in navigator) {
   })
 }
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
+// NOTE: StrictMode disabled due to React 19 + Recharts 3.x compatibility issue
+// Recharts internally uses Redux/Immer which conflicts with React 19's concurrent rendering
+// Re-enable when Recharts fixes this: https://github.com/recharts/recharts/issues
+createRoot(document.getElementById('root')!).render(<App />)

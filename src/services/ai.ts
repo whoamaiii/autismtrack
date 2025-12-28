@@ -74,16 +74,14 @@ export function reportAIError(error: Error, context: Record<string, unknown>): v
 const FREE_MODEL_ID = 'google/gemini-2.0-flash-001';
 
 // PREMIUM models for deep analysis - ordered by preference
-// 1. Grok 4 - xAI's flagship reasoning model (256K context, excellent for behavioral analysis)
-// 2. GPT-5.1 - OpenAI's latest with advanced reasoning
-// 3. Gemini 2.5 Pro - Google's best (1M context, strong multimodal)
+// Using verified OpenRouter model IDs
 const PREMIUM_MODELS = [
-    'x-ai/grok-4',           // Best: Real-time reasoning, 256K context
-    'openai/gpt-5.1',        // Excellent: Advanced reasoning, balanced
-    'google/gemini-2.5-pro', // Fallback: 1M context, strong reasoning
+    'google/gemini-2.5-pro-preview',  // Best: 1M context, strong reasoning
+    'anthropic/claude-3.5-sonnet',     // Excellent: Balanced reasoning and analysis
+    'openai/gpt-4o',                   // Fallback: Fast, reliable multimodal
 ] as const;
 
-// Primary premium model (Grok 4 - currently top-ranked for reasoning)
+// Primary premium model
 const PREMIUM_MODEL_ID = PREMIUM_MODELS[0];
 
 // Fallback if free model fails

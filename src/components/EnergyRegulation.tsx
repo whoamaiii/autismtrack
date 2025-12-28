@@ -141,7 +141,7 @@ export const EnergyRegulation: React.FC = () => {
                         aria-label={t('energyRegulation.chartDescription', { count: todayLogs.length })}
                     >
                         {todayLogs.length > 0 ? (
-                            <ResponsiveContainer width="100%" height="100%" minHeight={200}>
+                            <ResponsiveContainer width="100%" height="100%" minHeight={200} debounce={50}>
                                 <AreaChart data={chartData}>
                                     <defs>
                                         <linearGradient id="colorEnergy" x1="0" y1="0" x2="0" y2="1">

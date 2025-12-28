@@ -228,7 +228,7 @@ export default function ContextComparison({ onClose }: ContextComparisonProps) {
                                             {t('contextComparison.arousalByHour', 'Arousal per time')}
                                         </h3>
                                     </div>
-                                    <ResponsiveContainer width="100%" height={180}>
+                                    <ResponsiveContainer width="100%" height={180} debounce={50}>
                                         <LineChart data={hourlyChartData}>
                                             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
                                             <XAxis
@@ -288,7 +288,7 @@ export default function ContextComparison({ onClose }: ContextComparisonProps) {
                                             {t('contextComparison.triggerComparison', 'Triggere sammenligning')}
                                         </h3>
                                     </div>
-                                    <ResponsiveContainer width="100%" height={200}>
+                                    <ResponsiveContainer width="100%" height={200} debounce={50}>
                                         <BarChart data={triggerChartData} layout="vertical">
                                             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" horizontal={false} />
                                             <XAxis type="number" domain={[0, 100]} stroke="#64748b" fontSize={10} />

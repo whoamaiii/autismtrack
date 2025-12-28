@@ -164,6 +164,9 @@ export const GoalTracking: React.FC = () => {
         return GOAL_CATEGORIES.find(c => c.value === category)?.label || category;
     };
 
+    // Track if we're showing sample goals
+    const showingSamples = goals.length === 0;
+
     // Default goals if none exist - memoized to avoid calling Date.now() on every render
     const displayGoals: Goal[] = useMemo(() => {
         if (goals.length > 0) return goals;
@@ -258,12 +261,12 @@ export const GoalTracking: React.FC = () => {
                             <h3 className="font-bold text-lg">{t('goals.progression')}</h3>
                         </div>
                         <p className="text-indigo-100 mb-6 text-sm">
-                            {goals.length > 0
-                                ? t('goals.summary', {
+                            {showingSamples
+                                ? t('goals.sampleSummary', 'Sample goals shown below. Add your own to start tracking!')
+                                : t('goals.summary', {
                                     count: displayGoals.filter(g => getProgressPercent(g) >= 80).length,
                                     total: displayGoals.length
-                                })
-                                : t('goals.empty.summary', 'No goals added yet. Add your first goal to start tracking.')}
+                                })}
                         </p>
 
                         <div className="flex justify-between items-end">
@@ -292,6 +295,11 @@ export const GoalTracking: React.FC = () => {
                             <div className="flex justify-between items-start mb-3">
                                 <div className="flex-1">
                                     <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                        {goal.id.startsWith('demo-') && (
+                                            <span className="text-[10px] uppercase font-bold px-2 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                                {t('goals.sample', 'Sample')}
+                                            </span>
+                                        )}
                                         <span className="text-[10px] uppercase font-bold px-2 py-1 rounded-full bg-white/10 text-white/70 border border-white/5">
                                             {getCategoryLabel(goal.category)}
                                         </span>
@@ -363,45 +371,24 @@ export const GoalTracking: React.FC = () => {
                         </motion.div>
                     ))}
 
-                    {/* Add Another Goal button - visible when goals exist */}
-                    {goals.length > 0 && (
-                        <motion.button
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: displayGoals.length * 0.1 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => setShowAddGoal(true)}
-                            className="w-full border-2 border-dashed border-white/20 hover:border-primary/50 bg-white/5 hover:bg-primary/10 text-slate-400 hover:text-primary py-4 rounded-2xl font-medium text-sm transition-all flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
-                            aria-label={t('goals.addGoal')}
-                        >
-                            <Plus size={18} aria-hidden="true" />
-                            {t('goals.addGoal')}
-                        </motion.button>
-                    )}
-                </div>
-
-                {goals.length === 0 && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="text-center py-12"
+                    {/* Add Goal button - always visible */}
+                    <motion.button
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: displayGoals.length * 0.1 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setShowAddGoal(true)}
+                        className={`w-full py-4 rounded-2xl font-medium text-sm transition-all flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 ${
+                            showingSamples
+                                ? 'bg-primary text-white shadow-lg shadow-primary/25 hover:shadow-primary/40 neon-glow-blue font-bold'
+                                : 'border-2 border-dashed border-white/20 hover:border-primary/50 bg-white/5 hover:bg-primary/10 text-slate-400 hover:text-primary'
+                        }`}
+                        aria-label={t('goals.addGoal')}
                     >
-                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-indigo-500/10 flex items-center justify-center">
-                            <Target size={32} className="text-indigo-400" />
-                        </div>
-                        <h3 className="text-white font-bold text-lg mb-2">{t('goals.empty.title')}</h3>
-                        <p className="text-slate-400 mb-6 max-w-xs mx-auto text-sm">
-                            {t('goals.noGoals')}
-                        </p>
-                        <motion.button
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => setShowAddGoal(true)}
-                            className="bg-primary text-white px-8 py-4 rounded-2xl font-bold shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all neon-glow-blue"
-                        >
-                            {t('goals.addFirst')}
-                        </motion.button>
-                    </motion.div>
-                )}
+                        <Plus size={18} aria-hidden="true" />
+                        {showingSamples ? t('goals.addFirst', 'Add Your First Goal') : t('goals.addGoal')}
+                    </motion.button>
+                </div>
             </div>
 
             {/* Add Goal Modal */}

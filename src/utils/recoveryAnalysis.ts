@@ -17,6 +17,7 @@ import {
     DEFAULT_RECOVERY_CONFIG,
     type RecoveryAnalysisConfig
 } from './analysisConfig';
+import { safeParseTimestamp, safeParseTimestampWithFallback } from './dateUtils';
 
 // ============================================
 // RECOVERY DETECTION
@@ -33,16 +34,31 @@ function detectRecoveryFromLogs(
 ): RecoveryIndicator {
     const cfg = { ...DEFAULT_RECOVERY_CONFIG, ...config };
 
-    const crisisEndTime = new Date(crisisEvent.timestamp).getTime() + (crisisEvent.durationSeconds * 1000);
+    // Validate crisis timestamp - return early if invalid
+    const crisisStartTime = safeParseTimestamp(crisisEvent.timestamp);
+    if (crisisStartTime === null) {
+        return {
+            crisisId: crisisEvent.id,
+            manualRecoveryTime: crisisEvent.recoveryTimeMinutes,
+            recoveryConfidence: 'unknown'
+        };
+    }
+
+    const crisisEndTime = crisisStartTime + (crisisEvent.durationSeconds * 1000);
     const maxWindowEnd = crisisEndTime + (cfg.maxRecoveryWindow * 60 * 1000);
 
-    // Find logs after crisis within the recovery window
+    // Find logs after crisis within the recovery window (skip logs with invalid timestamps)
     const subsequentLogs = logs
         .filter(log => {
-            const logTime = new Date(log.timestamp).getTime();
+            const logTime = safeParseTimestamp(log.timestamp);
+            if (logTime === null) return false; // Skip invalid timestamps
             return logTime > crisisEndTime && logTime <= maxWindowEnd;
         })
-        .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        .sort((a, b) => {
+            const timeA = safeParseTimestampWithFallback(a.timestamp, 0);
+            const timeB = safeParseTimestampWithFallback(b.timestamp, 0);
+            return timeA - timeB;
+        });
 
     // Find first "normal" log
     const recoveryLog = subsequentLogs.find(log =>
@@ -51,7 +67,14 @@ function detectRecoveryFromLogs(
     );
 
     if (recoveryLog) {
-        const recoveryTime = new Date(recoveryLog.timestamp).getTime();
+        const recoveryTime = safeParseTimestamp(recoveryLog.timestamp);
+        if (recoveryTime === null) {
+            return {
+                crisisId: crisisEvent.id,
+                manualRecoveryTime: crisisEvent.recoveryTimeMinutes,
+                recoveryConfidence: crisisEvent.recoveryTimeMinutes ? 'confirmed' : 'unknown'
+            };
+        }
         const detectedMinutes = Math.round((recoveryTime - crisisEndTime) / (60 * 1000));
 
         return {
@@ -122,12 +145,18 @@ function calculateVulnerabilityWindow(
     }
 
     // Sort crises by timestamp - precompute timestamps for performance
+    // Filter out crises with invalid timestamps
     const sortedCrises = [...crisisEvents]
-        .map(c => ({
-            ...c,
-            startMs: new Date(c.timestamp).getTime(),
-            endMs: new Date(c.timestamp).getTime() + (c.durationSeconds * 1000)
-        }))
+        .map(c => {
+            const startMs = safeParseTimestamp(c.timestamp);
+            return {
+                ...c,
+                startMs: startMs ?? 0,
+                endMs: (startMs ?? 0) + (c.durationSeconds * 1000),
+                hasValidTimestamp: startMs !== null
+            };
+        })
+        .filter(c => c.hasValidTimestamp) // Remove entries with invalid timestamps
         .sort((a, b) => a.startMs - b.startMs);
 
     // Count re-escalations within vulnerability window

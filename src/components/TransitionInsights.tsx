@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, TrendingDown, TrendingUp, Activity, HelpCircle, BarChart3 } from 'lucide-react';
+import { ArrowLeft, TrendingDown, TrendingUp, Activity, HelpCircle, BarChart3, Calendar } from 'lucide-react';
 import { useSchedule } from '../store';
 import { calculateTransitionStats } from '../utils/transitionAnalysis';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, LineChart, Line } from 'recharts';
@@ -52,7 +52,7 @@ export const TransitionInsights: React.FC = () => {
                 </div>
 
                 {/* Empty state content */}
-                <div className="flex flex-col items-center justify-center text-center py-20">
+                <div className="flex flex-col items-center justify-center text-center py-16">
                     <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
@@ -73,10 +73,21 @@ export const TransitionInsights: React.FC = () => {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
-                        className="text-sm text-slate-500 max-w-xs leading-relaxed"
+                        className="text-sm text-slate-500 max-w-xs leading-relaxed mb-6"
                     >
                         {t('transitions.emptyState.howToStart')}
                     </motion.p>
+                    <motion.button
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => navigate('/schedule')}
+                        className="flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all"
+                    >
+                        <Calendar size={18} />
+                        {t('transitions.emptyState.goToSchedule', 'Go to Schedule')}
+                    </motion.button>
                 </div>
             </div>
         );

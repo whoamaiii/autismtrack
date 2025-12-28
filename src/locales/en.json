@@ -128,6 +128,7 @@
         "emptyState": {
             "noData": "No transition data yet",
             "howToStart": "Complete activities and rate their difficulty to see insights.",
+            "goToSchedule": "Go to Schedule",
             "noStrategies": "No strategy data yet. Try logging support during transitions.",
             "noChartData": "Not enough data to display chart"
         }
@@ -467,6 +468,8 @@
         },
         "progression": "Goal Progression",
         "summary": "You are tracking {{count}} of {{total}} goals this week.",
+        "sampleSummary": "Sample goals shown below. Add your own to start tracking!",
+        "sample": "Sample",
         "totalCompletion": "Total Completion",
         "activeGoals": "Active Goals",
         "progress": "Progress",
@@ -815,5 +818,42 @@
         "message": "An error occurred while loading this page.",
         "retry": "Try again",
         "home": "Home"
+    },
+    "modelLoader": {
+        "browserNotSupported": "Browser not supported",
+        "webGPUNotAvailable": "WebGPU is not available in this browser. Please use Chrome 113+ or Edge 113+.",
+        "continueWithoutAI": "Continue without AI model",
+        "modelReady": "AI model ready!",
+        "localAnalysisEnabled": "Local analysis is enabled and works offline.",
+        "continueToApp": "Continue to app",
+        "loadingModel": "Loading AI model...",
+        "initializing": "Initializing...",
+        "downloadingModel": "The model is downloaded once and stored locally for offline use.",
+        "downloadAIModel": "Download AI Model",
+        "offlineAnalysis": "To use behavior analysis offline, download the local AI model.",
+        "downloadFailed": "Download failed",
+        "modelInfo": {
+            "model": "Model",
+            "modelName": "Gemma 2B (optimized)",
+            "size": "Size",
+            "sizeValue": "~600 MB",
+            "vramRequired": "VRAM required"
+        },
+        "benefits": {
+            "title": "Benefits of local model:",
+            "offline": "Works completely offline",
+            "privacy": "Data stays on device",
+            "optimized": "Optimized for Norwegian"
+        },
+        "downloadButton": "Download AI Model",
+        "skipForNow": "Skip for now",
+        "skip": "Skip"
+    },
+    "crisisResolution": {
+        "selfRegulated": "Self-regulated",
+        "coRegulated": "Co-regulated (with help)",
+        "timedOut": "Timed out naturally",
+        "interrupted": "Interrupted",
+        "other": "Other"
     }
 }

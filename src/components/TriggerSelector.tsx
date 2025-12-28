@@ -42,12 +42,13 @@ export const TriggerSelector: React.FC<TriggerSelectorProps> = ({ options, selec
                         onClick={() => toggleOption(option)}
                         className={twMerge(
                             clsx(
-                                "rounded-full px-4 py-2 text-sm font-semibold border backdrop-blur-md transition-all duration-200",
+                                "rounded-full px-4 py-2 text-sm font-semibold border backdrop-blur-md transition-all duration-200 max-w-[180px] truncate",
                                 selected.includes(option)
                                     ? "bg-primary/20 border-primary text-primary shadow-[0_0_12px_0_rgba(76,141,255,0.5)]"
                                     : "bg-white/5 border-slate-200 dark:border-white/20 text-slate-600 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-white/10"
                             )
                         )}
+                        title={translate(option)}
                     >
                         {translate(option)}
                     </button>

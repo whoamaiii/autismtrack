@@ -128,6 +128,7 @@
         "emptyState": {
             "noData": "Ingen overgangsdata ennå",
             "howToStart": "Fullfør aktiviteter og vurder vanskelighetsgrad for å se innsikt.",
+            "goToSchedule": "Gå til Dagsplan",
             "noStrategies": "Ingen data om effektive tiltak ennå. Prøv å logge støtte ved overganger.",
             "noChartData": "Ikke nok data til å vise graf"
         }
@@ -467,6 +468,8 @@
         },
         "progression": "Målprogresjon",
         "summary": "Du følger {{count}} av {{total}} mål denne uken.",
+        "sampleSummary": "Eksempelmål vises nedenfor. Legg til dine egne for å starte!",
+        "sample": "Eksempel",
         "totalCompletion": "Samlet Fullføring",
         "activeGoals": "Aktive Mål",
         "progress": "Fremgang",
@@ -788,5 +791,42 @@
         "message": "En feil oppstod ved lasting av denne siden.",
         "retry": "Prøv igjen",
         "home": "Hjem"
+    },
+    "modelLoader": {
+        "browserNotSupported": "Nettleser ikke støttet",
+        "webGPUNotAvailable": "WebGPU er ikke tilgjengelig i denne nettleseren. Vennligst bruk Chrome 113+ eller Edge 113+.",
+        "continueWithoutAI": "Fortsett uten AI-modell",
+        "modelReady": "AI-modell klar!",
+        "localAnalysisEnabled": "Lokal analyse er aktivert og fungerer offline.",
+        "continueToApp": "Fortsett til appen",
+        "loadingModel": "Laster AI-modell...",
+        "initializing": "Initialiserer...",
+        "downloadingModel": "Modellen lastes ned én gang og lagres lokalt for offline bruk.",
+        "downloadAIModel": "Last ned AI-modell",
+        "offlineAnalysis": "For å bruke atferdsanalyse offline, last ned den lokale AI-modellen.",
+        "downloadFailed": "Nedlasting feilet",
+        "modelInfo": {
+            "model": "Modell",
+            "modelName": "Gemma 2B (optimalisert)",
+            "size": "Størrelse",
+            "sizeValue": "~600 MB",
+            "vramRequired": "VRAM krav"
+        },
+        "benefits": {
+            "title": "Fordeler med lokal modell:",
+            "offline": "Fungerer helt offline",
+            "privacy": "Data forblir på enheten",
+            "optimized": "Optimalisert for norsk"
+        },
+        "downloadButton": "Last ned AI-modell",
+        "skipForNow": "Hopp over for nå",
+        "skip": "Hopp over"
+    },
+    "crisisResolution": {
+        "selfRegulated": "Selvregulert",
+        "coRegulated": "Samregulert (med hjelp)",
+        "timedOut": "Gikk over av seg selv",
+        "interrupted": "Avbrutt",
+        "other": "Annet"
     }
 }

@@ -383,11 +383,11 @@ export const CrisisMode: React.FC = () => {
     };
 
     const resolutionOptions: { value: CrisisResolution; label: string }[] = [
-        { value: 'self_regulated', label: 'Selvregulert' },
-        { value: 'co_regulated', label: 'Samregulert (med hjelp)' },
-        { value: 'timed_out', label: 'Gikk over av seg selv' },
-        { value: 'interrupted', label: 'Avbrutt' },
-        { value: 'other', label: 'Annet' }
+        { value: 'self_regulated', label: t('crisisResolution.selfRegulated') },
+        { value: 'co_regulated', label: t('crisisResolution.coRegulated') },
+        { value: 'timed_out', label: t('crisisResolution.timedOut') },
+        { value: 'interrupted', label: t('crisisResolution.interrupted') },
+        { value: 'other', label: t('crisisResolution.other') }
     ];
 
     return (
