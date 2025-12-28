@@ -32,3 +32,6 @@ dist-ssr
 finetune/
 *.gguf
 *.zip
+
+# Sugar autonomous dev system
+.sugar/

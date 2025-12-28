@@ -9,16 +9,23 @@ import type { Goal } from '../types';
 const TEST_UUID_1 = '11111111-1111-4111-a111-111111111111';
 const TEST_UUID_2 = '22222222-2222-4222-a222-222222222222';
 const TEST_UUID_3 = '33333333-3333-4333-a333-333333333333';
-const TEST_UUID_4 = '44444444-4444-4444-a444-444444444444';
 
 // Mock framer-motion to avoid animation issues in tests
-vi.mock('framer-motion', () => ({
-    motion: {
-        div: ({ children, whileTap, initial, animate, exit, transition, ...props }: React.HTMLAttributes<HTMLDivElement> & Record<string, unknown>) => <div {...props}>{children}</div>,
-        button: ({ children, whileTap, initial, animate, exit, transition, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & Record<string, unknown>) => <button {...props}>{children}</button>,
-    },
-    AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-}));
+vi.mock('framer-motion', () => {
+    const filterMotionProps = (props: Record<string, unknown>) => {
+        const motionKeys = ['whileTap', 'initial', 'animate', 'exit', 'transition', 'whileHover', 'variants'];
+        return Object.fromEntries(Object.entries(props).filter(([key]) => !motionKeys.includes(key)));
+    };
+    return {
+        motion: {
+            div: ({ children, ...props }: { children?: React.ReactNode } & Record<string, unknown>) =>
+                <div {...filterMotionProps(props)}>{children}</div>,
+            button: ({ children, ...props }: { children?: React.ReactNode } & Record<string, unknown>) =>
+                <button {...filterMotionProps(props)}>{children}</button>,
+        },
+        AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+    };
+});
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
@@ -265,9 +272,7 @@ describe('GoalTracking Component', () => {
                 expect(screen.getByText('goals.newGoal')).toBeInTheDocument();
             });
 
-            // Find and click close button
-            const closeButton = screen.getByRole('button', { name: '' }); // X button has no accessible name
-            // Actually find the X button by looking for buttons in the modal header
+            // Find and click close button by looking for buttons in the modal header
             const modalHeader = screen.getByText('goals.newGoal').parentElement;
             const xButton = modalHeader?.querySelector('button');
             if (xButton) {
