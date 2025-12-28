@@ -17,9 +17,6 @@ import {
     Upload,
     Database,
     RefreshCw,
-    Cpu,
-    WifiOff,
-    CheckCircle,
     Sparkles
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -36,7 +33,6 @@ import { useTranslation } from 'react-i18next';
 import { generateUUID } from '../utils/uuid';
 import { useSettings } from '../store';
 import { useToast } from './Toast';
-import { useModel } from '../contexts/ModelContext';
 
 // Multi-select chip component with keyboard accessibility
 const ChipSelect: React.FC<{
@@ -90,177 +86,6 @@ const ChipSelect: React.FC<{
                 );
             })}
         </div>
-    );
-};
-
-// Local AI Model Management Section
-const LocalModelSection: React.FC = () => {
-    const {
-        isLoaded,
-        isLoading,
-        loadProgress,
-        progressText,
-        error,
-        webGPUSupported,
-        webGPUError,
-        modelInfo,
-        loadModel,
-        unloadModel
-    } = useModel();
-
-    const handleDownload = async () => {
-        try {
-            await loadModel();
-        } catch {
-            // Error is handled by context
-        }
-    };
-
-    const handleUnload = async () => {
-        if (confirm('Er du sikker på at du vil fjerne AI-modellen? Du må laste den ned igjen for å bruke offline-analyse.')) {
-            await unloadModel();
-        }
-    };
-
-    // WebGPU not supported
-    if (webGPUSupported === false) {
-        return (
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.25 }}
-                className="liquid-glass-card p-5 rounded-3xl"
-            >
-                <div className="flex items-center gap-2 mb-4">
-                    <Cpu size={18} className="text-red-400" />
-                    <h2 className="text-lg font-bold text-white">Lokal AI-modell</h2>
-                </div>
-                <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20">
-                    <div className="flex items-start gap-3">
-                        <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
-                        <div>
-                            <p className="text-red-400 font-medium">Nettleser ikke støttet</p>
-                            <p className="text-red-400/70 text-sm mt-1">
-                                {webGPUError || 'WebGPU er ikke tilgjengelig. Vennligst bruk Chrome 113+ eller Edge 113+.'}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </motion.div>
-        );
-    }
-
-    return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25 }}
-            className="liquid-glass-card p-5 rounded-3xl space-y-4"
-        >
-            <div className="flex items-center gap-2 mb-4">
-                <Cpu size={18} className="text-cyan-400" />
-                <h2 className="text-lg font-bold text-white">Lokal AI-modell</h2>
-            </div>
-
-            {/* Status */}
-            <div className="flex items-center justify-between p-4 rounded-xl bg-white/5">
-                <div className="flex items-center gap-3">
-                    {isLoaded ? (
-                        <CheckCircle className="w-6 h-6 text-green-400" />
-                    ) : (
-                        <WifiOff className="w-6 h-6 text-slate-400" />
-                    )}
-                    <div>
-                        <p className="text-white font-medium">
-                            {isLoaded ? 'Modell lastet' : 'Modell ikke lastet'}
-                        </p>
-                        <p className="text-xs text-slate-400">
-                            {isLoaded ? 'Analyse fungerer offline' : 'Last ned for offline-bruk'}
-                        </p>
-                    </div>
-                </div>
-                {isLoaded && (
-                    <span className="px-2 py-1 text-xs rounded-full bg-green-500/20 text-green-400">
-                        Aktiv
-                    </span>
-                )}
-            </div>
-
-            {/* Model Info */}
-            <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 rounded-lg bg-white/5">
-                    <p className="text-xs text-slate-400">Modell</p>
-                    <p className="text-sm text-white font-medium">Gemma 2B</p>
-                </div>
-                <div className="p-3 rounded-lg bg-white/5">
-                    <p className="text-xs text-slate-400">Størrelse</p>
-                    <p className="text-sm text-white font-medium">~600 MB</p>
-                </div>
-                <div className="p-3 rounded-lg bg-white/5">
-                    <p className="text-xs text-slate-400">VRAM</p>
-                    <p className="text-sm text-white font-medium">{modelInfo.vramRequired}</p>
-                </div>
-                <div className="p-3 rounded-lg bg-white/5">
-                    <p className="text-xs text-slate-400">Kontekst</p>
-                    <p className="text-sm text-white font-medium">{modelInfo.contextLength} tokens</p>
-                </div>
-            </div>
-
-            {/* Loading Progress */}
-            {isLoading && (
-                <div className="space-y-2">
-                    <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                        <motion.div
-                            className="h-full bg-gradient-to-r from-cyan-500 to-purple-500"
-                            initial={{ width: 0 }}
-                            animate={{ width: `${loadProgress}%` }}
-                            transition={{ duration: 0.3 }}
-                        />
-                    </div>
-                    <div className="flex justify-between text-xs text-slate-400">
-                        <span>{progressText}</span>
-                        <span>{loadProgress}%</span>
-                    </div>
-                </div>
-            )}
-
-            {/* Error */}
-            {error && (
-                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20">
-                    <div className="flex items-center gap-2 text-red-400 text-sm">
-                        <AlertTriangle size={16} />
-                        {error}
-                    </div>
-                </div>
-            )}
-
-            {/* Actions */}
-            <div className="flex gap-3">
-                {!isLoaded ? (
-                    <button
-                        onClick={handleDownload}
-                        disabled={isLoading}
-                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-500 text-white font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
-                    >
-                        <Download size={18} />
-                        {isLoading ? 'Laster...' : 'Last ned AI-modell'}
-                    </button>
-                ) : (
-                    <button
-                        onClick={handleUnload}
-                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-red-500/20 text-red-400 font-medium hover:bg-red-500/30 transition-colors"
-                    >
-                        <Trash2 size={18} />
-                        Fjern modell
-                    </button>
-                )}
-            </div>
-
-            {/* Info note */}
-            <p className="text-xs text-slate-500 text-center">
-                Modellen lastes ned én gang og lagres lokalt for offline bruk.
-            </p>
-        </motion.div>
     );
 };
 
@@ -726,9 +551,6 @@ export const Settings: React.FC = () => {
                     <span>{t('settings.stats.goals')}: {dataStats.goals}</span>
                 </div>
             </motion.div>
-
-            {/* Local AI Model Section */}
-            <LocalModelSection />
 
             {/* Save Profile Button */}
             <div className="flex gap-3">

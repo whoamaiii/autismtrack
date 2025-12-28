@@ -5,6 +5,9 @@
     "code-review@cc-marketplace": true,
     "code-review-assistant@cc-marketplace": true,
     "code-reviewer@cc-marketplace": true,
-    "documentation-generator@cc-marketplace": true
+    "documentation-generator@cc-marketplace": true,
+    "ultrathink@cc-marketplace": true,
+    "refractor@cc-marketplace": true,
+    "workflow-optimizer@cc-marketplace": true
   }
 }

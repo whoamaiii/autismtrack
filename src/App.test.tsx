@@ -1,9 +1,8 @@
-import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import App from './App';
-import { DataProvider, useSettings } from './store';
-import { ModelProvider } from './contexts/ModelContext';
+import { DataProvider } from './store';
 import { ToastProvider } from './components/Toast';
 import React, { type ReactNode } from 'react';
 
@@ -74,24 +73,6 @@ vi.mock('./components/Toast', () => ({
         showError: vi.fn(),
         showWarning: vi.fn(),
         showInfo: vi.fn(),
-    }),
-}));
-
-// Mock ModelContext
-vi.mock('./contexts/ModelContext', () => ({
-    ModelProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
-    useModel: () => ({
-        isLoaded: false,
-        isLoading: false,
-        loadProgress: 0,
-        progressText: '',
-        error: null,
-        webGPUSupported: true,
-        webGPUError: null,
-        modelInfo: { name: 'test-model', size: '100MB' },
-        loadModel: vi.fn(),
-        unloadModel: vi.fn(),
-        checkSupport: vi.fn().mockResolvedValue(true),
     }),
 }));
 
@@ -194,11 +175,9 @@ const renderAppWithRoute = (initialRoute: string = '/') => {
     return render(
         <MemoryRouter initialEntries={[initialRoute]}>
             <DataProvider>
-                <ModelProvider>
-                    <ToastProvider>
-                        <App />
-                    </ToastProvider>
-                </ModelProvider>
+                <ToastProvider>
+                    <App />
+                </ToastProvider>
             </DataProvider>
         </MemoryRouter>
     );
@@ -427,7 +406,7 @@ describe('App Component', () => {
             mockOnboardingCompleted = true;
 
             // The App component should have:
-            // ErrorBoundary > BrowserRouter > DataProvider > ModelProvider > ToastProvider
+            // ErrorBoundary > BrowserRouter > DataProvider > ToastProvider
             const { container } = render(<App />);
 
             // If providers are incorrectly nested, the app would crash

@@ -1,5 +1,28 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
+import React from 'react';
+
+// Mock react-i18next with withTranslation HOC
+vi.mock('react-i18next', () => ({
+    useTranslation: () => ({
+        t: (key: string, fallback?: string | object) => {
+            if (typeof fallback === 'object' && fallback !== null) {
+                return key;
+            }
+            return typeof fallback === 'string' ? fallback : key;
+        },
+        i18n: {
+            language: 'no',
+            changeLanguage: vi.fn(),
+        },
+    }),
+    withTranslation: () => <T extends React.ComponentType<unknown>>(Component: T) => Component,
+    Trans: ({ children }: { children: React.ReactNode }) => children,
+    initReactI18next: {
+        type: '3rdParty',
+        init: vi.fn(),
+    },
+}));
 
 // Mock localStorage for tests
 const localStorageMock = (() => {

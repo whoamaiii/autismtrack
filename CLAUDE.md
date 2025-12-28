@@ -11,7 +11,14 @@ npm run lint     # ESLint validation
 npm run preview  # Preview production build
 npm run test     # Run Vitest in watch mode
 npm run test:run # Run tests once
+npm run test:run -- src/path/to/file.test.ts  # Run single test file
+npm run test -- --coverage                     # Run tests with coverage
 ```
+
+### Test Environment
+- Uses `happy-dom` (fast, lightweight DOM implementation)
+- Setup file: `src/test/setup.ts` (mocks localStorage, matchMedia, crypto.randomUUID)
+- Tests located in: `src/**/*.test.{ts,tsx}`
 
 ## Architecture Overview
 

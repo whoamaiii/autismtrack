@@ -8,13 +8,6 @@ import {
     clearGeminiCache
 } from './gemini';
 import {
-    analyzeLogsWithLocalModel,
-    analyzeLogsDeepWithLocalModel,
-    analyzeLogsStreamingWithLocalModel,
-    getModelStatus,
-    clearLocalModelCache
-} from './localModel';
-import {
     generateLogsHash,
     createAnalysisCache,
     getLogsDateRange,
@@ -30,11 +23,7 @@ import {
 // CONFIGURATION
 // =============================================================================
 
-// Offline-first: Use local model as primary
-// NOTE: Disabled while fine-tuned model is being prepared
-const USE_LOCAL_MODEL_PRIMARY = false;
-
-// Fallback to cloud APIs if local model not loaded
+// Fallback to Gemini if OpenRouter fails
 const USE_GEMINI_FALLBACK = true;
 
 const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || '';
@@ -591,7 +580,7 @@ utgjør en "perfekt storm" for overbelastning.`,
 
 /**
  * Analyzes log entries and crisis events
- * Uses local WebLLM model as primary (offline-first), falls back to cloud APIs
+ * Uses Gemini as primary, falls back to OpenRouter
  *
  * @param logs - Array of log entries to analyze
  * @param crisisEvents - Optional array of crisis events for deeper analysis
@@ -611,22 +600,7 @@ export const analyzeLogs = async (
     // Deduplicate concurrent requests
     const dedupeKey = `regular:${generateLogsHash(logs, crisisEvents)}`;
     return deduplicatedRequest(dedupeKey, async () => {
-    // Try local model first (offline-first approach)
-    if (USE_LOCAL_MODEL_PRIMARY && getModelStatus().loaded) {
-        try {
-            if (import.meta.env.DEV) {
-                console.log('[AI] Using local WebLLM model as primary...');
-            }
-            return await analyzeLogsWithLocalModel(logs, crisisEvents, options);
-        } catch (localError) {
-            if (import.meta.env.DEV) {
-                console.warn('[AI] Local model failed, falling back to cloud:', localError);
-            }
-            // Fall through to cloud APIs
-        }
-    }
-
-    // Fallback to Gemini if local model not available
+    // Try Gemini first
     if (USE_GEMINI_FALLBACK && isGeminiConfigured()) {
         try {
             if (import.meta.env.DEV) {
@@ -723,8 +697,8 @@ export const analyzeLogs = async (
 };
 
 /**
- * Performs DEEP analysis using local model or premium cloud models
- * Uses local WebLLM model as primary (offline-first), falls back to cloud APIs
+ * Performs DEEP analysis using premium cloud models
+ * Uses Gemini as primary, falls back to OpenRouter premium models
  */
 export const analyzeLogsDeep = async (
     logs: LogEntry[],
@@ -739,22 +713,7 @@ export const analyzeLogsDeep = async (
     // Deduplicate concurrent requests
     const dedupeKey = `deep:${generateLogsHash(logs, crisisEvents)}`;
     return deduplicatedRequest(dedupeKey, async () => {
-    // Try local model first (offline-first approach)
-    if (USE_LOCAL_MODEL_PRIMARY && getModelStatus().loaded) {
-        try {
-            if (import.meta.env.DEV) {
-                console.log('[AI] Using local WebLLM model for deep analysis...');
-            }
-            return await analyzeLogsDeepWithLocalModel(logs, crisisEvents, options);
-        } catch (localError) {
-            if (import.meta.env.DEV) {
-                console.warn('[AI] Local model deep analysis failed, falling back to cloud:', localError);
-            }
-            // Fall through to cloud APIs
-        }
-    }
-
-    // Fallback to Gemini if local model not available
+    // Try Gemini first
     if (USE_GEMINI_FALLBACK && isGeminiConfigured()) {
         try {
             if (import.meta.env.DEV) {
@@ -903,7 +862,6 @@ VIKTIG: Dette er en DYP ANALYSE. Bruk mer tid på å tenke gjennom sammenhenger.
 export const clearAnalysisCache = (): void => {
     cache.clear();
     clearGeminiCache();
-    clearLocalModelCache();
 };
 
 /**
@@ -915,25 +873,20 @@ export const getApiStatus = (): {
     premiumModel: string;
     geminiConfigured: boolean;
     geminiModel?: string;
-    localModelLoaded: boolean;
-    localModelId?: string;
 } => {
     const geminiStatus = getGeminiStatus();
-    const localStatus = getModelStatus();
     return {
-        configured: localStatus.loaded || Boolean(OPENROUTER_API_KEY) || geminiStatus.configured,
+        configured: Boolean(OPENROUTER_API_KEY) || geminiStatus.configured,
         freeModel: FREE_MODEL_ID,
         premiumModel: PREMIUM_MODEL_ID,
         geminiConfigured: geminiStatus.configured,
         geminiModel: geminiStatus.model,
-        localModelLoaded: localStatus.loaded,
-        localModelId: localStatus.modelId || undefined,
     };
 };
 
 /**
  * Streaming analysis - Shows AI "thinking" in real-time for WOW factor
- * Uses local WebLLM model as primary (offline-first), falls back to cloud APIs
+ * Uses Gemini as primary, falls back to OpenRouter
  */
 export const analyzeLogsStreaming = async (
     logs: LogEntry[],
@@ -941,26 +894,11 @@ export const analyzeLogsStreaming = async (
     callbacks: StreamCallbacks,
     options: { childProfile?: ChildProfile | null } = {}
 ): Promise<AnalysisResult> => {
-    // Try local model first (offline-first approach)
-    if (USE_LOCAL_MODEL_PRIMARY && getModelStatus().loaded) {
-        try {
-            if (import.meta.env.DEV) {
-                console.log('[AI] Using local WebLLM model for streaming analysis...');
-            }
-            return await analyzeLogsStreamingWithLocalModel(logs, crisisEvents, callbacks, options);
-        } catch (localError) {
-            if (import.meta.env.DEV) {
-                console.warn('[AI] Local model streaming failed, falling back to cloud:', localError);
-            }
-            // Fall through to cloud APIs
-        }
-    }
-
-    // Fallback to Gemini if local model not available
+    // Try Gemini first
     if (USE_GEMINI_FALLBACK && isGeminiConfigured()) {
         try {
             if (import.meta.env.DEV) {
-                console.log('[AI] Using Gemini streaming as fallback...');
+                console.log('[AI] Using Gemini streaming...');
             }
             return await analyzeLogsStreamingWithGemini(logs, crisisEvents, callbacks, options);
         } catch (geminiError) {

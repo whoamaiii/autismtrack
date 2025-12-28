@@ -5,7 +5,6 @@ import { Layout } from './components/Layout';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { RouteErrorBoundary } from './components/RouteErrorBoundary';
 import { ToastProvider, StorageErrorListener } from './components/Toast';
-import { ModelProvider } from './contexts/ModelContext';
 
 // Eagerly loaded - these are on the main navigation path
 import { Home } from './components/Home';
@@ -168,14 +167,12 @@ function App() {
     <ErrorBoundary>
       <BrowserRouter>
         <DataProvider>
-          <ModelProvider>
-            <ToastProvider>
-              <StorageErrorListener />
-              {/* CSS background always visible - shader loads in ProtectedLayout */}
-              <CSSBackground />
-              <AppContent />
-            </ToastProvider>
-          </ModelProvider>
+          <ToastProvider>
+            <StorageErrorListener />
+            {/* CSS background always visible - shader loads in ProtectedLayout */}
+            <CSSBackground />
+            <AppContent />
+          </ToastProvider>
         </DataProvider>
       </BrowserRouter>
     </ErrorBoundary>
