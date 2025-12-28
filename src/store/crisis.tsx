@@ -8,7 +8,7 @@ import type { CrisisEvent, ContextType } from '../types';
 import { enrichCrisisEvent } from '../types';
 import { STORAGE_KEYS } from '../constants/storage';
 import { CrisisEventSchema, validateCrisisEvent } from '../utils/validation';
-import { getStorageItem, safeSetItem, STORAGE_REFRESH_EVENT } from './storage';
+import { getStorageItem, safeSetItem, STORAGE_REFRESH_EVENT, debounce } from './storage';
 import type { CrisisContextType } from './types';
 
 const CrisisContext = createContext<CrisisContextType | undefined>(undefined);
@@ -34,14 +34,18 @@ export const CrisisProvider: React.FC<CrisisProviderProps> = ({ children }) => {
                 } else if (import.meta.env.DEV) {
                     console.warn('[Storage Sync] Invalid crisis events data from other tab');
                 }
-            } catch {
-                // Ignore parse errors
+            } catch (e) {
+                // Log parse errors in DEV mode for debugging
+                if (import.meta.env.DEV) {
+                    console.warn('[Storage Sync] Failed to parse crisis events from other tab:', e);
+                }
             }
         };
 
-        const handleRefresh = () => {
+        // Handle refresh event - debounced to prevent rapid re-renders
+        const handleRefresh = debounce(() => {
             setCrisisEvents(getStorageItem(STORAGE_KEYS.CRISIS_EVENTS, [], z.array(CrisisEventSchema)));
-        };
+        }, 100);
 
         window.addEventListener('storage', handleStorageChange);
         window.addEventListener(STORAGE_REFRESH_EVENT, handleRefresh);
@@ -51,9 +55,13 @@ export const CrisisProvider: React.FC<CrisisProviderProps> = ({ children }) => {
         };
     }, []);
 
-    const saveCrisisEvents = useCallback((newEvents: CrisisEvent[]) => {
-        setCrisisEvents(newEvents);
-        safeSetItem(STORAGE_KEYS.CRISIS_EVENTS, JSON.stringify(newEvents));
+    // Functional update pattern to prevent stale closure bugs
+    const saveCrisisEvents = useCallback((updater: CrisisEvent[] | ((prev: CrisisEvent[]) => CrisisEvent[])) => {
+        setCrisisEvents(prevEvents => {
+            const newEvents = typeof updater === 'function' ? updater(prevEvents) : updater;
+            safeSetItem(STORAGE_KEYS.CRISIS_EVENTS, JSON.stringify(newEvents));
+            return newEvents;
+        });
     }, []);
 
     const addCrisisEvent = useCallback((event: Omit<CrisisEvent, 'dayOfWeek' | 'timeOfDay' | 'hourOfDay'>): boolean => {
@@ -66,17 +74,17 @@ export const CrisisProvider: React.FC<CrisisProviderProps> = ({ children }) => {
         }
 
         const enrichedEvent = enrichCrisisEvent(event);
-        saveCrisisEvents([enrichedEvent, ...crisisEvents]);
+        saveCrisisEvents(prev => [enrichedEvent, ...prev]);
         return true;
-    }, [crisisEvents, saveCrisisEvents]);
+    }, [saveCrisisEvents]);
 
     const updateCrisisEvent = useCallback((id: string, updates: Partial<CrisisEvent>) => {
-        saveCrisisEvents(crisisEvents.map(e => e.id === id ? { ...e, ...updates } : e));
-    }, [crisisEvents, saveCrisisEvents]);
+        saveCrisisEvents(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e));
+    }, [saveCrisisEvents]);
 
     const deleteCrisisEvent = useCallback((id: string) => {
-        saveCrisisEvents(crisisEvents.filter(e => e.id !== id));
-    }, [crisisEvents, saveCrisisEvents]);
+        saveCrisisEvents(prev => prev.filter(e => e.id !== id));
+    }, [saveCrisisEvents]);
 
     const getCrisisByDateRange = useCallback((startDate: Date, endDate: Date) => {
         return crisisEvents.filter(event => {
@@ -103,10 +111,10 @@ export const CrisisProvider: React.FC<CrisisProviderProps> = ({ children }) => {
     }, [crisisEvents]);
 
     const updateCrisisRecoveryTime = useCallback((id: string, recoveryMinutes: number) => {
-        saveCrisisEvents(crisisEvents.map(e =>
+        saveCrisisEvents(prev => prev.map(e =>
             e.id === id ? { ...e, recoveryTimeMinutes: recoveryMinutes } : e
         ));
-    }, [crisisEvents, saveCrisisEvents]);
+    }, [saveCrisisEvents]);
 
     const value = useMemo<CrisisContextType>(() => ({
         crisisEvents,

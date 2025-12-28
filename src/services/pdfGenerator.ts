@@ -12,18 +12,33 @@ declare module 'jspdf' {
     }
 }
 
-// Dynamic import helper - loaded on first use
+// Dynamic import helper - loaded on first use with mutex pattern
 let jsPDFModule: typeof import('jspdf') | null = null;
 let autoTableModule: typeof import('jspdf-autotable') | null = null;
+let loadingPromise: Promise<{ jsPDF: typeof import('jspdf').default; autoTable: typeof import('jspdf-autotable').default }> | null = null;
 
 async function loadPDFLibraries() {
-    if (!jsPDFModule || !autoTableModule) {
-        [jsPDFModule, autoTableModule] = await Promise.all([
-            import('jspdf'),
-            import('jspdf-autotable')
-        ]);
+    // Return cached modules if already loaded
+    if (jsPDFModule && autoTableModule) {
+        return { jsPDF: jsPDFModule.default, autoTable: autoTableModule.default };
     }
-    return { jsPDF: jsPDFModule.default, autoTable: autoTableModule.default };
+
+    // Mutex: reuse existing loading promise if in progress
+    if (loadingPromise) {
+        return loadingPromise;
+    }
+
+    // Start loading and cache the promise
+    loadingPromise = Promise.all([
+        import('jspdf'),
+        import('jspdf-autotable')
+    ]).then(([jsPDF, autoTable]) => {
+        jsPDFModule = jsPDF;
+        autoTableModule = autoTable;
+        return { jsPDF: jsPDF.default, autoTable: autoTable.default };
+    });
+
+    return loadingPromise;
 }
 
 interface PDFGeneratorOptions {

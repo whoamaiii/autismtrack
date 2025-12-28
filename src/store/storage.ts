@@ -4,6 +4,20 @@
 import { z } from 'zod';
 
 /**
+ * Simple debounce utility for storage refresh events
+ */
+export function debounce<T extends (...args: unknown[]) => void>(
+    fn: T,
+    delay: number
+): (...args: Parameters<T>) => void {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    return (...args: Parameters<T>) => {
+        if (timeoutId) clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => fn(...args), delay);
+    };
+}
+
+/**
  * Custom event dispatched when localStorage quota is exceeded
  * Can be caught by UI components to show user notifications
  */

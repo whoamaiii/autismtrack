@@ -8,7 +8,7 @@ import type { LogEntry, ContextType } from '../types';
 import { enrichLogEntry } from '../types';
 import { STORAGE_KEYS } from '../constants/storage';
 import { LogEntrySchema, validateLogEntryInput } from '../utils/validation';
-import { getStorageItem, safeSetItem, STORAGE_REFRESH_EVENT } from './storage';
+import { getStorageItem, safeSetItem, STORAGE_REFRESH_EVENT, debounce } from './storage';
 import type { LogsContextType } from './types';
 
 const LogsContext = createContext<LogsContextType | undefined>(undefined);
@@ -34,15 +34,18 @@ export const LogsProvider: React.FC<LogsProviderProps> = ({ children }) => {
                 } else if (import.meta.env.DEV) {
                     console.warn('[Storage Sync] Invalid logs data from other tab');
                 }
-            } catch {
-                // Ignore parse errors
+            } catch (e) {
+                // Log parse errors in DEV mode for debugging
+                if (import.meta.env.DEV) {
+                    console.warn('[Storage Sync] Failed to parse logs from other tab:', e);
+                }
             }
         };
 
-        // Handle refresh event from settings.refreshData()
-        const handleRefresh = () => {
+        // Handle refresh event from settings.refreshData() - debounced to prevent rapid re-renders
+        const handleRefresh = debounce(() => {
             setLogs(getStorageItem(STORAGE_KEYS.LOGS, [], z.array(LogEntrySchema)));
-        };
+        }, 100);
 
         window.addEventListener('storage', handleStorageChange);
         window.addEventListener(STORAGE_REFRESH_EVENT, handleRefresh);
@@ -52,9 +55,13 @@ export const LogsProvider: React.FC<LogsProviderProps> = ({ children }) => {
         };
     }, []);
 
-    const saveLogs = useCallback((newLogs: LogEntry[]) => {
-        setLogs(newLogs);
-        safeSetItem(STORAGE_KEYS.LOGS, JSON.stringify(newLogs));
+    // Functional update pattern to prevent stale closure bugs
+    const saveLogs = useCallback((updater: LogEntry[] | ((prev: LogEntry[]) => LogEntry[])) => {
+        setLogs(prevLogs => {
+            const newLogs = typeof updater === 'function' ? updater(prevLogs) : updater;
+            safeSetItem(STORAGE_KEYS.LOGS, JSON.stringify(newLogs));
+            return newLogs;
+        });
     }, []);
 
     const addLog = useCallback((log: Omit<LogEntry, 'dayOfWeek' | 'timeOfDay' | 'hourOfDay'>): boolean => {
@@ -67,17 +74,17 @@ export const LogsProvider: React.FC<LogsProviderProps> = ({ children }) => {
         }
 
         const enrichedLog = enrichLogEntry(log);
-        saveLogs([enrichedLog, ...logs]);
+        saveLogs(prev => [enrichedLog, ...prev]);
         return true;
-    }, [logs, saveLogs]);
+    }, [saveLogs]);
 
     const updateLog = useCallback((id: string, updates: Partial<LogEntry>) => {
-        saveLogs(logs.map(log => log.id === id ? { ...log, ...updates } : log));
-    }, [logs, saveLogs]);
+        saveLogs(prev => prev.map(log => log.id === id ? { ...log, ...updates } : log));
+    }, [saveLogs]);
 
     const deleteLog = useCallback((id: string) => {
-        saveLogs(logs.filter(log => log.id !== id));
-    }, [logs, saveLogs]);
+        saveLogs(prev => prev.filter(log => log.id !== id));
+    }, [saveLogs]);
 
     const getLogsByDateRange = useCallback((startDate: Date, endDate: Date) => {
         return logs.filter(log => {

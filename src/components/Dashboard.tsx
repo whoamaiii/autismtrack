@@ -84,7 +84,7 @@ export const Dashboard: React.FC = () => {
 
     // Quick analysis (FREE - Llama 4 Maverick)
     const handleQuickAnalysis = async () => {
-        if (logs.length < 3 || isAnalyzing || isDeepAnalyzing) return;
+        if (logs.length < 3 || isAnalyzing || isDeepAnalyzing || isStreaming) return;
 
         setIsAnalyzing(true);
         setAnalysisError(null);
