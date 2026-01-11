@@ -151,6 +151,13 @@ export const Analysis: React.FC = () => {
         return 'text-red-400 bg-red-500/10 border-red-500/20';
     };
 
+    // Accessible label for arousal level (not just color)
+    const getArousalLabel = (level: number): string => {
+        if (level <= 3) return t('logExplorer.arousalLevel.low', 'Low');
+        if (level <= 6) return t('logExplorer.arousalLevel.medium', 'Medium');
+        return t('logExplorer.arousalLevel.high', 'High');
+    };
+
     const dateLocale = i18n.language === 'no' ? nb : enUS;
 
     return (
@@ -273,8 +280,12 @@ export const Analysis: React.FC = () => {
                                 {/* Header Row */}
                                 <div className="flex justify-between items-start mb-4">
                                     <div className="flex items-center gap-3">
-                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${getArousalColor(log.arousal)}`}>
-                                            <span className="font-bold text-lg">{log.arousal}</span>
+                                        <div
+                                            className={`w-10 h-10 rounded-xl flex items-center justify-center border ${getArousalColor(log.arousal)}`}
+                                            role="img"
+                                            aria-label={`${t('logExplorer.arousal', 'Arousal')}: ${log.arousal}/10 (${getArousalLabel(log.arousal)})`}
+                                        >
+                                            <span className="font-bold text-lg" aria-hidden="true">{log.arousal}</span>
                                         </div>
                                         <div>
                                             <div className="flex items-center gap-2 text-slate-300 text-sm font-medium">

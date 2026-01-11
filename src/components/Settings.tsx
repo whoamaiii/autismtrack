@@ -28,7 +28,7 @@ import {
     STRATEGIES
 } from '../types';
 import { downloadExport, importData, exportAllData, type ImportResult } from '../utils/exportData';
-import { loadDemoData, clearDemoData } from '../utils/demoData';
+// Note: demoData is now dynamically imported for bundle optimization
 import { useTranslation } from 'react-i18next';
 import { generateUUID } from '../utils/uuid';
 import { useSettings } from '../store';
@@ -534,8 +534,10 @@ export const Settings: React.FC = () => {
                         </p>
                         <div className="flex gap-2">
                             <button
-                                onClick={() => {
+                                onClick={async () => {
                                     if (confirm(t('settings.dataManagement.demo.confirmLoad'))) {
+                                        // Dynamic import for bundle optimization
+                                        const { loadDemoData } = await import('../utils/demoData');
                                         loadDemoData();
                                         window.location.reload();
                                     }
@@ -545,8 +547,10 @@ export const Settings: React.FC = () => {
                                 {t('settings.dataManagement.demo.loadButton')}
                             </button>
                             <button
-                                onClick={() => {
+                                onClick={async () => {
                                     if (confirm(t('settings.dataManagement.demo.confirmClear'))) {
+                                        // Dynamic import for bundle optimization
+                                        const { clearDemoData } = await import('../utils/demoData');
                                         clearDemoData();
                                         window.location.reload();
                                     }

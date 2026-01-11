@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mic, Square, AlertTriangle, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { v4 as uuidv4 } from 'uuid';
 import { useCrisis, useAppContext } from '../store';
 import {
     type CrisisType,
@@ -324,7 +323,7 @@ export const CrisisMode: React.FC = () => {
 
         // Save crisis event with recovery time
         addCrisisEvent({
-            id: uuidv4(),
+            id: crypto.randomUUID(),
             timestamp: startTime,
             context: currentContext,
             type: crisisType,
@@ -347,7 +346,7 @@ export const CrisisMode: React.FC = () => {
     const handleSkipRecovery = () => {
         // Save without recovery time
         addCrisisEvent({
-            id: uuidv4(),
+            id: crypto.randomUUID(),
             timestamp: startTime,
             context: currentContext,
             type: crisisType,
@@ -372,7 +371,7 @@ export const CrisisMode: React.FC = () => {
         setRecoveryTime(recoveryMins);
         // Then save
         addCrisisEvent({
-            id: uuidv4(),
+            id: crypto.randomUUID(),
             timestamp: startTime,
             context: currentContext,
             type: crisisType,
@@ -394,7 +393,7 @@ export const CrisisMode: React.FC = () => {
     const handleSkipDetails = () => {
         // Save with minimal data
         addCrisisEvent({
-            id: uuidv4(),
+            id: crypto.randomUUID(),
             timestamp: startTime,
             context: currentContext,
             type: 'other',
@@ -632,19 +631,24 @@ export const CrisisMode: React.FC = () => {
 
                                 {/* Peak Intensity */}
                                 <div>
-                                    <label className="text-slate-300 font-medium text-sm block mb-2">
-                                        {t('crisis.intensity.label')}: <span className="text-white font-bold">{peakIntensity}</span>
+                                    <label htmlFor="peak-intensity-slider" className="text-slate-300 font-medium text-sm block mb-2">
+                                        {t('crisis.intensity.label')}: <span className="text-white font-bold" aria-live="polite">{peakIntensity}</span>
                                     </label>
                                     <input
                                         type="range"
+                                        id="peak-intensity-slider"
                                         min="1"
                                         max="10"
                                         value={peakIntensity}
                                         onChange={(e) => setPeakIntensity(Number(e.target.value))}
                                         className="w-full h-2 rounded-full appearance-none cursor-pointer"
                                         style={{ background: 'linear-gradient(to right, #facc15, #f97316, #ef4444)' }}
+                                        aria-valuemin={1}
+                                        aria-valuemax={10}
+                                        aria-valuenow={peakIntensity}
+                                        aria-describedby="peak-intensity-description"
                                     />
-                                    <div className="flex justify-between text-xs text-slate-500 mt-1">
+                                    <div id="peak-intensity-description" className="flex justify-between text-xs text-slate-500 mt-1">
                                         <span>{t('crisis.intensity.mild')}</span>
                                         <span>{t('crisis.intensity.extreme')}</span>
                                     </div>
@@ -760,7 +764,7 @@ export const CrisisMode: React.FC = () => {
                                             onClick={() => {
                                                 // Save directly with selected recovery time
                                                 addCrisisEvent({
-                                                    id: uuidv4(),
+                                                    id: crypto.randomUUID(),
                                                     timestamp: startTime,
                                                     context: currentContext,
                                                     type: crisisType,

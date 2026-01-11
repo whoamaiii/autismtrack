@@ -1,5 +1,4 @@
 import React, { useReducer, useId, useCallback, useMemo } from 'react';
-import { v4 as uuidv4 } from 'uuid';
 import { useLogs, useAppContext } from '../store';
 import { type LogEntry, SENSORY_TRIGGERS, CONTEXT_TRIGGERS, STRATEGIES } from '../types';
 import { TriggerSelector } from './TriggerSelector';
@@ -217,7 +216,7 @@ export const LogEntryForm: React.FC<LogEntryFormProps> = ({ onClose }) => {
 
         try {
             const newLog: LogEntry = {
-                id: uuidv4(),
+                id: crypto.randomUUID(),
                 timestamp: formState.timestamp,
                 context: currentContext,
                 arousal: formState.arousal,

@@ -23,10 +23,24 @@ export interface TransitionAnalysisConfig {
 }
 
 /**
+ * Configuration for personalized thresholds (adaptive to child's baseline)
+ */
+export interface PersonalizedThresholdConfig {
+  /** Whether to use personalized thresholds based on child's percentiles */
+  enabled: boolean;
+  /** Percentile for high arousal (default: 75 = top 25%) */
+  highArousalPercentile: number;
+  /** Percentile for recovery (default: 25 = bottom 25%) */
+  recoveryPercentile: number;
+  /** Minimum logs required to calculate personalized thresholds */
+  minLogsForPersonalization: number;
+}
+
+/**
  * Configuration for risk prediction
  */
 export interface RiskPredictionConfig {
-  /** Minimum samples on same weekday for prediction (default: 5) */
+  /** Minimum samples on same weekday for prediction (default: 10) */
   minSamplesForPrediction: number;
   /** Minimum incidents at an hour to count as a pattern (default: 2) */
   minIncidentsForPattern: number;
@@ -44,6 +58,20 @@ export interface RiskPredictionConfig {
   recencyDecayHalfLife: number;
   /** High arousal threshold - >= this value counts as high arousal (default: 7) */
   highArousalThreshold: number;
+  /** Personalized threshold configuration */
+  personalizedThresholds: PersonalizedThresholdConfig;
+  /** Enable multi-factor risk scoring (energy, context, triggers) */
+  enableMultiFactorScoring: boolean;
+  /** Weight for energy factor in risk calculation (0-1) */
+  energyFactorWeight: number;
+  /** Weight for context factor in risk calculation (0-1) */
+  contextFactorWeight: number;
+  /** Weight for recent strategy failure in risk calculation (0-1) */
+  strategyFailureWeight: number;
+  /** Enable cross-day lag effects in prediction */
+  enableLagEffects: boolean;
+  /** Days to look back for lag effects (default: 3) */
+  lagEffectDays: number;
 }
 
 /**
@@ -59,10 +87,20 @@ export const DEFAULT_TRANSITION_CONFIG: TransitionAnalysisConfig = {
 };
 
 /**
+ * Default configuration for personalized thresholds
+ */
+export const DEFAULT_PERSONALIZED_THRESHOLD_CONFIG: PersonalizedThresholdConfig = {
+  enabled: true,
+  highArousalPercentile: 75,
+  recoveryPercentile: 25,
+  minLogsForPersonalization: 20,
+};
+
+/**
  * Default configuration for risk prediction
  */
 export const DEFAULT_RISK_CONFIG: RiskPredictionConfig = {
-  minSamplesForPrediction: 5,
+  minSamplesForPrediction: 10, // Increased from 5 for better accuracy
   minIncidentsForPattern: 2,
   hoursAheadWindow: 4,
   riskZoneBoost: 30,
@@ -71,13 +109,20 @@ export const DEFAULT_RISK_CONFIG: RiskPredictionConfig = {
   historyDays: 30,
   recencyDecayHalfLife: 7,
   highArousalThreshold: 7,
+  personalizedThresholds: DEFAULT_PERSONALIZED_THRESHOLD_CONFIG,
+  enableMultiFactorScoring: true,
+  energyFactorWeight: 0.2,
+  contextFactorWeight: 0.15,
+  strategyFailureWeight: 0.15,
+  enableLagEffects: true,
+  lagEffectDays: 3,
 };
 
 /**
  * Configuration for multi-factor pattern analysis
  */
 export interface MultiFactorConfig {
-  /** Minimum pattern occurrences to report (default: 3) */
+  /** Minimum pattern occurrences to report (default: 5) - increased for accuracy */
   minOccurrencesForPattern: number;
   /** Minimum probability to consider pattern significant (default: 0.6 = 60%) */
   minConfidenceThreshold: number;
@@ -97,6 +142,16 @@ export interface MultiFactorConfig {
   };
   /** Minimum logs required to run analysis (default: 10) */
   minLogsForAnalysis: number;
+  /** Enable multiple comparison correction (Benjamini-Hochberg FDR) */
+  enableMultipleComparisonCorrection: boolean;
+  /** False discovery rate level for FDR correction (default: 0.1) */
+  fdrLevel: number;
+  /** Enable adaptive quantile-based discretization */
+  enableAdaptiveDiscretization: boolean;
+  /** Enable interaction effect testing between factors */
+  enableInteractionTesting: boolean;
+  /** Enable stratified analysis by context (home/school) */
+  enableStratifiedAnalysis: boolean;
 }
 
 /**
@@ -115,6 +170,14 @@ export interface RecoveryAnalysisConfig {
   vulnerabilityWindowMinutes: number;
   /** Minimum sample size for factor significance (default: 3) */
   minFactorSampleSize: number;
+  /** Enable data-driven vulnerability window calculation */
+  enableDataDrivenVulnerability: boolean;
+  /** Target re-escalation probability for vulnerability window (default: 0.1 = 10%) */
+  targetReEscalationProbability: number;
+  /** Use personalized recovery thresholds based on child's baseline */
+  usePersonalizedRecoveryThresholds: boolean;
+  /** Enable Mann-Kendall trend test instead of simple first/second half comparison */
+  useStatisticalTrendTest: boolean;
 }
 
 /**
@@ -137,7 +200,7 @@ export interface ContextComparisonConfig {
  * Default configuration for multi-factor analysis
  */
 export const DEFAULT_MULTI_FACTOR_CONFIG: MultiFactorConfig = {
-  minOccurrencesForPattern: 3,
+  minOccurrencesForPattern: 5, // Increased from 3 for better accuracy
   minConfidenceThreshold: 0.6,
   significanceLevel: 0.05,
   maxFactorsPerPattern: 4,
@@ -150,6 +213,11 @@ export const DEFAULT_MULTI_FACTOR_CONFIG: MultiFactorConfig = {
     afterStrategy: 30,
   },
   minLogsForAnalysis: 10,
+  enableMultipleComparisonCorrection: true,
+  fdrLevel: 0.1,
+  enableAdaptiveDiscretization: true,
+  enableInteractionTesting: true,
+  enableStratifiedAnalysis: true,
 };
 
 /**
@@ -162,6 +230,10 @@ export const DEFAULT_RECOVERY_CONFIG: RecoveryAnalysisConfig = {
   minRecoveryDataPoints: 3,
   vulnerabilityWindowMinutes: 60,
   minFactorSampleSize: 3,
+  enableDataDrivenVulnerability: true,
+  targetReEscalationProbability: 0.1,
+  usePersonalizedRecoveryThresholds: true,
+  useStatisticalTrendTest: true,
 };
 
 /**

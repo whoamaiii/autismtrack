@@ -67,6 +67,75 @@ export const AI_CONFIG = {
 } as const;
 
 // =============================================================================
+// TRANSLATION MAPS (Centralized for consistency)
+// =============================================================================
+
+/** Crisis type translations (Norwegian) */
+export const CRISIS_TYPE_MAP: Readonly<Record<string, string>> = {
+    'meltdown': 'Nedsmelting',
+    'shutdown': 'Shutdown',
+    'anxiety': 'Angst',
+    'sensory_overload': 'Sensorisk overbelastning',
+    'other': 'Annet'
+} as const;
+
+/** Crisis resolution translations (Norwegian) */
+export const RESOLUTION_MAP: Readonly<Record<string, string>> = {
+    'self_regulated': 'Selvregulert',
+    'co_regulated': 'Samregulert',
+    'timed_out': 'Utløpt',
+    'interrupted': 'Avbrutt'
+} as const;
+
+/** Communication style translations (Norwegian) */
+export const COMM_STYLE_MAP: Readonly<Record<string, string>> = {
+    'verbal': 'Verbal kommunikasjon',
+    'limited_verbal': 'Begrenset verbal kommunikasjon',
+    'non_verbal': 'Non-verbal',
+    'aac': 'Bruker ASK/AAC'
+} as const;
+
+/** Strategy effectiveness symbols */
+export const EFFECTIVENESS_SYMBOLS: Readonly<Record<string, string>> = {
+    'helped': '✓',
+    'escalated': '✗',
+    'neutral': '~'
+} as const;
+
+// =============================================================================
+// LEVEL CLASSIFICATION UTILITIES
+// =============================================================================
+
+type LevelLabel = 'Lav' | 'Moderat' | 'Høy';
+type ValenceLabel = 'Negativ' | 'Nøytral' | 'Positiv';
+
+/**
+ * Classifies a numeric value (1-10) into Low/Moderate/High
+ * Used for arousal, energy levels
+ */
+export const getIntensityLevel = (value: number): LevelLabel => {
+    if (value <= 3) return 'Lav';
+    if (value <= 6) return 'Moderat';
+    return 'Høy';
+};
+
+/**
+ * Classifies valence (1-10) into Negative/Neutral/Positive
+ */
+export const getValenceLevel = (value: number): ValenceLabel => {
+    if (value <= 3) return 'Negativ';
+    if (value <= 6) return 'Nøytral';
+    return 'Positiv';
+};
+
+/**
+ * Gets the effectiveness symbol for a strategy outcome
+ */
+export const getEffectivenessSymbol = (effectiveness?: string): string => {
+    return EFFECTIVENESS_SYMBOLS[effectiveness || ''] || EFFECTIVENESS_SYMBOLS['neutral'];
+};
+
+// =============================================================================
 // DATA SANITIZATION
 // =============================================================================
 
@@ -209,12 +278,22 @@ export function createAnalysisCache() {
                 analysisType
             });
 
-            // Cleanup expired entries (limit map size to prevent memory leaks)
+            // Cleanup: enforce max cache size to prevent memory leaks
             if (cacheMap.size > AI_CONFIG.maxCacheEntries) {
                 const now = Date.now();
+                // First pass: remove expired entries
                 for (const [k, v] of cacheMap.entries()) {
                     if (now - v.timestamp > AI_CONFIG.cacheTtlMs) {
                         cacheMap.delete(k);
+                    }
+                }
+                // Second pass: if still over limit, remove oldest entries
+                if (cacheMap.size > AI_CONFIG.maxCacheEntries) {
+                    const entries = Array.from(cacheMap.entries())
+                        .sort((a, b) => a[1].timestamp - b[1].timestamp);
+                    const toRemove = cacheMap.size - AI_CONFIG.maxCacheEntries;
+                    for (let i = 0; i < toRemove; i++) {
+                        cacheMap.delete(entries[i][0]);
                     }
                 }
             }
@@ -266,6 +345,44 @@ export const prepareCrisisEventsForAnalysis = (events: CrisisEvent[], referenceD
 };
 
 // =============================================================================
+// DATA PREPARATION UTILITY
+// =============================================================================
+
+/**
+ * Prepared analysis data interface
+ * Contains all data needed for AI analysis requests
+ */
+export interface PreparedAnalysisData {
+    preparedLogs: PreparedLog[];
+    preparedCrisis: PreparedCrisis[];
+    totalDays: number;
+    dateRangeStart: string;
+    dateRangeEnd: string;
+    logsHash: string;
+}
+
+/**
+ * Prepares analysis data from logs and crisis events
+ * Centralizes the common data preparation pattern used across AI services
+ */
+export const prepareAnalysisData = (
+    logs: LogEntry[],
+    crisisEvents: CrisisEvent[]
+): PreparedAnalysisData => {
+    const { oldest: oldestDate, newest: newestDate } = getLogsDateRange(logs);
+    const totalDays = Math.ceil((newestDate.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+    return {
+        preparedLogs: prepareLogsForAnalysis(logs, newestDate),
+        preparedCrisis: prepareCrisisEventsForAnalysis(crisisEvents, newestDate),
+        totalDays,
+        dateRangeStart: oldestDate.toISOString(),
+        dateRangeEnd: newestDate.toISOString(),
+        logsHash: generateLogsHash(logs, crisisEvents)
+    };
+};
+
+// =============================================================================
 // TOKEN OPTIMIZATION
 // =============================================================================
 
@@ -281,22 +398,16 @@ export const logsToSummaryStrings = (logs: PreparedLog[]): string => {
         const parts: string[] = [];
         parts.push(`${log.relativeTime} (${log.context})`);
 
-        const arousalLevel = log.arousal <= 3 ? 'Lav' : log.arousal <= 6 ? 'Moderat' : 'Høy';
-        const valenceLevel = log.valence <= 3 ? 'Negativ' : log.valence <= 6 ? 'Nøytral' : 'Positiv';
-        const energyLevel = log.energy <= 3 ? 'Lav' : log.energy <= 6 ? 'Moderat' : 'Høy';
-
-        parts.push(`A:${log.arousal}(${arousalLevel})`);
-        parts.push(`V:${log.valence}(${valenceLevel})`);
-        parts.push(`E:${log.energy}(${energyLevel})`);
+        parts.push(`A:${log.arousal}(${getIntensityLevel(log.arousal)})`);
+        parts.push(`V:${log.valence}(${getValenceLevel(log.valence)})`);
+        parts.push(`E:${log.energy}(${getIntensityLevel(log.energy)})`);
 
         if (log.triggers.length > 0) {
             parts.push(`Triggere:[${log.triggers.join(',')}]`);
         }
 
         if (log.strategies.length > 0) {
-            const effectSymbol = log.strategyEffectiveness === 'helped' ? '✓' :
-                log.strategyEffectiveness === 'escalated' ? '✗' : '~';
-            parts.push(`Tiltak:[${log.strategies.join(',')}](${effectSymbol})`);
+            parts.push(`Tiltak:[${log.strategies.join(',')}](${getEffectivenessSymbol(log.strategyEffectiveness)})`);
         }
 
         if (log.note && log.note.trim()) {
@@ -316,24 +427,9 @@ export const logsToSummaryStrings = (logs: PreparedLog[]): string => {
 export const crisisToSummaryStrings = (events: PreparedCrisis[]): string => {
     if (events.length === 0) return '';
 
-    const typeMap: Record<string, string> = {
-        'meltdown': 'Nedsmelting',
-        'shutdown': 'Shutdown',
-        'anxiety': 'Angst',
-        'sensory_overload': 'Sensorisk overbelastning',
-        'other': 'Annet'
-    };
-
-    const resolutionMap: Record<string, string> = {
-        'self_regulated': 'Selvregulert',
-        'co_regulated': 'Samregulert',
-        'timed_out': 'Utløpt',
-        'interrupted': 'Avbrutt'
-    };
-
     const summaries = events.map(event => {
         const parts: string[] = [];
-        parts.push(`${event.relativeTime}: ${typeMap[event.type] || event.type} (${event.context})`);
+        parts.push(`${event.relativeTime}: ${CRISIS_TYPE_MAP[event.type] || event.type} (${event.context})`);
         parts.push(`Varighet:${event.durationMinutes}min, Intensitet:${event.peakIntensity}/10`);
 
         if (event.precedingArousal !== undefined || event.precedingEnergy !== undefined) {
@@ -351,7 +447,7 @@ export const crisisToSummaryStrings = (events: PreparedCrisis[]): string => {
             parts.push(`Triggere:[${event.triggers.join(',')}]`);
         }
 
-        parts.push(`Løsning:${resolutionMap[event.resolution] || event.resolution}`);
+        parts.push(`Løsning:${RESOLUTION_MAP[event.resolution] || event.resolution}`);
 
         if (event.recoveryTimeMinutes !== undefined) {
             parts.push(`Restitusjon:${event.recoveryTimeMinutes}min`);
@@ -443,14 +539,8 @@ export const buildChildProfileContext = (profile: ChildProfile | null): string =
         parts.push(`Diagnoser: ${profile.diagnoses.join(', ')}`);
     }
 
-    const commStyleMap: Record<string, string> = {
-        'verbal': 'Verbal kommunikasjon',
-        'limited_verbal': 'Begrenset verbal kommunikasjon',
-        'non_verbal': 'Non-verbal',
-        'aac': 'Bruker ASK/AAC'
-    };
     if (profile.communicationStyle) {
-        parts.push(`Kommunikasjon: ${commStyleMap[profile.communicationStyle] || profile.communicationStyle}`);
+        parts.push(`Kommunikasjon: ${COMM_STYLE_MAP[profile.communicationStyle] || profile.communicationStyle}`);
     }
 
     if (profile.sensorySensitivities.length > 0) {

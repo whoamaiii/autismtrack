@@ -2,7 +2,6 @@ import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Target, TrendingUp, CheckCircle2, Plus, ArrowLeft, X, Clock, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { v4 as uuidv4 } from 'uuid';
 import { useGoals, useAppContext } from '../store';
 import { type Goal, type GoalCategory, type GoalStatus, GOAL_CATEGORIES } from '../types';
 import { useTranslation } from 'react-i18next';
@@ -120,7 +119,7 @@ export const GoalTracking: React.FC = () => {
         }
 
         const goal: Goal = {
-            id: uuidv4(),
+            id: crypto.randomUUID(),
             title: newTitle,
             description: newDescription,
             category: newCategory,

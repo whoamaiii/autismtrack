@@ -1,6 +1,12 @@
 /**
  * Recovery Pattern Analysis
  * Analyze post-crisis recovery times, vulnerability windows, and factors affecting recovery
+ *
+ * Improvements implemented:
+ * - Data-driven vulnerability window calculation
+ * - Mann-Kendall statistical trend test
+ * - Personalized recovery thresholds
+ * - Confidence intervals for recovery times
  */
 
 import type {
@@ -18,6 +24,35 @@ import {
     type RecoveryAnalysisConfig
 } from './analysisConfig';
 import { safeParseTimestamp, safeParseTimestampWithFallback } from './dateUtils';
+import { mannKendallTest, bootstrapMeanCI } from './statisticalUtils';
+
+// ============================================
+// PERSONALIZED THRESHOLDS
+// ============================================
+
+/**
+ * Calculate personalized recovery thresholds based on child's baseline
+ */
+export function calculatePersonalizedRecoveryThresholds(
+    logs: LogEntry[],
+    _config: Partial<RecoveryAnalysisConfig> = {}
+): { arousalThreshold: number; energyThreshold: number } | null {
+    if (logs.length < 20) {
+        return null;
+    }
+
+    // Use 25th percentile for arousal (lower = recovered)
+    const arousalValues = logs.map(l => l.arousal).sort((a, b) => a - b);
+    const arousalP25Index = Math.floor(arousalValues.length * 0.25);
+    const arousalThreshold = arousalValues[arousalP25Index];
+
+    // Use 75th percentile for energy (higher = recovered)
+    const energyValues = logs.map(l => l.energy).sort((a, b) => a - b);
+    const energyP75Index = Math.floor(energyValues.length * 0.75);
+    const energyThreshold = energyValues[energyP75Index];
+
+    return { arousalThreshold, energyThreshold };
+}
 
 // ============================================
 // RECOVERY DETECTION
@@ -30,9 +65,18 @@ import { safeParseTimestamp, safeParseTimestampWithFallback } from './dateUtils'
 function detectRecoveryFromLogs(
     crisisEvent: CrisisEvent,
     logs: LogEntry[],
-    config: Partial<RecoveryAnalysisConfig> = {}
+    config: Partial<RecoveryAnalysisConfig> = {},
+    personalizedThresholds?: { arousalThreshold: number; energyThreshold: number }
 ): RecoveryIndicator {
     const cfg = { ...DEFAULT_RECOVERY_CONFIG, ...config };
+
+    // Use personalized thresholds if available and enabled
+    const arousalThreshold = (cfg.usePersonalizedRecoveryThresholds && personalizedThresholds)
+        ? personalizedThresholds.arousalThreshold
+        : cfg.normalArousalThreshold;
+    const energyThreshold = (cfg.usePersonalizedRecoveryThresholds && personalizedThresholds)
+        ? personalizedThresholds.energyThreshold
+        : cfg.normalEnergyThreshold;
 
     // Validate crisis timestamp - return early if invalid
     const crisisStartTime = safeParseTimestamp(crisisEvent.timestamp);
@@ -60,10 +104,10 @@ function detectRecoveryFromLogs(
             return timeA - timeB;
         });
 
-    // Find first "normal" log
+    // Find first "normal" log using appropriate thresholds
     const recoveryLog = subsequentLogs.find(log =>
-        log.arousal <= cfg.normalArousalThreshold &&
-        log.energy >= cfg.normalEnergyThreshold
+        log.arousal <= arousalThreshold &&
+        log.energy >= energyThreshold
     );
 
     if (recoveryLog) {
@@ -90,7 +134,7 @@ function detectRecoveryFromLogs(
     // If there are logs but none show recovery, check if the last one is still elevated
     if (subsequentLogs.length > 0) {
         const lastLog = subsequentLogs[subsequentLogs.length - 1];
-        if (lastLog.arousal > cfg.normalArousalThreshold) {
+        if (lastLog.arousal > arousalThreshold) {
             // Still not recovered within window
             return {
                 crisisId: crisisEvent.id,
@@ -125,14 +169,26 @@ function getEffectiveRecoveryTime(
 // ============================================
 
 /**
+ * Extended vulnerability window with data-driven calculation
+ */
+export interface ExtendedVulnerabilityWindow extends VulnerabilityWindow {
+    /** Confidence interval for the vulnerability duration */
+    durationCI?: { lower: number; upper: number };
+    /** Whether the window was calculated from data or using defaults */
+    isDataDriven: boolean;
+    /** Time at which re-escalation probability drops below target */
+    safeTimeMinutes?: number;
+}
+
+/**
  * Calculate post-crisis vulnerability window
- * (Internal helper - used by analyzeRecoveryPatterns)
+ * Now with data-driven window calculation based on observed re-escalation times
  */
 function calculateVulnerabilityWindow(
     crisisEvents: CrisisEvent[],
     _logs: LogEntry[],
     config: Partial<RecoveryAnalysisConfig> = {}
-): VulnerabilityWindow {
+): ExtendedVulnerabilityWindow {
     const cfg = { ...DEFAULT_RECOVERY_CONFIG, ...config };
 
     if (crisisEvents.length < 2) {
@@ -140,7 +196,8 @@ function calculateVulnerabilityWindow(
             durationMinutes: cfg.vulnerabilityWindowMinutes,
             elevatedRiskPeriod: cfg.vulnerabilityWindowMinutes,
             recommendedBuffer: cfg.vulnerabilityWindowMinutes + 15,
-            reEscalationRate: 0
+            reEscalationRate: 0,
+            isDataDriven: false
         };
     }
 
@@ -156,42 +213,84 @@ function calculateVulnerabilityWindow(
                 hasValidTimestamp: startMs !== null
             };
         })
-        .filter(c => c.hasValidTimestamp) // Remove entries with invalid timestamps
+        .filter(c => c.hasValidTimestamp)
         .sort((a, b) => a.startMs - b.startMs);
 
-    // Count re-escalations within vulnerability window
-    let reEscalations = 0;
+    // Collect all gaps between crises
     const timeBetweenCrises: number[] = [];
 
     for (let i = 1; i < sortedCrises.length; i++) {
         const gap = (sortedCrises[i].startMs - sortedCrises[i - 1].endMs) / (60 * 1000); // minutes
-
-        timeBetweenCrises.push(gap);
-
-        if (gap <= cfg.vulnerabilityWindowMinutes) {
-            reEscalations++;
+        if (gap > 0 && gap < 480) { // Only include gaps up to 8 hours
+            timeBetweenCrises.push(gap);
         }
     }
 
-    const reEscalationRate = Math.round((reEscalations / (sortedCrises.length - 1)) * 100);
+    if (timeBetweenCrises.length < 3) {
+        return {
+            durationMinutes: cfg.vulnerabilityWindowMinutes,
+            elevatedRiskPeriod: cfg.vulnerabilityWindowMinutes,
+            recommendedBuffer: cfg.vulnerabilityWindowMinutes + 15,
+            reEscalationRate: 0,
+            isDataDriven: false
+        };
+    }
 
-    // Calculate median time between crises for those that re-escalated quickly
-    const quickReescalations = timeBetweenCrises.filter(t => t <= cfg.vulnerabilityWindowMinutes * 2);
-    const avgQuickReescalation = quickReescalations.length > 0
-        ? quickReescalations.reduce((a, b) => a + b, 0) / quickReescalations.length
-        : cfg.vulnerabilityWindowMinutes;
+    // Data-driven vulnerability window calculation
+    let durationMinutes: number;
+    let safeTimeMinutes: number | undefined;
+    let durationCI: { lower: number; upper: number } | undefined;
 
-    // Elevated risk period is average quick re-escalation time
-    const elevatedRiskPeriod = Math.round(avgQuickReescalation);
+    if (cfg.enableDataDrivenVulnerability) {
+        // Sort gaps to find the time at which re-escalation probability drops below target
+        const sortedGaps = [...timeBetweenCrises].sort((a, b) => a - b);
 
-    // Recommended buffer adds safety margin
-    const recommendedBuffer = Math.round(elevatedRiskPeriod * 1.5);
+        // Find the percentile corresponding to target re-escalation probability
+        // e.g., if target is 10%, find the 90th percentile of gaps
+        const targetPercentile = 1 - cfg.targetReEscalationProbability;
+        const targetIndex = Math.floor(targetPercentile * sortedGaps.length);
+        safeTimeMinutes = sortedGaps[Math.min(targetIndex, sortedGaps.length - 1)];
+
+        // Use the median of quick re-escalations as the vulnerability duration
+        const quickGaps = sortedGaps.filter(g => g <= safeTimeMinutes!);
+        durationMinutes = quickGaps.length > 0
+            ? quickGaps[Math.floor(quickGaps.length / 2)]
+            : cfg.vulnerabilityWindowMinutes;
+
+        // Calculate bootstrap CI for the duration
+        const ciResult = bootstrapMeanCI(quickGaps.length > 0 ? quickGaps : [cfg.vulnerabilityWindowMinutes], 0.95, 500);
+        durationCI = { lower: Math.round(ciResult.lower), upper: Math.round(ciResult.upper) };
+    } else {
+        // Fallback to original calculation
+        const quickReescalations = timeBetweenCrises.filter(t => t <= cfg.vulnerabilityWindowMinutes * 2);
+        durationMinutes = quickReescalations.length > 0
+            ? Math.round(quickReescalations.reduce((a, b) => a + b, 0) / quickReescalations.length)
+            : cfg.vulnerabilityWindowMinutes;
+    }
+
+    // Count re-escalations within the calculated vulnerability window
+    let reEscalations = 0;
+    for (const gap of timeBetweenCrises) {
+        if (gap <= durationMinutes) {
+            reEscalations++;
+        }
+    }
+    const reEscalationRate = Math.round((reEscalations / timeBetweenCrises.length) * 100);
+
+    // Elevated risk period and recommended buffer
+    const elevatedRiskPeriod = Math.round(durationMinutes);
+    const recommendedBuffer = safeTimeMinutes
+        ? Math.round(safeTimeMinutes)
+        : Math.round(durationMinutes * 1.5);
 
     return {
-        durationMinutes: Math.round(avgQuickReescalation),
+        durationMinutes,
         elevatedRiskPeriod,
         recommendedBuffer,
-        reEscalationRate
+        reEscalationRate,
+        isDataDriven: cfg.enableDataDrivenVulnerability,
+        durationCI,
+        safeTimeMinutes
     };
 }
 
@@ -329,15 +428,29 @@ function analyzeRecoveryFactors(
 // ============================================
 
 /**
+ * Extended recovery stats with confidence intervals and statistical trend
+ */
+export interface ExtendedRecoveryStats extends RecoveryStats {
+    /** 95% confidence interval for average recovery time */
+    avgCI?: { lower: number; upper: number };
+    /** Mann-Kendall trend p-value */
+    trendPValue?: number;
+    /** Kendall's tau correlation coefficient */
+    trendTau?: number;
+}
+
+/**
  * Calculate recovery statistics grouped by crisis type
- * (Internal helper - used by analyzeRecoveryPatterns)
+ * Now uses Mann-Kendall test for proper statistical trend detection
  */
 function calculateRecoveryByType(
     crisisEvents: CrisisEvent[],
     logs: LogEntry[],
-    config: Partial<RecoveryAnalysisConfig> = {}
-): Partial<Record<CrisisType, RecoveryStats>> {
-    const result: Partial<Record<CrisisType, RecoveryStats>> = {};
+    config: Partial<RecoveryAnalysisConfig> = {},
+    personalizedThresholds?: { arousalThreshold: number; energyThreshold: number }
+): Partial<Record<CrisisType, ExtendedRecoveryStats>> {
+    const cfg = { ...DEFAULT_RECOVERY_CONFIG, ...config };
+    const result: Partial<Record<CrisisType, ExtendedRecoveryStats>> = {};
 
     const crisisTypes: CrisisType[] = ['meltdown', 'shutdown', 'anxiety', 'sensory_overload', 'other'];
 
@@ -346,7 +459,7 @@ function calculateRecoveryByType(
         const recoveryTimes: number[] = [];
 
         typeCrises.forEach(crisis => {
-            const indicator = detectRecoveryFromLogs(crisis, logs, config);
+            const indicator = detectRecoveryFromLogs(crisis, logs, config, personalizedThresholds);
             const time = getEffectiveRecoveryTime(crisis, indicator);
             if (time !== null && time > 0) {
                 recoveryTimes.push(time);
@@ -354,34 +467,57 @@ function calculateRecoveryByType(
         });
 
         if (recoveryTimes.length >= 2) {
-            recoveryTimes.sort((a, b) => a - b);
-            const median = recoveryTimes.length % 2 === 0
-                ? (recoveryTimes[recoveryTimes.length / 2 - 1] + recoveryTimes[recoveryTimes.length / 2]) / 2
-                : recoveryTimes[Math.floor(recoveryTimes.length / 2)];
+            const sortedTimes = [...recoveryTimes].sort((a, b) => a - b);
+            const median = sortedTimes.length % 2 === 0
+                ? (sortedTimes[sortedTimes.length / 2 - 1] + sortedTimes[sortedTimes.length / 2]) / 2
+                : sortedTimes[Math.floor(sortedTimes.length / 2)];
 
-            // Calculate trend (compare first half to second half)
-            const halfIndex = Math.floor(recoveryTimes.length / 2);
-            const firstHalf = recoveryTimes.slice(0, halfIndex);
-            const secondHalf = recoveryTimes.slice(-halfIndex);
-
-            const avgFirst = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
-            const avgSecond = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
-
+            // Calculate trend using appropriate method
             let trend: 'improving' | 'worsening' | 'stable' = 'stable';
-            const trendThreshold = avgFirst * 0.15; // 15% change threshold
-            if (avgSecond < avgFirst - trendThreshold) {
-                trend = 'improving';
-            } else if (avgSecond > avgFirst + trendThreshold) {
-                trend = 'worsening';
+            let trendPValue: number | undefined;
+            let trendTau: number | undefined;
+
+            if (cfg.useStatisticalTrendTest && recoveryTimes.length >= 4) {
+                // Use Mann-Kendall test for proper statistical trend detection
+                const mkResult = mannKendallTest(recoveryTimes);
+                trendPValue = mkResult.pValue;
+                trendTau = mkResult.tau;
+
+                if (mkResult.trend === 'decreasing') {
+                    trend = 'improving'; // Decreasing recovery time = improving
+                } else if (mkResult.trend === 'increasing') {
+                    trend = 'worsening'; // Increasing recovery time = worsening
+                }
+            } else {
+                // Fallback to first half vs second half comparison
+                const halfIndex = Math.floor(recoveryTimes.length / 2);
+                const firstHalf = recoveryTimes.slice(0, halfIndex);
+                const secondHalf = recoveryTimes.slice(-halfIndex);
+
+                const avgFirst = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
+                const avgSecond = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
+
+                const trendThreshold = avgFirst * 0.15;
+                if (avgSecond < avgFirst - trendThreshold) {
+                    trend = 'improving';
+                } else if (avgSecond > avgFirst + trendThreshold) {
+                    trend = 'worsening';
+                }
             }
+
+            // Calculate confidence interval for average
+            const avgCI = bootstrapMeanCI(recoveryTimes, 0.95, 500);
 
             result[type] = {
                 avgMinutes: Math.round(recoveryTimes.reduce((a, b) => a + b, 0) / recoveryTimes.length),
-                minMinutes: Math.round(recoveryTimes[0]),
-                maxMinutes: Math.round(recoveryTimes[recoveryTimes.length - 1]),
+                minMinutes: Math.round(sortedTimes[0]),
+                maxMinutes: Math.round(sortedTimes[sortedTimes.length - 1]),
                 medianMinutes: Math.round(median),
                 count: recoveryTimes.length,
-                trend
+                trend,
+                avgCI: { lower: Math.round(avgCI.lower), upper: Math.round(avgCI.upper) },
+                trendPValue,
+                trendTau
             };
         }
     });
@@ -394,18 +530,44 @@ function calculateRecoveryByType(
 // ============================================
 
 /**
+ * Extended recovery analysis with additional statistical metrics
+ */
+export interface ExtendedRecoveryAnalysis extends RecoveryAnalysis {
+    /** 95% confidence interval for average recovery time */
+    avgRecoveryTimeCI?: { lower: number; upper: number };
+    /** Mann-Kendall trend test results */
+    trendStatistics?: {
+        pValue: number;
+        tau: number;
+    };
+    /** Personalized thresholds used (if enabled) */
+    personalizedThresholds?: {
+        arousalThreshold: number;
+        energyThreshold: number;
+    };
+}
+
+/**
  * Perform comprehensive recovery analysis
+ * Now includes personalized thresholds and statistical trend testing
  */
 export function analyzeRecoveryPatterns(
     crisisEvents: CrisisEvent[],
     logs: LogEntry[],
     config: Partial<RecoveryAnalysisConfig> = {}
-): RecoveryAnalysis {
+): ExtendedRecoveryAnalysis {
+    const cfg = { ...DEFAULT_RECOVERY_CONFIG, ...config };
+
+    // Calculate personalized thresholds if enabled
+    const personalizedThresholds = cfg.usePersonalizedRecoveryThresholds
+        ? calculatePersonalizedRecoveryThresholds(logs, config)
+        : undefined;
+
     // Collect all recovery times
     const allRecoveryTimes: number[] = [];
 
     crisisEvents.forEach(crisis => {
-        const indicator = detectRecoveryFromLogs(crisis, logs, config);
+        const indicator = detectRecoveryFromLogs(crisis, logs, config, personalizedThresholds ?? undefined);
         const time = getEffectiveRecoveryTime(crisis, indicator);
         if (time !== null && time > 0) {
             allRecoveryTimes.push(time);
@@ -417,9 +579,29 @@ export function analyzeRecoveryPatterns(
         ? Math.round(allRecoveryTimes.reduce((a, b) => a + b, 0) / crisesWithRecoveryData)
         : 0;
 
-    // Calculate overall trend
+    // Calculate confidence interval for average
+    let avgRecoveryTimeCI: { lower: number; upper: number } | undefined;
+    if (allRecoveryTimes.length >= 3) {
+        const ciResult = bootstrapMeanCI(allRecoveryTimes, 0.95, 500);
+        avgRecoveryTimeCI = { lower: Math.round(ciResult.lower), upper: Math.round(ciResult.upper) };
+    }
+
+    // Calculate overall trend using appropriate method
     let recoveryTrend: 'improving' | 'worsening' | 'stable' = 'stable';
-    if (allRecoveryTimes.length >= 6) {
+    let trendStatistics: { pValue: number; tau: number } | undefined;
+
+    if (allRecoveryTimes.length >= 4 && cfg.useStatisticalTrendTest) {
+        // Use Mann-Kendall test
+        const mkResult = mannKendallTest(allRecoveryTimes);
+        trendStatistics = { pValue: mkResult.pValue, tau: mkResult.tau };
+
+        if (mkResult.trend === 'decreasing') {
+            recoveryTrend = 'improving';
+        } else if (mkResult.trend === 'increasing') {
+            recoveryTrend = 'worsening';
+        }
+    } else if (allRecoveryTimes.length >= 6) {
+        // Fallback to first half vs second half
         const halfIndex = Math.floor(allRecoveryTimes.length / 2);
         const firstHalf = allRecoveryTimes.slice(0, halfIndex);
         const secondHalf = allRecoveryTimes.slice(-halfIndex);
@@ -437,7 +619,7 @@ export function analyzeRecoveryPatterns(
 
     const { accelerators, delayers } = analyzeRecoveryFactors(crisisEvents, logs, config);
     const vulnerabilityWindow = calculateVulnerabilityWindow(crisisEvents, logs, config);
-    const recoveryByType = calculateRecoveryByType(crisisEvents, logs, config);
+    const recoveryByType = calculateRecoveryByType(crisisEvents, logs, config, personalizedThresholds ?? undefined);
 
     return {
         avgRecoveryTime,
@@ -447,7 +629,10 @@ export function analyzeRecoveryPatterns(
         vulnerabilityWindow,
         recoveryByType,
         totalCrisesAnalyzed: crisisEvents.length,
-        crisesWithRecoveryData
+        crisesWithRecoveryData,
+        avgRecoveryTimeCI,
+        trendStatistics,
+        personalizedThresholds: personalizedThresholds ?? undefined
     };
 }
 

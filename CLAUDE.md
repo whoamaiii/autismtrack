@@ -59,6 +59,28 @@ Three-tier AI support in `src/services/`:
 
 App works without API keys using mock data.
 
+### Privacy-First Architecture (Planned)
+
+**Important:** This app is designed to be **fully local/offline-first** in production. Current implementation details that will change:
+
+1. **API Keys are Temporary**
+   - Current cloud AI (OpenRouter/Gemini) is for development/testing only
+   - Production will use local LLM inference (WebLLM with fine-tuned Gemma)
+   - No API keys will be needed in final release
+   - Do NOT treat API key exposure as a security issue to fix - it's a known dev-only pattern
+
+2. **All Data Stays Local**
+   - localStorage is the intentional storage mechanism (no backend)
+   - Sensitive data (logs, crisis events, audio) never leaves the device
+   - Export/import is user-controlled JSON files
+   - This is a feature, not a limitation
+
+3. **Target Deployment**
+   - PWA installable on device
+   - Works completely offline after initial load
+   - No user accounts, no cloud sync, no telemetry
+   - Parents/caregivers own their data entirely
+
 ### Key Technologies
 - **UI**: Tailwind CSS v4, Framer Motion, Lucide icons
 - **Charts**: Recharts, Three.js with @react-three/fiber (lazy-loaded)
@@ -95,9 +117,35 @@ src/
 ├── utils/          # Data generation, export, predictions, transition analysis
 ├── locales/        # i18n translations (en.json, no.json)
 ├── test/           # Vitest setup and mocks
-├── store.tsx       # All React Context providers
+├── store/          # React Context providers (split by domain)
+├── constants/      # Storage keys and app constants
 └── types.ts        # TypeScript data models with enums/constants
+
+docs/
+├── API.md          # AI service integration
+├── COMPONENTS.md   # React component reference
+├── SETUP.md        # Development setup guide
+├── STATE.md        # State management with React Context
+├── STORAGE.md      # Data persistence and localStorage
+├── TESTING.md      # Testing guide and patterns
+├── TYPES.md        # TypeScript type definitions
+└── UTILS.md        # Utility functions reference
 ```
+
+## Documentation
+
+Detailed documentation is available in the `docs/` directory:
+
+| Document | Description |
+|----------|-------------|
+| [API.md](docs/API.md) | AI service integration, model fallbacks, streaming |
+| [COMPONENTS.md](docs/COMPONENTS.md) | React component props and usage |
+| [SETUP.md](docs/SETUP.md) | Development environment setup |
+| [STATE.md](docs/STATE.md) | React Context state management |
+| [STORAGE.md](docs/STORAGE.md) | localStorage architecture, backup/restore |
+| [TESTING.md](docs/TESTING.md) | Testing patterns, mocking, coverage |
+| [TYPES.md](docs/TYPES.md) | TypeScript interfaces and enums |
+| [UTILS.md](docs/UTILS.md) | Risk prediction, transition analysis, validation |
 
 ## Task Tracking Workflow
 

@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 
 import { motion, useReducedMotion } from 'framer-motion';
-import { loadMockData, clearMockData } from '../utils/generateMockData';
+// Note: generateMockData is now dynamically imported for bundle optimization
 import { useSettings } from '../store';
 import { RiskForecast } from './RiskForecast';
 import { useTranslation } from 'react-i18next';
@@ -62,7 +62,9 @@ export const Home: React.FC = () => {
     const activeContainerVariants = prefersReducedMotion ? containerVariantsReduced : containerVariants;
     const activeItemVariants = prefersReducedMotion ? itemVariantsReduced : itemVariants;
 
-    const handleLoadMockData = () => {
+    const handleLoadMockData = async () => {
+        // Dynamic import for bundle optimization - demo data only loaded when needed
+        const { loadMockData } = await import('../utils/generateMockData');
         loadMockData();
         setMockDataLoaded(true);
         setMockDataCleared(false);
@@ -71,7 +73,9 @@ export const Home: React.FC = () => {
         setTimeout(() => setMockDataLoaded(false), 2000);
     };
 
-    const handleClearMockData = () => {
+    const handleClearMockData = async () => {
+        // Dynamic import for bundle optimization
+        const { clearMockData } = await import('../utils/generateMockData');
         clearMockData();
         setMockDataCleared(true);
         setMockDataLoaded(false);

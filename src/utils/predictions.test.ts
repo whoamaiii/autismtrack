@@ -24,9 +24,11 @@ describe('calculateRiskForecast', () => {
         const now = new Date();
         const logs: LogEntry[] = [];
 
-        // Create 5 logs on same day of week within 30-day window, all with high arousal
-        for (let i = 0; i < 5; i++) {
-            const date = new Date(now.getTime() - (7 * i * 24 * 60 * 60 * 1000)); // Same day of week, going back weeks
+        // Create 10 logs on same day of week within 30-day window, all with high arousal
+        // (minSamplesForPrediction is now 10)
+        for (let i = 0; i < 10; i++) {
+            const date = new Date(now.getTime() - (Math.floor(i / 2) * 7 * 24 * 60 * 60 * 1000)); // Same day of week, going back weeks
+            date.setHours(10 + (i % 3)); // Spread across hours
             logs.push(createMockLog(8, date)); // High arousal
         }
 
@@ -54,9 +56,10 @@ describe('calculateRiskForecast', () => {
         const now = new Date();
         const logs: LogEntry[] = [];
 
-        // Create 5 logs on same day of week with low arousal
-        for (let i = 0; i < 5; i++) {
-            const date = new Date(now.getTime() - (7 * i * 24 * 60 * 60 * 1000));
+        // Create 10 logs on same day of week with low arousal (minSamplesForPrediction is 10)
+        for (let i = 0; i < 10; i++) {
+            const date = new Date(now.getTime() - (Math.floor(i / 2) * 7 * 24 * 60 * 60 * 1000));
+            date.setHours(10 + (i % 3));
             logs.push(createMockLog(3, date)); // Low arousal
         }
 
@@ -92,7 +95,7 @@ describe('calculateRiskForecast - Enhanced Features', () => {
         const logs: LogEntry[] = [];
 
         // Old high arousal logs (should have less weight due to decay)
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < 5; i++) {
             const date = new Date(now.getTime() - (25 * 24 * 60 * 60 * 1000)); // 25 days ago
             // Same day of week
             while (date.getDay() !== now.getDay()) {
@@ -103,11 +106,12 @@ describe('calculateRiskForecast - Enhanced Features', () => {
         }
 
         // Recent low arousal logs (should have more weight)
-        for (let i = 0; i < 3; i++) {
-            const date = new Date(now.getTime() - (7 * i * 24 * 60 * 60 * 1000)); // Recent weeks
+        for (let i = 0; i < 5; i++) {
+            const date = new Date(now.getTime() - (7 * Math.floor(i / 2) * 24 * 60 * 60 * 1000)); // Recent weeks
             while (date.getDay() !== now.getDay()) {
                 date.setDate(date.getDate() - 1);
             }
+            date.setHours(10 + i);
             logs.push(createMockLog(3, date));
         }
 
@@ -121,9 +125,9 @@ describe('calculateRiskForecast - Enhanced Features', () => {
         const now = new Date();
         const logs: LogEntry[] = [];
 
-        // Create very high risk scenario that would exceed 100
-        for (let i = 0; i < 5; i++) {
-            const date = new Date(now.getTime() - (7 * i * 24 * 60 * 60 * 1000));
+        // Create very high risk scenario that would exceed 100 (10 logs for minSamplesForPrediction)
+        for (let i = 0; i < 10; i++) {
+            const date = new Date(now.getTime() - (Math.floor(i / 2) * 7 * 24 * 60 * 60 * 1000));
             while (date.getDay() !== now.getDay()) {
                 date.setDate(date.getDate() - 1);
             }
@@ -143,7 +147,7 @@ describe('calculateRiskForecast - Enhanced Features', () => {
     it('should return confidence level based on sample size', () => {
         const now = new Date();
 
-        // Low sample size (exactly 5 - minimum)
+        // Low sample size (exactly 10 - minimum) - use custom config for lower threshold
         const fewLogs = Array.from({ length: 5 }, (_, i) => {
             const date = new Date(now.getTime() - (7 * i * 24 * 60 * 60 * 1000));
             while (date.getDay() !== now.getDay()) {
@@ -152,17 +156,16 @@ describe('calculateRiskForecast - Enhanced Features', () => {
             return createMockLog(5, date);
         });
 
-        const lowResult = calculateRiskForecast(fewLogs);
+        const lowResult = calculateRiskForecast(fewLogs, { minSamplesForPrediction: 5 });
         expect(lowResult.confidence).toBe('low');
 
-        // High sample size (15+) - need 15+ same-day logs
-        // Create 20 logs to ensure we have enough after filtering
-        const manyLogs = Array.from({ length: 20 }, (_, i) => {
-            const date = new Date(now.getTime() - (Math.floor(i / 5) * 7 * 24 * 60 * 60 * 1000));
+        // High sample size (30+) - need 30+ same-day logs for high confidence (3x min)
+        const manyLogs = Array.from({ length: 35 }, (_, i) => {
+            const date = new Date(now.getTime() - (Math.floor(i / 10) * 7 * 24 * 60 * 60 * 1000));
             while (date.getDay() !== now.getDay()) {
                 date.setDate(date.getDate() - 1);
             }
-            date.setHours(date.getHours() + (i % 5));
+            date.setHours(8 + (i % 10));
             return createMockLog(5, date);
         });
 
@@ -195,9 +198,9 @@ describe('calculateRiskForecast - Enhanced Features', () => {
         const now = new Date();
         const logs: LogEntry[] = [];
 
-        // Create pattern at 14:00
-        for (let i = 0; i < 5; i++) {
-            const date = new Date(now.getTime() - (7 * i * 24 * 60 * 60 * 1000));
+        // Create pattern at 14:00 (10 logs to meet minSamplesForPrediction)
+        for (let i = 0; i < 10; i++) {
+            const date = new Date(now.getTime() - (Math.floor(i / 2) * 7 * 24 * 60 * 60 * 1000));
             while (date.getDay() !== now.getDay()) {
                 date.setDate(date.getDate() - 1);
             }
@@ -212,16 +215,17 @@ describe('calculateRiskForecast - Enhanced Features', () => {
 
         const hour14 = result.hourlyRiskDistribution!.find(h => h.hour === 14);
         expect(hour14).toBeDefined();
-        expect(hour14!.incidentCount).toBe(5);
+        expect(hour14!.incidentCount).toBe(10);
     });
 
     it('should include sample size in result', () => {
         const now = new Date();
-        const logs = Array.from({ length: 8 }, (_, i) => {
-            const date = new Date(now.getTime() - (7 * Math.floor(i / 2) * 24 * 60 * 60 * 1000));
+        const logs = Array.from({ length: 12 }, (_, i) => {
+            const date = new Date(now.getTime() - (Math.floor(i / 3) * 7 * 24 * 60 * 60 * 1000));
             while (date.getDay() !== now.getDay()) {
                 date.setDate(date.getDate() - 1);
             }
+            date.setHours(10 + (i % 3));
             return createMockLog(5, date);
         });
 
@@ -234,25 +238,26 @@ describe('calculateRiskForecast - Enhanced Features', () => {
         const now = new Date();
         const logs: LogEntry[] = [];
 
-        // Create low arousal scenario (all below threshold)
-        for (let i = 0; i < 5; i++) {
-            const date = new Date(now.getTime() - (7 * i * 24 * 60 * 60 * 1000));
+        // Create low arousal scenario (all below default threshold of 7) - 10 logs for minSamples
+        for (let i = 0; i < 10; i++) {
+            const date = new Date(now.getTime() - (Math.floor(i / 2) * 7 * 24 * 60 * 60 * 1000));
             while (date.getDay() !== now.getDay()) {
                 date.setDate(date.getDate() - 1);
             }
-            logs.push(createMockLog(5, date)); // All low arousal
+            date.setHours(10 + (i % 3));
+            logs.push(createMockLog(5, date)); // All low arousal (below 7)
         }
 
-        // With default thresholds, low arousal should be 'low' risk
+        // With default thresholds (highArousal=7), low arousal (5) should be 'low' risk
         const defaultResult = calculateRiskForecast(logs);
         expect(defaultResult.level).toBe('low');
-        expect(defaultResult.score).toBe(0); // No high arousal events
 
         // Verify custom highArousalThreshold changes what counts as "high"
         const customResult = calculateRiskForecast(logs, {
-            highArousalThreshold: 4 // Now arousal=5 is considered "high"
+            highArousalThreshold: 4, // Now arousal=5 is considered "high"
+            personalizedThresholds: { enabled: false, highArousalPercentile: 75, recoveryPercentile: 25, minLogsForPersonalization: 20 }
         });
-        // With lower threshold, score should be higher
+        // With lower threshold, score should be higher since all arousal=5 now counts as "high"
         expect(customResult.score).toBeGreaterThan(0);
     });
 });

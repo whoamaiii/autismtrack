@@ -76,12 +76,14 @@ export default defineConfig({
         manualChunks: {
           // Core React dependencies
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          // Animation and UI libraries
-          'vendor-ui': ['framer-motion', 'lucide-react', 'recharts'],
+          // Animation and UI libraries (recharts separated for lazy-loaded routes)
+          'vendor-ui': ['framer-motion', 'lucide-react'],
+          // Charts library - only loaded on chart-heavy routes
+          'vendor-recharts': ['recharts'],
           // 3D/WebGL (largest dependency)
           'vendor-three': ['three', '@react-three/fiber', '@react-three/drei'],
-          // Utilities
-          'vendor-utils': ['date-fns', 'uuid', 'clsx', 'tailwind-merge'],
+          // Utilities (uuid removed - using native crypto.randomUUID)
+          'vendor-utils': ['date-fns', 'clsx', 'tailwind-merge'],
         },
       },
     },

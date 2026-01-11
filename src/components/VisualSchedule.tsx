@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { v4 as uuidv4 } from 'uuid';
 import { useSchedule, useAppContext } from '../store';
 import type { ScheduleEntry, ActivityStatus, DailyScheduleTemplate } from '../types';
 import { Settings } from 'lucide-react';
@@ -485,7 +484,7 @@ export const VisualSchedule: React.FC = () => {
 
         // Save completed activity to store for LLM analysis
         const entry: ScheduleEntry = {
-            id: uuidv4(),
+            id: crypto.randomUUID(),
             date: today,
             context: currentContext,
             activity: {
@@ -536,7 +535,7 @@ export const VisualSchedule: React.FC = () => {
         } else {
             // Create new activity
             const newActivity: Activity = {
-                id: uuidv4(),
+                id: crypto.randomUUID(),
                 ...activityData,
                 status: 'upcoming'
             };
@@ -582,7 +581,7 @@ export const VisualSchedule: React.FC = () => {
         if (editingActivity) {
             const newActivity: Activity = {
                 ...editingActivity,
-                id: uuidv4(),
+                id: crypto.randomUUID(),
                 title: `${editingActivity.title} (Copy)`,
                 status: 'upcoming'
             };

@@ -1,14 +1,11 @@
 import { GoogleGenAI } from "@google/genai";
 import type { LogEntry, AnalysisResult, CrisisEvent, ChildProfile } from '../types';
 import {
-    generateLogsHash,
     createAnalysisCache,
-    prepareLogsForAnalysis,
-    prepareCrisisEventsForAnalysis,
+    prepareAnalysisData,
     buildSystemPrompt,
     buildUserPrompt,
     parseAnalysisResponse,
-    getLogsDateRange,
     AI_CONFIG,
     type StreamCallbacks
 } from './aiCommon';
@@ -45,7 +42,7 @@ const cache = createAnalysisCache();
 // =============================================================================
 
 /**
- * Analyze logs using Gemini 3 Pro
+ * Analyze logs using Gemini 2.0 Flash (or Gemini 2.5 Pro for deep analysis)
  */
 export const analyzeLogsWithGemini = async (
     logs: LogEntry[],
@@ -56,8 +53,11 @@ export const analyzeLogsWithGemini = async (
         throw new Error('No logs provided for analysis');
     }
 
+    // Prepare data using shared utility
+    const analysisData = prepareAnalysisData(logs, crisisEvents);
+    const { preparedLogs, preparedCrisis, totalDays, dateRangeStart, dateRangeEnd, logsHash } = analysisData;
+
     // Check cache first
-    const logsHash = generateLogsHash(logs, crisisEvents);
     if (!options.forceRefresh) {
         const cached = cache.get(logsHash, 'regular');
         if (cached) {
@@ -71,13 +71,6 @@ export const analyzeLogsWithGemini = async (
     if (!GEMINI_API_KEY) {
         throw new Error('Gemini API key not configured');
     }
-
-    // Prepare data (using safe date range calculation)
-    const { oldest: oldestDate, newest: newestDate } = getLogsDateRange(logs);
-    const totalDays = Math.ceil((newestDate.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-
-    const preparedLogs = prepareLogsForAnalysis(logs, newestDate);
-    const preparedCrisis = prepareCrisisEventsForAnalysis(crisisEvents, newestDate);
 
     const systemPrompt = buildSystemPrompt(options.childProfile);
     const userPrompt = buildUserPrompt(preparedLogs, preparedCrisis, totalDays);
@@ -113,9 +106,9 @@ export const analyzeLogsWithGemini = async (
 
         const result = parseAnalysisResponse(content);
 
-        // Add metadata (using safe date range)
-        result.dateRangeStart = oldestDate.toISOString();
-        result.dateRangeEnd = newestDate.toISOString();
+        // Add metadata
+        result.dateRangeStart = dateRangeStart;
+        result.dateRangeEnd = dateRangeEnd;
         result.isDeepAnalysis = false;
         result.modelUsed = MODEL_ID;
 
@@ -148,12 +141,9 @@ export const analyzeLogsDeepWithGemini = async (
         throw new Error('Gemini API key not configured');
     }
 
-    // Prepare data (using safe date range calculation)
-    const { oldest: oldestDate, newest: newestDate } = getLogsDateRange(logs);
-    const totalDays = Math.ceil((newestDate.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-
-    const preparedLogs = prepareLogsForAnalysis(logs, newestDate);
-    const preparedCrisis = prepareCrisisEventsForAnalysis(crisisEvents, newestDate);
+    // Prepare data using shared utility
+    const analysisData = prepareAnalysisData(logs, crisisEvents);
+    const { preparedLogs, preparedCrisis, totalDays, dateRangeStart, dateRangeEnd, logsHash } = analysisData;
 
     const systemPrompt = buildSystemPrompt(options.childProfile) + `
 
@@ -192,14 +182,13 @@ VIKTIG: Dette er en DYP ANALYSE. Bruk mer tid på å tenke gjennom sammenhenger.
 
         const result = parseAnalysisResponse(content);
 
-        // Add metadata (using safe date range from earlier)
-        result.dateRangeStart = oldestDate.toISOString();
-        result.dateRangeEnd = newestDate.toISOString();
+        // Add metadata
+        result.dateRangeStart = dateRangeStart;
+        result.dateRangeEnd = dateRangeEnd;
         result.isDeepAnalysis = true;
         result.modelUsed = PREMIUM_MODEL_ID;
 
         // Cache the result
-        const logsHash = generateLogsHash(logs, crisisEvents);
         cache.set(result, logsHash, 'deep');
 
         return { ...result, modelUsed: PREMIUM_MODEL_ID };
@@ -230,12 +219,9 @@ export const analyzeLogsStreamingWithGemini = async (
         throw new Error('Gemini API key not configured');
     }
 
-    // Prepare data (using safe date range calculation)
-    const { oldest: oldestDate, newest: newestDate } = getLogsDateRange(logs);
-    const totalDays = Math.ceil((newestDate.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-
-    const preparedLogs = prepareLogsForAnalysis(logs, newestDate);
-    const preparedCrisis = prepareCrisisEventsForAnalysis(crisisEvents, newestDate);
+    // Prepare data using shared utility
+    const analysisData = prepareAnalysisData(logs, crisisEvents);
+    const { preparedLogs, preparedCrisis, totalDays, dateRangeStart, dateRangeEnd, logsHash } = analysisData;
 
     const systemPrompt = buildSystemPrompt(options.childProfile);
     const userPrompt = buildUserPrompt(preparedLogs, preparedCrisis, totalDays);
@@ -281,14 +267,13 @@ export const analyzeLogsStreamingWithGemini = async (
 
             const result = parseAnalysisResponse(fullText);
 
-            // Add metadata (using safe date range)
-            result.dateRangeStart = oldestDate.toISOString();
-            result.dateRangeEnd = newestDate.toISOString();
+            // Add metadata
+            result.dateRangeStart = dateRangeStart;
+            result.dateRangeEnd = dateRangeEnd;
             result.isDeepAnalysis = false;
             result.modelUsed = MODEL_ID;
 
             // Cache the result
-            const logsHash = generateLogsHash(logs, crisisEvents);
             cache.set(result, logsHash, 'regular');
 
             return result;

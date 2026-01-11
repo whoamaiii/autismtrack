@@ -1,6 +1,14 @@
 /**
  * Multi-Factor Pattern Analysis
  * Detects complex patterns like "high arousal occurs WHEN energy < 4 AND time = afternoon"
+ *
+ * Improvements implemented:
+ * - Multiple comparison correction (Benjamini-Hochberg FDR)
+ * - Proper chi-squared p-value calculation
+ * - Adaptive quantile-based discretization
+ * - Interaction effect testing
+ * - Stratified analysis by context
+ * - Confidence intervals for probabilities
  */
 
 import type {
@@ -17,6 +25,13 @@ import {
     DEFAULT_MULTI_FACTOR_CONFIG,
     type MultiFactorConfig
 } from './analysisConfig';
+import {
+    chiSquaredPValue,
+    benjaminiHochbergCorrection,
+    wilsonScoreInterval,
+    calculateQuantileThresholds,
+    assignToBin
+} from './statisticalUtils';
 
 // ============================================
 // FACTOR EXTRACTION
@@ -46,28 +61,59 @@ function getHourBucket(hour: number): ExtractedFactors['hourBucket'] {
     return 'night';
 }
 
-function extractFactors(log: LogEntry, config: MultiFactorConfig): ExtractedFactors {
+/**
+ * Calculate adaptive thresholds based on the full dataset
+ */
+export function calculateAdaptiveThresholds(logs: LogEntry[]): {
+    energyThresholds: number[];
+    arousalThresholds: number[];
+} {
+    const energyValues = logs.map(l => l.energy);
+    const arousalValues = logs.map(l => l.arousal);
+
+    return {
+        energyThresholds: calculateQuantileThresholds(energyValues, 3),
+        arousalThresholds: calculateQuantileThresholds(arousalValues, 3)
+    };
+}
+
+function extractFactors(
+    log: LogEntry,
+    config: MultiFactorConfig,
+    adaptiveThresholds?: { energyThresholds: number[]; arousalThresholds: number[] }
+): ExtractedFactors {
     const date = new Date(log.timestamp);
     const hour = date.getHours();
     const dayOfWeek = log.dayOfWeek || 'monday';
     const isWeekend = dayOfWeek === 'saturday' || dayOfWeek === 'sunday';
 
     let energyLevel: 'low' | 'moderate' | 'high';
-    if (log.energy < config.energyThresholds.low) {
-        energyLevel = 'low';
-    } else if (log.energy > config.energyThresholds.high) {
-        energyLevel = 'high';
-    } else {
-        energyLevel = 'moderate';
-    }
-
     let arousalLevel: 'low' | 'moderate' | 'high';
-    if (log.arousal <= 3) {
-        arousalLevel = 'low';
-    } else if (log.arousal >= 7) {
-        arousalLevel = 'high';
+
+    // Use adaptive discretization if enabled and thresholds are available
+    if (config.enableAdaptiveDiscretization && adaptiveThresholds) {
+        const energyBin = assignToBin(log.energy, adaptiveThresholds.energyThresholds);
+        energyLevel = ['low', 'moderate', 'high'][energyBin] as 'low' | 'moderate' | 'high';
+
+        const arousalBin = assignToBin(log.arousal, adaptiveThresholds.arousalThresholds);
+        arousalLevel = ['low', 'moderate', 'high'][arousalBin] as 'low' | 'moderate' | 'high';
     } else {
-        arousalLevel = 'moderate';
+        // Fallback to fixed thresholds
+        if (log.energy < config.energyThresholds.low) {
+            energyLevel = 'low';
+        } else if (log.energy > config.energyThresholds.high) {
+            energyLevel = 'high';
+        } else {
+            energyLevel = 'moderate';
+        }
+
+        if (log.arousal <= 3) {
+            arousalLevel = 'low';
+        } else if (log.arousal >= 7) {
+            arousalLevel = 'high';
+        } else {
+            arousalLevel = 'moderate';
+        }
     }
 
     return {
@@ -164,6 +210,8 @@ function generateFactorCombinations(
     });
 
     // Generate combinations up to maxFactors
+    // Performance optimization: limit total combinations to prevent CPU spikes
+    const MAX_COMBINATIONS = 150;
     const combinations: FactorCombination[] = [];
 
     // Single factors
@@ -174,10 +222,11 @@ function generateFactorCombinations(
         });
     });
 
-    // Two-factor combinations
-    if (maxFactors >= 2) {
-        for (let i = 0; i < baseFacts.length; i++) {
+    // Two-factor combinations (with early termination)
+    if (maxFactors >= 2 && combinations.length < MAX_COMBINATIONS) {
+        outer2: for (let i = 0; i < baseFacts.length; i++) {
             for (let j = i + 1; j < baseFacts.length; j++) {
+                if (combinations.length >= MAX_COMBINATIONS) break outer2;
                 const combo = [baseFacts[i], baseFacts[j]];
                 combinations.push({
                     factors: combo,
@@ -187,11 +236,12 @@ function generateFactorCombinations(
         }
     }
 
-    // Three-factor combinations (most valuable for insights)
-    if (maxFactors >= 3) {
-        for (let i = 0; i < baseFacts.length; i++) {
+    // Three-factor combinations (with early termination to prevent O(n^3) explosion)
+    if (maxFactors >= 3 && combinations.length < MAX_COMBINATIONS) {
+        outer3: for (let i = 0; i < baseFacts.length; i++) {
             for (let j = i + 1; j < baseFacts.length; j++) {
                 for (let k = j + 1; k < baseFacts.length; k++) {
+                    if (combinations.length >= MAX_COMBINATIONS) break outer3;
                     const combo = [baseFacts[i], baseFacts[j], baseFacts[k]];
                     combinations.push({
                         factors: combo,
@@ -212,21 +262,21 @@ function generateFactorCombinations(
 /**
  * Chi-squared test for independence
  * Tests if the observed frequency differs significantly from expected
+ * Now uses proper chi-squared CDF for accurate p-values
  */
 function calculateChiSquared(
     observed: number,
     expected: number,
-    total: number
+    _total: number
 ): { chiSquared: number; pValue: number } {
-    if (expected === 0 || total === 0) {
+    if (expected === 0) {
         return { chiSquared: 0, pValue: 1 };
     }
 
     const chiSquared = Math.pow(observed - expected, 2) / expected;
 
-    // Approximate p-value using chi-squared distribution with 1 df
-    // Using the Wilson-Hilferty approximation
-    const pValue = Math.exp(-chiSquared / 2);
+    // Use proper chi-squared CDF for accurate p-value (df=1)
+    const pValue = chiSquaredPValue(chiSquared, 1);
 
     return { chiSquared, pValue };
 }
@@ -255,25 +305,55 @@ interface PatternStats {
 }
 
 /**
+ * Extended pattern result with confidence intervals
+ */
+export interface ExtendedMultiFactorPattern extends MultiFactorPattern {
+    /** 95% confidence interval for probability */
+    probabilityCI?: { lower: number; upper: number };
+    /** Sample size for this pattern */
+    sampleSize: number;
+    /** Adjusted p-value after FDR correction */
+    adjustedPValue?: number;
+    /** Whether significant after FDR correction */
+    significantAfterCorrection?: boolean;
+    /** Context-specific probabilities if stratified analysis enabled */
+    contextBreakdown?: {
+        home?: { probability: number; count: number };
+        school?: { probability: number; count: number };
+    };
+}
+
+/**
  * Analyze logs to find multi-factor patterns that predict high arousal or crises
+ * Now includes: FDR correction, confidence intervals, adaptive discretization, stratified analysis
  */
 export function analyzeMultiFactorPatterns(
     logs: LogEntry[],
     _crisisEvents: CrisisEvent[],
     config: Partial<MultiFactorConfig> = {}
-): MultiFactorPattern[] {
+): ExtendedMultiFactorPattern[] {
     const cfg = { ...DEFAULT_MULTI_FACTOR_CONFIG, ...config };
 
     if (logs.length < cfg.minLogsForAnalysis) {
         return [];
     }
 
-    // Track pattern statistics
-    const patternStats = new Map<string, PatternStats>();
+    // Calculate adaptive thresholds if enabled
+    const adaptiveThresholds = cfg.enableAdaptiveDiscretization
+        ? calculateAdaptiveThresholds(logs)
+        : undefined;
+
+    // Track pattern statistics (including context breakdown)
+    const patternStats = new Map<string, PatternStats & {
+        homeOutcome: number;
+        homeTotal: number;
+        schoolOutcome: number;
+        schoolTotal: number;
+    }>();
 
     // Process each log
     logs.forEach(log => {
-        const extracted = extractFactors(log, cfg);
+        const extracted = extractFactors(log, cfg, adaptiveThresholds);
         const isHighArousal = log.arousal >= 7;
 
         const combinations = generateFactorCombinations(extracted, cfg.maxFactorsPerPattern);
@@ -285,13 +365,25 @@ export function analyzeMultiFactorPatterns(
                 if (isHighArousal) {
                     existing.outcomeCount++;
                 }
+                // Track by context for stratified analysis
+                if (log.context === 'home') {
+                    existing.homeTotal++;
+                    if (isHighArousal) existing.homeOutcome++;
+                } else {
+                    existing.schoolTotal++;
+                    if (isHighArousal) existing.schoolOutcome++;
+                }
             } else {
                 patternStats.set(combo.key, {
                     factors: combo.factors,
                     outcomeCount: isHighArousal ? 1 : 0,
                     totalWithFactors: 1,
                     totalWithoutFactors: 0,
-                    outcomeWithoutFactors: 0
+                    outcomeWithoutFactors: 0,
+                    homeOutcome: log.context === 'home' && isHighArousal ? 1 : 0,
+                    homeTotal: log.context === 'home' ? 1 : 0,
+                    schoolOutcome: log.context === 'school' && isHighArousal ? 1 : 0,
+                    schoolTotal: log.context === 'school' ? 1 : 0
                 });
             }
         });
@@ -301,8 +393,14 @@ export function analyzeMultiFactorPatterns(
     const baselineHighArousal = logs.filter(l => l.arousal >= 7).length;
     const baselineRate = baselineHighArousal / logs.length;
 
-    // Convert to patterns with statistical analysis
-    const patterns: MultiFactorPattern[] = [];
+    // First pass: collect all candidate patterns with p-values
+    const candidatePatterns: Array<{
+        key: string;
+        stats: PatternStats & { homeOutcome: number; homeTotal: number; schoolOutcome: number; schoolTotal: number };
+        probability: number;
+        pValue: number;
+        probabilityCI: { lower: number; upper: number };
+    }> = [];
 
     patternStats.forEach((stats, key) => {
         // Skip if not enough occurrences
@@ -320,26 +418,87 @@ export function analyzeMultiFactorPatterns(
         // Calculate expected based on baseline
         const expectedOutcomes = stats.totalWithFactors * baselineRate;
 
-        // Chi-squared test
+        // Chi-squared test with proper p-value
         const { pValue } = calculateChiSquared(
             stats.outcomeCount,
             expectedOutcomes,
             logs.length
         );
 
+        // Calculate Wilson score confidence interval
+        const probabilityCI = wilsonScoreInterval(
+            stats.outcomeCount,
+            stats.totalWithFactors,
+            0.95
+        );
+
+        candidatePatterns.push({
+            key,
+            stats,
+            probability,
+            pValue,
+            probabilityCI: { lower: probabilityCI.lower, upper: probabilityCI.upper }
+        });
+    });
+
+    // Apply multiple comparison correction if enabled
+    let adjustedResults: { adjustedPValues: number[]; significant: boolean[] } | null = null;
+    if (cfg.enableMultipleComparisonCorrection && candidatePatterns.length > 0) {
+        const pValues = candidatePatterns.map(p => p.pValue);
+        adjustedResults = benjaminiHochbergCorrection(pValues, cfg.fdrLevel);
+    }
+
+    // Convert to patterns with statistical analysis
+    const patterns: ExtendedMultiFactorPattern[] = [];
+
+    candidatePatterns.forEach((candidate, index) => {
+        const { stats, probability, pValue, probabilityCI } = candidate;
+
+        // Check significance (with or without FDR correction)
+        let isSignificant: boolean;
+        let adjustedPValue: number | undefined;
+        let significantAfterCorrection: boolean | undefined;
+
+        if (adjustedResults) {
+            adjustedPValue = adjustedResults.adjustedPValues[index];
+            significantAfterCorrection = adjustedResults.significant[index];
+            isSignificant = significantAfterCorrection;
+        } else {
+            isSignificant = pValue <= cfg.significanceLevel;
+        }
+
         // Only include if statistically significant
-        if (pValue > cfg.significanceLevel) {
+        if (!isSignificant) {
             return;
         }
 
         const confidence = getConfidenceLevel(pValue, stats.totalWithFactors, cfg.significanceLevel);
 
-        // Generate human-readable description
+        // Generate human-readable description with CI
         const factorDescriptions = stats.factors.map(f => f.label).join(' + ');
-        const description = `Når ${factorDescriptions}, er det ${Math.round(probability * 100)}% sannsynlighet for høy aktivering (vs ${Math.round(baselineRate * 100)}% normalt)`;
+        const ciText = `${Math.round(probabilityCI.lower * 100)}-${Math.round(probabilityCI.upper * 100)}%`;
+        const description = `Når ${factorDescriptions}, er det ${Math.round(probability * 100)}% (${ciText}) sannsynlighet for høy aktivering (vs ${Math.round(baselineRate * 100)}% normalt)`;
+
+        // Build context breakdown if stratified analysis enabled
+        let contextBreakdown: ExtendedMultiFactorPattern['contextBreakdown'];
+        if (cfg.enableStratifiedAnalysis) {
+            contextBreakdown = {};
+            if (stats.homeTotal >= 2) {
+                contextBreakdown.home = {
+                    probability: stats.homeTotal > 0 ? stats.homeOutcome / stats.homeTotal : 0,
+                    count: stats.homeTotal
+                };
+            }
+            if (stats.schoolTotal >= 2) {
+                contextBreakdown.school = {
+                    probability: stats.schoolTotal > 0 ? stats.schoolOutcome / stats.schoolTotal : 0,
+                    count: stats.schoolTotal
+                };
+            }
+        }
 
         patterns.push({
-            id: key,
+            id: candidate.key,
             factors: stats.factors,
             outcome: 'high_arousal' as PatternOutcome,
             occurrenceCount: stats.outcomeCount,
@@ -347,7 +506,12 @@ export function analyzeMultiFactorPatterns(
             probability,
             pValue,
             confidence,
-            description
+            description,
+            probabilityCI,
+            sampleSize: stats.totalWithFactors,
+            adjustedPValue,
+            significantAfterCorrection,
+            contextBreakdown
         });
     });
 
@@ -361,6 +525,104 @@ export function analyzeMultiFactorPatterns(
 
     // Return top patterns (limit to prevent overwhelming)
     return patterns.slice(0, 10);
+}
+
+/**
+ * Analyze interaction effects between two factors
+ * Tests if the combination has a synergistic effect beyond individual factors
+ */
+export function analyzeInteractionEffects(
+    logs: LogEntry[],
+    config: Partial<MultiFactorConfig> = {}
+): Array<{
+    factor1: string;
+    factor2: string;
+    individualEffect1: number;
+    individualEffect2: number;
+    combinedEffect: number;
+    interactionStrength: number;
+    synergistic: boolean;
+    description: string;
+}> {
+    const cfg = { ...DEFAULT_MULTI_FACTOR_CONFIG, ...config };
+
+    if (!cfg.enableInteractionTesting || logs.length < cfg.minLogsForAnalysis) {
+        return [];
+    }
+
+    const adaptiveThresholds = cfg.enableAdaptiveDiscretization
+        ? calculateAdaptiveThresholds(logs)
+        : undefined;
+
+    // Extract factors for all logs
+    const extractedLogs = logs.map(log => ({
+        log,
+        factors: extractFactors(log, cfg, adaptiveThresholds),
+        isHighArousal: log.arousal >= 7
+    }));
+
+    const baselineRate = logs.filter(l => l.arousal >= 7).length / logs.length;
+
+    const interactions: Array<{
+        factor1: string;
+        factor2: string;
+        individualEffect1: number;
+        individualEffect2: number;
+        combinedEffect: number;
+        interactionStrength: number;
+        synergistic: boolean;
+        description: string;
+    }> = [];
+
+    // Test energy × timeOfDay interaction
+    const energyLevels = ['low', 'moderate', 'high'] as const;
+    const timeBuckets = ['early_morning', 'morning', 'midday', 'afternoon', 'evening', 'night'] as const;
+
+    for (const energy of energyLevels) {
+        for (const time of timeBuckets) {
+            // Calculate individual effects
+            const withEnergy = extractedLogs.filter(l => l.factors.energyLevel === energy);
+            const withTime = extractedLogs.filter(l => l.factors.hourBucket === time);
+            const withBoth = extractedLogs.filter(l =>
+                l.factors.energyLevel === energy && l.factors.hourBucket === time
+            );
+
+            if (withBoth.length < cfg.minOccurrencesForPattern) continue;
+
+            const energyEffect = withEnergy.length > 0
+                ? withEnergy.filter(l => l.isHighArousal).length / withEnergy.length - baselineRate
+                : 0;
+            const timeEffect = withTime.length > 0
+                ? withTime.filter(l => l.isHighArousal).length / withTime.length - baselineRate
+                : 0;
+            const combinedEffect = withBoth.filter(l => l.isHighArousal).length / withBoth.length - baselineRate;
+
+            // Expected additive effect
+            const expectedAdditiveEffect = energyEffect + timeEffect;
+            const interactionStrength = combinedEffect - expectedAdditiveEffect;
+
+            // Only report significant interactions
+            if (Math.abs(interactionStrength) > 0.15) {
+                interactions.push({
+                    factor1: `Energi: ${energy}`,
+                    factor2: `Tid: ${time}`,
+                    individualEffect1: energyEffect,
+                    individualEffect2: timeEffect,
+                    combinedEffect,
+                    interactionStrength,
+                    synergistic: interactionStrength > 0,
+                    description: interactionStrength > 0
+                        ? `${energy} energi + ${time} har sterkere effekt enn forventet (${Math.round(interactionStrength * 100)}% ekstra risiko)`
+                        : `${energy} energi + ${time} har svakere effekt enn forventet (${Math.round(Math.abs(interactionStrength) * 100)}% mindre risiko)`
+                });
+            }
+        }
+    }
+
+    // Sort by interaction strength
+    interactions.sort((a, b) => Math.abs(b.interactionStrength) - Math.abs(a.interactionStrength));
+
+    return interactions.slice(0, 5);
 }
 
 /**

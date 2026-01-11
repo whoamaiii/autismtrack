@@ -166,6 +166,9 @@ export function exportAllData(): ExportedData {
                 if (g.currentValue <= g.targetValue) {
                     progress = 100;
                 } else if (range <= 0) {
+                    // Edge case: baseline equals or is below target value
+                    // This can happen if first recorded value was already at/below target
+                    // Cannot calculate meaningful progress, default to 0%
                     progress = 0;
                 } else {
                     progress = Math.min(100, Math.max(0, (baseline - g.currentValue) / range * 100));

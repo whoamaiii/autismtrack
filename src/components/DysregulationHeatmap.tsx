@@ -92,7 +92,9 @@ export const DysregulationHeatmap: React.FC = () => {
             });
         });
 
-        // Process logs
+        // Process logs - collect sums first, divide at end (performance optimization)
+        // Using a separate sumMap to avoid division in the loop
+        const sumMap = new Map<string, number>();
         logs.forEach(log => {
             const date = new Date(log.timestamp);
             const hour = date.getHours();
@@ -108,10 +110,18 @@ export const DysregulationHeatmap: React.FC = () => {
             const key = `${dayId}-${timeBlock.id}`;
             const cell = cellMap.get(key);
             if (cell) {
-                const totalArousal = cell.avgArousal * cell.logCount + log.arousal;
+                // Accumulate sum and count (defer division)
+                sumMap.set(key, (sumMap.get(key) || 0) + log.arousal);
                 cell.logCount += 1;
-                cell.avgArousal = totalArousal / cell.logCount;
                 cell.maxArousal = Math.max(cell.maxArousal, log.arousal);
+            }
+        });
+
+        // Calculate averages after all logs are processed (single division per cell)
+        sumMap.forEach((sum, key) => {
+            const cell = cellMap.get(key);
+            if (cell && cell.logCount > 0) {
+                cell.avgArousal = sum / cell.logCount;
             }
         });
 

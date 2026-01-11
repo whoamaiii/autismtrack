@@ -10,9 +10,7 @@ import {
 import {
     generateLogsHash,
     createAnalysisCache,
-    getLogsDateRange,
-    prepareLogsForAnalysis,
-    prepareCrisisEventsForAnalysis,
+    prepareAnalysisData,
     buildSystemPrompt,
     buildUserPrompt,
     parseAnalysisResponse,
@@ -177,10 +175,37 @@ function deduplicatedRequest<T extends AnalysisResult>(
 }
 
 // =============================================================================
-// API COMMUNICATION
+// API UTILITIES
 // =============================================================================
 
 const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+ * Parses API error responses into readable error messages
+ * Handles both JSON and plain text error formats
+ */
+const parseApiError = (errorText: string): string => {
+    try {
+        const errorJson = JSON.parse(errorText);
+        return errorJson.error?.message || errorJson.message || errorText;
+    } catch {
+        return errorText;
+    }
+};
+
+/**
+ * Creates standard headers for OpenRouter API requests
+ */
+const createApiHeaders = (): HeadersInit => ({
+    'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+    'HTTP-Referer': SITE_URL,
+    'X-Title': SITE_NAME,
+    'Content-Type': 'application/json'
+});
+
+// =============================================================================
+// API COMMUNICATION
+// =============================================================================
 
 const callOpenRouter = async (
     messages: OpenRouterMessage[],
@@ -204,26 +229,14 @@ const callOpenRouter = async (
     try {
         const response = await fetch(API_CONFIG.baseUrl, {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-                'HTTP-Referer': SITE_URL,
-                'X-Title': SITE_NAME,
-                'Content-Type': 'application/json'
-            },
+            headers: createApiHeaders(),
             body: JSON.stringify(requestBody),
             signal: controller.signal
         });
 
         if (!response.ok) {
             const errorText = await response.text();
-            // Try to parse as JSON for better error messages
-            let errorMsg = errorText;
-            try {
-                const errorJson = JSON.parse(errorText);
-                errorMsg = errorJson.error?.message || errorJson.message || errorText;
-            } catch {
-                // Keep raw error text
-            }
+            const errorMsg = parseApiError(errorText);
             if (import.meta.env.DEV) {
                 console.error(`OpenRouter API Error (${modelId}):`, response.status, errorMsg);
             }
@@ -312,26 +325,14 @@ const callOpenRouterStreaming = async (
     try {
         const response = await fetch(API_CONFIG.baseUrl, {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-                'HTTP-Referer': SITE_URL,
-                'X-Title': SITE_NAME,
-                'Content-Type': 'application/json'
-            },
+            headers: createApiHeaders(),
             body: JSON.stringify(requestBody),
             signal: controller.signal
         });
 
         if (!response.ok) {
             const errorText = await response.text();
-            // Try to parse as JSON for better error messages
-            let errorMsg = errorText;
-            try {
-                const errorJson = JSON.parse(errorText);
-                errorMsg = errorJson.error?.message || errorJson.message || errorText;
-            } catch {
-                // Keep raw error text
-            }
+            const errorMsg = parseApiError(errorText);
             throw new Error(`OpenRouter streaming: ${errorMsg} (${response.status})`);
         }
 
@@ -419,12 +420,9 @@ export const analyzeLogsStreamingWithOpenRouter = async (
         return result;
     }
 
-    // Prepare data
-    const { oldest: oldestDate, newest: newestDate } = getLogsDateRange(logs);
-    const totalDays = Math.ceil((newestDate.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-
-    const preparedLogs = prepareLogsForAnalysis(logs, newestDate);
-    const preparedCrisis = prepareCrisisEventsForAnalysis(crisisEvents, newestDate);
+    // Prepare data using shared utility
+    const analysisData = prepareAnalysisData(logs, crisisEvents);
+    const { preparedLogs, preparedCrisis, totalDays, dateRangeStart, dateRangeEnd, logsHash } = analysisData;
 
     const systemPrompt = buildSystemPrompt(options.childProfile);
     const userPrompt = buildUserPrompt(preparedLogs, preparedCrisis, totalDays);
@@ -447,12 +445,11 @@ export const analyzeLogsStreamingWithOpenRouter = async (
             const result = parseAnalysisResponse(fullText);
 
             // Add metadata
-            result.dateRangeStart = oldestDate.toISOString();
-            result.dateRangeEnd = newestDate.toISOString();
+            result.dateRangeStart = dateRangeStart;
+            result.dateRangeEnd = dateRangeEnd;
             result.isDeepAnalysis = false;
 
             // Cache the result
-            const logsHash = generateLogsHash(logs, crisisEvents);
             cache.set(result, logsHash, 'regular');
 
             return result;
@@ -615,8 +612,11 @@ export const analyzeLogs = async (
         }
     }
 
+    // Prepare data using shared utility
+    const analysisData = prepareAnalysisData(logs, crisisEvents);
+    const { preparedLogs, preparedCrisis, totalDays, dateRangeStart, dateRangeEnd, logsHash } = analysisData;
+
     // Check cache first (unless force refresh)
-    const logsHash = generateLogsHash(logs, crisisEvents);
     if (!options.forceRefresh) {
         const cached = cache.get(logsHash, 'regular');
         if (cached) {
@@ -635,20 +635,9 @@ export const analyzeLogs = async (
         return generateMockAnalysis();
     }
 
-    // Prepare data - safely calculate date range without assuming sort order
-    const { oldest: oldestDate, newest: newestDate } = getLogsDateRange(logs);
-    const totalDays = Math.ceil((newestDate.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-
-    const preparedLogs = prepareLogsForAnalysis(logs, newestDate);
-    const preparedCrisis = prepareCrisisEventsForAnalysis(crisisEvents, newestDate);
-
     // Build prompts with child profile for personalization
     const systemPrompt = buildSystemPrompt(options.childProfile);
     const userPrompt = buildUserPrompt(preparedLogs, preparedCrisis, totalDays);
-
-    // Calculate date range for result
-    const dateRangeStart = oldestDate.toISOString();
-    const dateRangeEnd = newestDate.toISOString();
 
     try {
         if (import.meta.env.DEV) {
@@ -736,12 +725,9 @@ export const analyzeLogsDeep = async (
         return generateMockAnalysis();
     }
 
-    // Prepare data - safely calculate date range without assuming sort order
-    const { oldest: oldestDate, newest: newestDate } = getLogsDateRange(logs);
-    const totalDays = Math.ceil((newestDate.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-
-    const preparedLogs = prepareLogsForAnalysis(logs, newestDate);
-    const preparedCrisis = prepareCrisisEventsForAnalysis(crisisEvents, newestDate);
+    // Prepare data using shared utility
+    const analysisData = prepareAnalysisData(logs, crisisEvents);
+    const { preparedLogs, preparedCrisis, totalDays, dateRangeStart, dateRangeEnd, logsHash } = analysisData;
 
     // Enhanced system prompt for deep analysis
     const systemPrompt = buildSystemPrompt(options.childProfile) + `
@@ -753,10 +739,6 @@ VIKTIG: Dette er en DYP ANALYSE. Bruk mer tid på å tenke gjennom sammenhenger.
 - Vurder langsiktige trender og deres implikasjoner`;
 
     const userPrompt = buildUserPrompt(preparedLogs, preparedCrisis, totalDays);
-
-    // Calculate date range for result
-    const dateRangeStart = oldestDate.toISOString();
-    const dateRangeEnd = newestDate.toISOString();
 
     const messages: OpenRouterMessage[] = [
         { role: 'system', content: systemPrompt },
@@ -796,7 +778,6 @@ VIKTIG: Dette er en DYP ANALYSE. Bruk mer tid på å tenke gjennom sammenhenger.
             const finalResult = { ...result, modelUsed };
 
             // Cache the result for other components (like Reports) to use
-            const logsHash = generateLogsHash(logs, crisisEvents);
             cache.set(finalResult, logsHash, 'deep');
 
             if (import.meta.env.DEV) {
@@ -836,8 +817,7 @@ VIKTIG: Dette er en DYP ANALYSE. Bruk mer tid på å tenke gjennom sammenhenger.
         modelUsed = FREE_MODEL_ID;
         const finalResult = { ...result, modelUsed };
 
-        // Cache the result
-        const logsHash = generateLogsHash(logs, crisisEvents);
+        // Cache the result (reuse logsHash from prepareAnalysisData)
         cache.set(finalResult, logsHash, 'regular'); // Cache as regular since it's downgraded
 
         if (import.meta.env.DEV) {

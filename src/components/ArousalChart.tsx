@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import type { LogEntry } from '../types';
 import { format } from 'date-fns';
@@ -11,14 +11,17 @@ interface ArousalChartProps {
 export const ArousalChart: React.FC<ArousalChartProps> = ({ logs }) => {
     const { t } = useTranslation();
 
-    // Sort logs by timestamp
-    const sortedLogs = [...logs].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-
-    const data = sortedLogs.map(log => ({
-        time: new Date(log.timestamp).getTime(),
-        arousal: log.arousal,
-        formattedTime: format(new Date(log.timestamp), 'HH:mm'),
-    }));
+    // Memoize sorted logs and chart data to prevent re-sorting on every render
+    const data = useMemo(() => {
+        const sortedLogs = [...logs].sort((a, b) =>
+            new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        );
+        return sortedLogs.map(log => ({
+            time: new Date(log.timestamp).getTime(),
+            arousal: log.arousal,
+            formattedTime: format(new Date(log.timestamp), 'HH:mm'),
+        }));
+    }, [logs]);
 
     if (data.length === 0) {
         return (

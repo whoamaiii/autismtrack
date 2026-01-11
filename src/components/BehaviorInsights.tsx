@@ -531,6 +531,7 @@ export const BehaviorInsights: React.FC = () => {
                             ))}
                         </div>
                         {/* Time rows with all 5 time periods including night */}
+                        {/* Performance: Using CSS animations instead of 35 motion.div elements */}
                         {timeKeys.map((time, timeIdx) => (
                             <div key={time} className="grid grid-cols-8 gap-1 mt-2" role="row">
                                 <div className="flex items-center justify-center text-xs font-bold text-slate-400" role="rowheader">
@@ -541,12 +542,10 @@ export const BehaviorInsights: React.FC = () => {
                                     const dayLabel = dayLabels[dayIdx];
                                     const timeLabel = getTimeLabel(time);
                                     return (
-                                        <motion.div
+                                        <div
                                             key={`${time}-${day}`}
-                                            initial={{ opacity: 0, scale: 0.8 }}
-                                            animate={{ opacity: 1, scale: 1 }}
-                                            transition={{ delay: 0.3 + timeIdx * 0.05 }}
-                                            className={`aspect-square rounded ${getHeatmapColor(level)}`}
+                                            className={`aspect-square rounded ${getHeatmapColor(level)} animate-[heatmapFadeIn_0.3s_ease-out_forwards]`}
+                                            style={{ animationDelay: `${0.3 + timeIdx * 0.05}s`, opacity: 0 }}
                                             role="gridcell"
                                             aria-label={t('behaviorInsights.heatmap.cellLabel', { day: dayLabel, time: timeLabel, level })}
                                             title={`${dayLabel} ${timeLabel}: ${level}`}
