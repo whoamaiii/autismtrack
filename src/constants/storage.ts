@@ -19,6 +19,7 @@ export const STORAGE_KEYS = {
     // UI state
     ANALYSIS_FILTERS: 'kreativium_analysis_filters',
     TIMER_STATE: 'kreativium_timer_state',
+    SETTINGS_VERSION: 'kreativium_settings_version',
 } as const;
 
 // Prefixes for dynamic keys

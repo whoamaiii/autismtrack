@@ -45,6 +45,11 @@ const playTimerEndSound = () => {
 
         oscillator.start(audioContext.currentTime);
         oscillator.stop(audioContext.currentTime + 0.5);
+
+        // Clean up AudioContext after sound finishes to prevent memory leak
+        oscillator.onended = () => {
+            audioContext.close();
+        };
     } catch {
         // Audio not supported, ignore
     }
@@ -96,6 +101,19 @@ const parseTime = (timeStr: string | undefined): ParsedTime => {
     }
 
     return defaultTime;
+};
+
+// Type guard for Activity array from localStorage
+const isValidActivityArray = (data: unknown): data is Activity[] => {
+    if (!Array.isArray(data)) return false;
+    return data.every(item =>
+        typeof item === 'object' &&
+        item !== null &&
+        typeof (item as Activity).id === 'string' &&
+        typeof (item as Activity).title === 'string' &&
+        typeof (item as Activity).time === 'string' &&
+        typeof (item as Activity).status === 'string'
+    );
 };
 
 // Timer state interface for persistence
@@ -209,8 +227,8 @@ export const VisualSchedule: React.FC = () => {
         try {
             const stored = localStorage.getItem(`${SCHEDULE_STORAGE_KEY}_${today}_${currentContext}`);
             if (stored) {
-                const parsed = JSON.parse(stored) as Activity[];
-                if (parsed.length > 0) {
+                const parsed: unknown = JSON.parse(stored);
+                if (isValidActivityArray(parsed) && parsed.length > 0) {
                     return determineCurrentActivity(parsed);
                 }
             }

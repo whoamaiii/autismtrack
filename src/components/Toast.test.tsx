@@ -289,8 +289,8 @@ describe('Toast System', () => {
             fireEvent.click(screen.getByTestId('trigger'));
             expect(screen.getByTestId('toast-count')).toHaveTextContent('1');
 
-            // Find the close button - this verifies dismiss functionality is wired up
-            const closeButton = screen.getByRole('button', { name: /lukk/i });
+            // Find the close button - this verifies dismiss functionality is wired up (uses i18n)
+            const closeButton = screen.getByRole('button', { name: /close notification/i });
             expect(closeButton).toBeInTheDocument();
 
             // The click handler is connected to dismissToast
@@ -328,8 +328,8 @@ describe('Toast System', () => {
 
             fireEvent.click(screen.getByTestId('trigger'));
 
-            // Verify close button is rendered
-            const closeButton = screen.getByRole('button', { name: /lukk/i });
+            // Verify close button is rendered (uses i18n - falls back to English in tests)
+            const closeButton = screen.getByRole('button', { name: /close notification/i });
             expect(closeButton).toBeInTheDocument();
         });
     });
@@ -359,11 +359,13 @@ describe('StorageErrorListener', () => {
             </ToastProvider>
         );
 
-        // Dispatch storage error event
-        const event = new CustomEvent(STORAGE_ERROR_EVENT, {
-            detail: { key: 'test_key', error: 'quota_exceeded' },
+        // Dispatch storage error event wrapped in act
+        await act(async () => {
+            const event = new CustomEvent(STORAGE_ERROR_EVENT, {
+                detail: { key: 'test_key', error: 'quota_exceeded' },
+            });
+            window.dispatchEvent(event);
         });
-        window.dispatchEvent(event);
 
         await waitFor(() => {
             expect(screen.getByText('Storage full')).toBeInTheDocument();
@@ -378,10 +380,12 @@ describe('StorageErrorListener', () => {
             </ToastProvider>
         );
 
-        const event = new CustomEvent(STORAGE_ERROR_EVENT, {
-            detail: { key: 'test_key', error: 'unknown_error' },
+        await act(async () => {
+            const event = new CustomEvent(STORAGE_ERROR_EVENT, {
+                detail: { key: 'test_key', error: 'unknown_error' },
+            });
+            window.dispatchEvent(event);
         });
-        window.dispatchEvent(event);
 
         await waitFor(() => {
             expect(screen.getByText('Storage error')).toBeInTheDocument();

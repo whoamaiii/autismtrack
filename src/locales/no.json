@@ -1,6 +1,7 @@
 {
     "common": {
         "close": "Lukk",
+        "closeNotification": "Lukk varsel",
         "required": "påkrevd",
         "error": "Feil",
         "validationError": "Valideringsfeil",
@@ -17,7 +18,9 @@
         "title": "Noe gikk galt",
         "description": "En uventet feil oppstod. Prøv å laste siden på nytt.",
         "tryAgain": "Prøv igjen",
-        "reload": "Last på nytt"
+        "reload": "Last på nytt",
+        "updateRequired": "Oppdatering påkrevd",
+        "chunkLoadError": "Appen har blitt oppdatert. Last siden på nytt for å få siste versjon."
     },
     "accessibility": {
         "skipToMain": "Hopp til hovedinnhold"
@@ -407,6 +410,7 @@
             "recommendations": "{{count}} anbefalinger inkludert",
             "notEnoughData": "Trenger minst 5 logger for AI-analyse.",
             "noAnalysis": "AI-analyse ikke tilgjengelig.",
+            "analysisError": "AI-analyse utilgjengelig",
             "sampleCrisis": "Krisehendelser (eksempler)",
             "more": "flere"
         },

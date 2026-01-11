@@ -4,20 +4,10 @@
  */
 
 import type { ZodSchema } from 'zod';
+import { STORAGE_KEYS, type StorageKey } from '../constants/storage';
 
-export const STORAGE_KEYS = {
-    LOGS: 'kreativium_logs',
-    CRISIS_EVENTS: 'kreativium_crisis_events',
-    SCHEDULE_ENTRIES: 'kreativium_schedule_entries',
-    SCHEDULE_TEMPLATES: 'kreativium_schedule_templates',
-    GOALS: 'kreativium_goals',
-    CHILD_PROFILE: 'kreativium_child_profile',
-    CURRENT_CONTEXT: 'kreativium_current_context',
-    SETTINGS_VERSION: 'kreativium_settings_version',
-    ONBOARDING_COMPLETED: 'kreativium_onboarding_completed',
-} as const;
-
-export type StorageKey = typeof STORAGE_KEYS[keyof typeof STORAGE_KEYS];
+// Re-export for backwards compatibility
+export { STORAGE_KEYS, type StorageKey };
 
 interface StorageResult<T> {
     success: boolean;

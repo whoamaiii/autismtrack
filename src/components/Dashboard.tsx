@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useLogs, useCrisis, useChildProfile } from '../store';
 import { ArousalChart } from './ArousalChart';
-import { Plus, Calendar, Battery, BrainCircuit, Sparkles, Loader2, RefreshCw, AlertCircle, Zap } from 'lucide-react';
+import { Plus, Calendar, Battery, BrainCircuit, Sparkles, Loader2, RefreshCw, AlertCircle, Zap, SearchX } from 'lucide-react';
+import { EmptyState } from './EmptyState';
 import { format } from 'date-fns';
 import { nb } from 'date-fns/locale';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
@@ -50,7 +51,7 @@ export const Dashboard: React.FC = () => {
     const latestLog = todaysLogs.length > 0
         ? todaysLogs.reduce((latest, log) =>
             new Date(log.timestamp) > new Date(latest.timestamp) ? log : latest
-          )
+        )
         : null;
     const currentEnergy = latestLog ? latestLog.energy : 10; // Default to full battery
 
@@ -218,13 +219,17 @@ export const Dashboard: React.FC = () => {
                         setAnalysis(result);
                     }
                 })
-                .catch(() => { /* Ignore - user can manually trigger */ });
+                .catch((error) => {
+                    if (import.meta.env.DEV) {
+                        console.warn('[Dashboard] Failed to load cached analysis:', error);
+                    }
+                });
         }
 
         return () => {
             isMounted = false;
         };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- analysis intentionally excluded to prevent re-runs after setting
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- analysis intentionally excluded to prevent re-runs after setting
     }, [logs, crisisEvents, childProfile]);
 
     // Skeleton loading state
@@ -302,68 +307,69 @@ export const Dashboard: React.FC = () => {
                 </div>
             </motion.div>
 
-            {/* Arousal Curve Card */}
-            <motion.div
-                initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={prefersReducedMotion ? { duration: 0.01 } : { duration: 0.3, delay: 0.05 }}
-                className="flex flex-col gap-4 liquid-glass-card p-6 rounded-3xl mb-6"
-            >
-                <div className="flex justify-between items-start">
-                    <div>
-                        <h2 className="text-slate-500 dark:text-slate-400 font-medium text-sm uppercase tracking-wider">Dagens Spenningskurve</h2>
-                        <p className="text-slate-900 dark:text-white text-3xl font-bold mt-1">
-                            {latestLog ? (latestLog.arousal <= 3 ? 'Rolig' : latestLog.arousal <= 7 ? 'Økt' : 'Høy') : 'Ingen Data'}
-                        </p>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Arousal Curve Card */}
+                <motion.div
+                    initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={prefersReducedMotion ? { duration: 0.01 } : { duration: 0.3, delay: 0.05 }}
+                    className="flex flex-col gap-4 liquid-glass-card p-6 rounded-3xl"
+                >
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <h2 className="text-slate-500 dark:text-slate-400 font-medium text-sm uppercase tracking-wider">Dagens Spenningskurve</h2>
+                            <p className="text-slate-900 dark:text-white text-3xl font-bold mt-1">
+                                {latestLog ? (latestLog.arousal <= 3 ? 'Rolig' : latestLog.arousal <= 7 ? 'Økt' : 'Høy') : 'Ingen Data'}
+                            </p>
+                        </div>
+                        {latestLog && (
+                            <motion.div
+                                initial={prefersReducedMotion ? { opacity: 0 } : { scale: 0 }}
+                                animate={prefersReducedMotion ? { opacity: 1 } : { scale: 1 }}
+                                transition={prefersReducedMotion ? { duration: 0.01 } : { type: "spring" as const, stiffness: 500, damping: 20, delay: 0.15 }}
+                                className={`px-3 py-1 rounded-full text-sm font-bold ${latestLog.arousal <= 3 ? 'bg-green-500/20 text-green-600 dark:text-green-400' :
+                                    latestLog.arousal <= 7 ? 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400' :
+                                        'bg-red-500/20 text-red-600 dark:text-red-400'
+                                    }`}
+                                aria-label={`Spenningsnivå ${latestLog.arousal} av 10, ${latestLog.arousal <= 3 ? 'rolig' :
+                                    latestLog.arousal <= 7 ? 'økt' : 'høy'
+                                    }`}
+                                role="status"
+                            >
+                                Nivå {latestLog.arousal}
+                            </motion.div>
+                        )}
                     </div>
-                    {latestLog && (
+
+                    <div className="h-48 w-full mt-2">
+                        <ArousalChart logs={todaysLogs} />
+                    </div>
+                </motion.div>
+
+                {/* Energy Card */}
+                <motion.div
+                    initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: -15 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={prefersReducedMotion ? { duration: 0.01 } : { duration: 0.3, delay: 0.1 }}
+                    className="liquid-glass-card p-6 rounded-3xl flex flex-col gap-4"
+                >
+                    <div className="flex justify-between items-center">
+                        <h3 className="text-slate-500 dark:text-slate-400 font-medium flex items-center gap-2">
+                            <Battery size={18} /> Daglig Energi
+                        </h3>
+                        <span className="text-slate-900 dark:text-white font-bold">{currentEnergy} / 10</span>
+                    </div>
+                    <div className="w-full bg-slate-200 dark:bg-slate-700/30 rounded-full h-3 overflow-hidden">
                         <motion.div
-                            initial={prefersReducedMotion ? { opacity: 0 } : { scale: 0 }}
-                            animate={prefersReducedMotion ? { opacity: 1 } : { scale: 1 }}
-                            transition={prefersReducedMotion ? { duration: 0.01 } : { type: "spring" as const, stiffness: 500, damping: 20, delay: 0.15 }}
-                            className={`px-3 py-1 rounded-full text-sm font-bold ${latestLog.arousal <= 3 ? 'bg-green-500/20 text-green-600 dark:text-green-400' :
-                                latestLog.arousal <= 7 ? 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400' :
-                                    'bg-red-500/20 text-red-600 dark:text-red-400'
-                                }`}
-                            aria-label={`Spenningsnivå ${latestLog.arousal} av 10, ${
-                                latestLog.arousal <= 3 ? 'rolig' :
-                                latestLog.arousal <= 7 ? 'økt' : 'høy'
-                            }`}
-                            role="status"
-                        >
-                            Nivå {latestLog.arousal}
-                        </motion.div>
-                    )}
-                </div>
-
-                <div className="h-48 w-full mt-2">
-                    <ArousalChart logs={todaysLogs} />
-                </div>
-            </motion.div>
-
-            {/* Energy Card */}
-            <motion.div
-                initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: -15 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={prefersReducedMotion ? { duration: 0.01 } : { duration: 0.3, delay: 0.1 }}
-                className="liquid-glass-card p-6 rounded-3xl flex flex-col gap-4"
-            >
-                <div className="flex justify-between items-center">
-                    <h3 className="text-slate-500 dark:text-slate-400 font-medium flex items-center gap-2">
-                        <Battery size={18} /> Daglig Energi
-                    </h3>
-                    <span className="text-slate-900 dark:text-white font-bold">{currentEnergy} / 10</span>
-                </div>
-                <div className="w-full bg-slate-200 dark:bg-slate-700/30 rounded-full h-3 overflow-hidden">
-                    <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${currentEnergy * 10}%` }}
-                        transition={prefersReducedMotion ? { duration: 0.01 } : { duration: 0.5, delay: 0.15, ease: "easeOut" }}
-                        className="bg-gradient-to-r from-primary to-blue-400 h-3 rounded-full"
-                    />
-                </div>
-                <p className="text-slate-400 text-sm">Energi Igjen</p>
-            </motion.div>
+                            initial={{ width: 0 }}
+                            animate={{ width: `${currentEnergy * 10}%` }}
+                            transition={prefersReducedMotion ? { duration: 0.01 } : { duration: 0.5, delay: 0.15, ease: "easeOut" }}
+                            className="bg-gradient-to-r from-primary to-blue-400 h-3 rounded-full"
+                        />
+                    </div>
+                    <p className="text-slate-400 text-sm">Energi Igjen</p>
+                </motion.div>
+            </div>
 
             {/* AI Insights Card - Full Width, Enhanced */}
             <motion.div
@@ -516,10 +522,17 @@ export const Dashboard: React.FC = () => {
                             </div>
                         </div>
                     ) : (
-                        <div className="py-4 text-center">
-                            <p className="text-slate-500 dark:text-slate-400 text-sm mb-2">
-                                {analysisError || (logs.length < 3 ? 'Trenger minst 3 logger for analyse.' : 'Klikk en knapp for å starte analyse.')}
-                            </p>
+                        <div className="py-2">
+                            <EmptyState
+                                title={logs.length < 3 ? "Samle inn mer data" : "Klar for analyse"}
+                                description={logs.length < 3
+                                    ? "Du trenger minst 3 logger for å få AI-innsikt. Logg hvordan dagen har vært!"
+                                    : "Start en analyse for å få innsikt i mønstre og trender."}
+                                icon={logs.length < 3 ? SearchX : BrainCircuit}
+                                actionLabel={logs.length < 3 ? "Ny Logg" : undefined}
+                                actionLink={logs.length < 3 ? "/log" : undefined}
+                                compact
+                            />
                         </div>
                     )}
 
@@ -561,7 +574,7 @@ export const Dashboard: React.FC = () => {
             <motion.div
                 initial={prefersReducedMotion ? { opacity: 0 } : { scale: 0 }}
                 animate={prefersReducedMotion ? { opacity: 1 } : { scale: 1 }}
-                transition={prefersReducedMotion ? { duration: 0.01 } : { type: "spring" as const, stiffness: 500, damping: 20, delay: 0.2 }}
+                transition={prefersReducedMotion ? { duration: 0.01 } : { type: "spring", stiffness: 500, damping: 20, delay: 0.2 }}
                 className="fixed bottom-24 right-6 z-40 md:hidden"
             >
                 <Link

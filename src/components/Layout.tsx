@@ -18,7 +18,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             {/* Background Shader is handled in App.tsx */}
 
             {/* Content */}
-            <main className="relative z-10 max-w-md mx-auto min-h-screen p-4 pb-32">
+            <main className="relative z-10 w-full max-w-md md:max-w-2xl lg:max-w-6xl mx-auto min-h-screen p-4 pb-32">
                 {/* Context Toggle */}
                 <motion.div
                     initial={{ opacity: 0, y: -10 }}

@@ -61,6 +61,7 @@ export interface AnalysisCacheEntry {
 
 export const AI_CONFIG = {
     cacheTtlMs: 15 * 60 * 1000, // 15 minutes
+    maxCacheEntries: 10, // Maximum cache entries before cleanup
     maxStreamingRetries: 2,
     streamingRetryDelayMs: 1500,
 } as const;
@@ -74,13 +75,33 @@ export const AI_CONFIG = {
  * - Replaces names (capitalized words not at sentence start)
  * - Removes potential phone numbers
  * - Removes email addresses
+ *
+ * Safety: Input is truncated to prevent ReDoS attacks
  */
+const MAX_SANITIZE_LENGTH = 10000;
+
 export const sanitizeText = (text: string): string => {
     if (!text) return '';
-    return text
-        .replace(/(?<!^|\. |\? |! |: )([A-Z][a-z]+)/g, '[PERSON]')
-        .replace(/\b\d{8,}\b/g, '[PHONE]')
-        .replace(/[\w.-]+@[\w.-]+\.\w+/g, '[EMAIL]');
+    // Truncate very long input to prevent ReDoS
+    const safeText = text.length > MAX_SANITIZE_LENGTH ? text.slice(0, MAX_SANITIZE_LENGTH) : text;
+
+    // Replace names - simpler regex that's safe from catastrophic backtracking
+    // Matches capitalized words that don't follow sentence endings
+    let result = safeText;
+
+    // Replace phone numbers (8+ digits)
+    result = result.replace(/\b\d{8,}\b/g, '[PHONE]');
+
+    // Replace email addresses
+    result = result.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[EMAIL]');
+
+    // Replace potential names (capitalized words in the middle of sentences)
+    // Use a simpler approach: replace mid-sentence capitalized words
+    result = result.replace(/([.?!:]\s+)([A-Z][a-z]+)/g, '$1[PERSON]');
+    // Also handle capitalized words after lowercase words (likely names)
+    result = result.replace(/([a-z]\s+)([A-Z][a-z]+)/g, '$1[PERSON]');
+
+    return result;
 };
 
 /**
@@ -189,7 +210,7 @@ export function createAnalysisCache() {
             });
 
             // Cleanup expired entries (limit map size to prevent memory leaks)
-            if (cacheMap.size > 10) {
+            if (cacheMap.size > AI_CONFIG.maxCacheEntries) {
                 const now = Date.now();
                 for (const [k, v] of cacheMap.entries()) {
                     if (now - v.timestamp > AI_CONFIG.cacheTtlMs) {

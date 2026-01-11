@@ -1,6 +1,7 @@
 {
     "common": {
         "close": "Close",
+        "closeNotification": "Close notification",
         "required": "required",
         "error": "Error",
         "validationError": "Validation Error",
@@ -17,7 +18,9 @@
         "title": "Something went wrong",
         "description": "An unexpected error occurred. Try reloading the page.",
         "tryAgain": "Try again",
-        "reload": "Reload"
+        "reload": "Reload",
+        "updateRequired": "Update Required",
+        "chunkLoadError": "The app has been updated. Please reload to get the latest version."
     },
     "accessibility": {
         "skipToMain": "Skip to main content"
@@ -407,6 +410,7 @@
             "recommendations": "{{count}} recommendations included",
             "notEnoughData": "Need at least 5 logs for AI analysis.",
             "noAnalysis": "AI analysis not available.",
+            "analysisError": "AI analysis unavailable",
             "sampleCrisis": "Crisis Events (samples)",
             "more": "more"
         },

@@ -28,6 +28,7 @@ export const Reports: React.FC = () => {
     const [showPreview, setShowPreview] = useState(false);
     const [previewAnalysis, setPreviewAnalysis] = useState<AnalysisResult | null>(null);
     const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+    const [previewAnalysisError, setPreviewAnalysisError] = useState(false);
     const [isInitialLoading, setIsInitialLoading] = useState(true);
 
     // Loading state for perceived performance - show skeleton briefly
@@ -121,6 +122,7 @@ export const Reports: React.FC = () => {
 
         setShowPreview(true);
         setError(null);
+        setPreviewAnalysisError(false);
 
         // Load AI analysis if we have enough data and don't already have it
         if (filteredLogs.length >= 5 && !previewAnalysis) {
@@ -133,6 +135,9 @@ export const Reports: React.FC = () => {
             } catch (e) {
                 if (import.meta.env.DEV) {
                     console.warn('AI Analysis failed for preview', e);
+                }
+                if (isMountedRef.current) {
+                    setPreviewAnalysisError(true);
                 }
             } finally {
                 if (isMountedRef.current) {
@@ -419,6 +424,11 @@ export const Reports: React.FC = () => {
                                         <div className="flex items-center justify-center gap-2 py-4 text-slate-400">
                                             <Loader2 size={20} className="animate-spin" />
                                             {t('reports.previewModal.loadingAnalysis')}
+                                        </div>
+                                    ) : previewAnalysisError ? (
+                                        <div className="flex items-center justify-center gap-2 py-4 text-amber-400">
+                                            <AlertCircle size={20} />
+                                            <span className="text-sm">{t('reports.previewModal.analysisError', 'AI analysis unavailable')}</span>
                                         </div>
                                     ) : previewAnalysis ? (
                                         <div className="space-y-2">

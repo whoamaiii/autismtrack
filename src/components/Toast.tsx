@@ -2,7 +2,7 @@
 // This file exports both the ToastProvider component and useToast hook.
 // This is a valid React pattern for context providers.
 
-import React, { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, XCircle, AlertCircle, Info, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -44,8 +44,16 @@ const ToastContext = createContext<ToastContextType | undefined>(undefined);
 // ============================================
 export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [toasts, setToasts] = useState<Toast[]>([]);
+    // Track timeout IDs to allow cancellation on manual dismiss
+    const timeoutRefs = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
     const dismissToast = useCallback((id: string) => {
+        // Clear the auto-dismiss timeout if it exists
+        const timeoutId = timeoutRefs.current.get(id);
+        if (timeoutId) {
+            clearTimeout(timeoutId);
+            timeoutRefs.current.delete(id);
+        }
         setToasts(prev => prev.filter(t => t.id !== id));
     }, []);
 
@@ -57,9 +65,11 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
         // Auto-dismiss after duration
         if (duration > 0) {
-            setTimeout(() => {
+            const timeoutId = setTimeout(() => {
+                timeoutRefs.current.delete(id);
                 dismissToast(id);
             }, duration);
+            timeoutRefs.current.set(id, timeoutId);
         }
     }, [dismissToast]);
 
@@ -78,6 +88,17 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const showInfo = useCallback((message: string, detail?: string) => {
         showToast({ type: 'info', message, detail });
     }, [showToast]);
+
+    // Cleanup all pending timeouts on unmount
+    useEffect(() => {
+        const refs = timeoutRefs.current;
+        return () => {
+            refs.forEach((timeoutId) => {
+                clearTimeout(timeoutId);
+            });
+            refs.clear();
+        };
+    }, []);
 
     return (
         <ToastContext.Provider value={{ toasts, showToast, showSuccess, showError, showWarning, showInfo, dismissToast }}>
@@ -132,6 +153,7 @@ interface ToastItemProps {
 }
 
 const ToastItem: React.FC<ToastItemProps> = ({ toast, onDismiss }) => {
+    const { t } = useTranslation();
     const icons = {
         success: <CheckCircle size={20} className="text-green-400" />,
         error: <XCircle size={20} className="text-red-400" />,
@@ -184,7 +206,7 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onDismiss }) => {
             <button
                 onClick={() => onDismiss(toast.id)}
                 className="flex-shrink-0 p-1 rounded-lg hover:bg-white/10 transition-colors text-slate-400 hover:text-white"
-                aria-label="Lukk varsel"
+                aria-label={t('common.closeNotification', 'Close notification')}
             >
                 <X size={16} />
             </button>
@@ -200,8 +222,14 @@ export const StorageErrorListener: React.FC = () => {
     const { t } = useTranslation();
 
     useEffect(() => {
-        const handleStorageError = (event: CustomEvent<{ key: string; error: string }>) => {
-            const { error } = event.detail;
+        const handleStorageError = (event: Event) => {
+            // Type guard for CustomEvent with expected detail structure
+            if (!(event instanceof CustomEvent) || !event.detail) {
+                return;
+            }
+            const detail = event.detail as { key?: string; error?: string };
+            const error = detail.error;
+
             if (error === 'quota_exceeded') {
                 showError(
                     t('common.storageError', 'Storage full'),
@@ -215,9 +243,9 @@ export const StorageErrorListener: React.FC = () => {
             }
         };
 
-        window.addEventListener(STORAGE_ERROR_EVENT, handleStorageError as EventListener);
+        window.addEventListener(STORAGE_ERROR_EVENT, handleStorageError);
         return () => {
-            window.removeEventListener(STORAGE_ERROR_EVENT, handleStorageError as EventListener);
+            window.removeEventListener(STORAGE_ERROR_EVENT, handleStorageError);
         };
     }, [showError, t]);
 

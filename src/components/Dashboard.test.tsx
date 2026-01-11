@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { Dashboard } from './Dashboard';
 import type { LogEntry, CrisisEvent, ChildProfile } from '../types';
@@ -135,7 +135,10 @@ describe('Dashboard Component', () => {
 
         it('renders navigation link to log entry', () => {
             render(<Dashboard />, { wrapper: TestWrapper });
-            const logLink = screen.getByRole('link', { name: /logg/i });
+            // Use getAllByRole since there may be multiple log-related links
+            const logLinks = screen.getAllByRole('link', { name: /logg/i });
+            const logLink = logLinks.find(link => link.getAttribute('href') === '/log');
+            expect(logLink).toBeInTheDocument();
             expect(logLink).toHaveAttribute('href', '/log');
         });
 
@@ -160,7 +163,7 @@ describe('Dashboard Component', () => {
     });
 
     describe('Today\'s Logs Calculation', () => {
-        it('correctly identifies today\'s logs', () => {
+        it('correctly identifies today\'s logs', async () => {
             const today = new Date();
             const yesterday = new Date(today.getTime() - 86400000);
 
@@ -171,14 +174,18 @@ describe('Dashboard Component', () => {
             ];
             mockUseLogs.mockReturnValue({ logs });
 
-            render(<Dashboard />, { wrapper: TestWrapper });
+            await act(async () => {
+                render(<Dashboard />, { wrapper: TestWrapper });
+            });
 
             // The component should calculate todaysLogs internally
             // We can verify it renders without error
-            expect(document.body).toBeTruthy();
+            await waitFor(() => {
+                expect(document.body).toBeTruthy();
+            });
         });
 
-        it('handles logs from multiple days', () => {
+        it('handles logs from multiple days', async () => {
             const today = new Date();
             const yesterday = new Date(today.getTime() - 86400000);
             const twoDaysAgo = new Date(today.getTime() - 172800000);
@@ -190,8 +197,13 @@ describe('Dashboard Component', () => {
             ];
             mockUseLogs.mockReturnValue({ logs });
 
-            render(<Dashboard />, { wrapper: TestWrapper });
-            expect(screen.getByTestId('arousal-chart')).toBeInTheDocument();
+            await act(async () => {
+                render(<Dashboard />, { wrapper: TestWrapper });
+            });
+
+            await waitFor(() => {
+                expect(screen.getByTestId('arousal-chart')).toBeInTheDocument();
+            });
         });
     });
 
@@ -255,7 +267,7 @@ describe('Dashboard Component', () => {
     });
 
     describe('Analysis Button State', () => {
-        it('renders analysis UI elements', () => {
+        it('renders analysis UI elements', async () => {
             const today = new Date();
             const logs = [
                 createMockLog('1', today),
@@ -264,11 +276,15 @@ describe('Dashboard Component', () => {
             ];
             mockUseLogs.mockReturnValue({ logs });
 
-            render(<Dashboard />, { wrapper: TestWrapper });
+            await act(async () => {
+                render(<Dashboard />, { wrapper: TestWrapper });
+            });
 
             // Should have buttons for analysis
-            const buttons = screen.getAllByRole('button');
-            expect(buttons.length).toBeGreaterThan(0);
+            await waitFor(() => {
+                const buttons = screen.getAllByRole('button');
+                expect(buttons.length).toBeGreaterThan(0);
+            });
         });
 
         it('has correct initial analysis state', () => {

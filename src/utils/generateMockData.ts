@@ -14,6 +14,12 @@
 import type { LogEntry, CrisisEvent, ScheduleEntry } from '../types';
 import { enrichLogEntry, enrichCrisisEvent } from '../types';
 import { STORAGE_KEYS } from '../constants/storage';
+import type {
+    SensoryTriggerKey,
+    ContextTriggerKey,
+    StrategyKey,
+    WarningSignKey,
+} from './i18nMigration';
 
 // Weighted random selection
 const weightedRandom = <T>(items: T[], weights: number[]): T => {
@@ -38,52 +44,54 @@ const pickRandom = <T>(items: T[], count: number): T[] => {
 };
 
 // Sensory triggers with weights (higher = more common for this profile)
-const SENSORY_TRIGGERS = [
-    { trigger: 'Auditiv', weight: 8 },      // Primary sensitivity
-    { trigger: 'Visuell', weight: 4 },
-    { trigger: 'Taktil', weight: 5 },
-    { trigger: 'Vestibulær', weight: 2 },
-    { trigger: 'Interosepsjon', weight: 6 }, // Often misses hunger/tiredness cues
-    { trigger: 'Lys', weight: 5 },
-    { trigger: 'Trengsel', weight: 7 },      // Crowded spaces difficult
-    { trigger: 'Temperatur', weight: 2 },
+// Uses i18n keys instead of hardcoded Norwegian strings
+const SENSORY_TRIGGERS: Array<{ trigger: SensoryTriggerKey; weight: number }> = [
+    { trigger: 'auditory', weight: 8 },      // Primary sensitivity
+    { trigger: 'visual', weight: 4 },
+    { trigger: 'tactile', weight: 5 },
+    { trigger: 'vestibular', weight: 2 },
+    { trigger: 'interoception', weight: 6 }, // Often misses hunger/tiredness cues
+    { trigger: 'light', weight: 5 },
+    { trigger: 'crowding', weight: 7 },      // Crowded spaces difficult
+    { trigger: 'temperature', weight: 2 },
 ];
 
-const CONTEXT_TRIGGERS = [
-    { trigger: 'Overgang', weight: 9 },      // Transitions very challenging
-    { trigger: 'Krav', weight: 7 },
-    { trigger: 'Sosialt', weight: 5 },
-    { trigger: 'Uventet Hendelse', weight: 8 },
-    { trigger: 'Sliten', weight: 6 },
-    { trigger: 'Sult', weight: 4 },
-    { trigger: 'Ventetid', weight: 6 },
-    { trigger: 'Gruppearbeid', weight: 5 },
-    { trigger: 'Prøve/Test', weight: 4 },
-    { trigger: 'Ny Situasjon', weight: 7 },
+const CONTEXT_TRIGGERS: Array<{ trigger: ContextTriggerKey; weight: number }> = [
+    { trigger: 'transition', weight: 9 },      // Transitions very challenging
+    { trigger: 'demands', weight: 7 },
+    { trigger: 'social', weight: 5 },
+    { trigger: 'unexpected_event', weight: 8 },
+    { trigger: 'tired', weight: 6 },
+    { trigger: 'hungry', weight: 4 },
+    { trigger: 'waiting', weight: 6 },
+    { trigger: 'group_work', weight: 5 },
+    { trigger: 'test', weight: 4 },
+    { trigger: 'new_situation', weight: 7 },
 ];
 
-const STRATEGIES = [
-    { strategy: 'Hodetelefoner', weight: 9, effectiveness: 0.8 },
-    { strategy: 'Skjerming', weight: 8, effectiveness: 0.75 },
-    { strategy: 'Dypt Trykk', weight: 6, effectiveness: 0.85 },
-    { strategy: 'Eget Rom', weight: 7, effectiveness: 0.7 },
-    { strategy: 'Timer/Visuell Støtte', weight: 8, effectiveness: 0.65 },
-    { strategy: 'Samregulering', weight: 5, effectiveness: 0.6 },
-    { strategy: 'Pusting', weight: 4, effectiveness: 0.4 },
-    { strategy: 'Fidget', weight: 6, effectiveness: 0.5 },
-    { strategy: 'Bevegelse', weight: 5, effectiveness: 0.7 },
-    { strategy: 'Musikk', weight: 4, effectiveness: 0.6 },
+const STRATEGIES: Array<{ strategy: StrategyKey; weight: number; effectiveness: number }> = [
+    { strategy: 'headphones', weight: 9, effectiveness: 0.8 },
+    { strategy: 'shielding', weight: 8, effectiveness: 0.75 },
+    { strategy: 'deep_pressure', weight: 6, effectiveness: 0.85 },
+    { strategy: 'own_room', weight: 7, effectiveness: 0.7 },
+    { strategy: 'timer_visual_support', weight: 8, effectiveness: 0.65 },
+    { strategy: 'co_regulation', weight: 5, effectiveness: 0.6 },
+    { strategy: 'breathing', weight: 4, effectiveness: 0.4 },
+    { strategy: 'fidget', weight: 6, effectiveness: 0.5 },
+    { strategy: 'movement', weight: 5, effectiveness: 0.7 },
+    { strategy: 'music', weight: 4, effectiveness: 0.6 },
 ];
 
-const WARNING_SIGNS = [
-    'Økt motorisk uro',
-    'Verbal eskalering',
-    'Tilbaketrekning',
-    'Repetitive bevegelser',
-    'Dekker ører',
-    'Unngår øyekontakt',
-    'Rødme/svetting',
-    'Nekter instrukser',
+// Warning signs use i18n keys
+const WARNING_SIGNS: WarningSignKey[] = [
+    'motor_restlessness',
+    'verbal_escalation',
+    'withdrawal',
+    'repetitive_movements',
+    'covers_ears',
+    'avoids_eye_contact',
+    'flushing_sweating',
+    'refuses_instructions',
 ];
 
 const NOTES_SCHOOL = [

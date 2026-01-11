@@ -95,19 +95,45 @@ export const CrisisMode: React.FC = () => {
 
         const handlePermissionChange = () => {
             if (permissionStatus) {
-                setMicPermissionState(permissionStatus.state as 'prompt' | 'granted' | 'denied');
+                const state = permissionStatus.state;
+                // Validate state is one of expected values
+                if (state === 'granted' || state === 'denied' || state === 'prompt') {
+                    setMicPermissionState(state);
+                } else {
+                    setMicPermissionState('unavailable');
+                }
             }
         };
 
-        if (navigator.permissions) {
-            navigator.permissions.query({ name: 'microphone' as PermissionName })
-                .then(status => {
-                    permissionStatus = status;
-                    setMicPermissionState(status.state as 'prompt' | 'granted' | 'denied');
-                    status.addEventListener('change', handlePermissionChange);
-                })
-                .catch(() => setMicPermissionState('unavailable'));
+        // Check if Permissions API is available
+        if (!navigator.permissions) {
+            // Permissions API not available, but microphone might still work
+            // Leave as 'prompt' to allow user to try recording
+            if (import.meta.env.DEV) {
+                console.warn('[CrisisMode] Permissions API not available');
+            }
+            return;
         }
+
+        navigator.permissions.query({ name: 'microphone' as PermissionName })
+            .then(status => {
+                permissionStatus = status;
+                const state = status.state;
+                // Validate state is one of expected values
+                if (state === 'granted' || state === 'denied' || state === 'prompt') {
+                    setMicPermissionState(state);
+                } else {
+                    setMicPermissionState('unavailable');
+                }
+                status.addEventListener('change', handlePermissionChange);
+            })
+            .catch((error) => {
+                if (import.meta.env.DEV) {
+                    console.warn('[CrisisMode] Failed to query microphone permission:', error);
+                }
+                // Permission query not supported for microphone, but it might still work
+                // Leave as 'prompt' to allow user to try
+            });
 
         return () => {
             if (permissionStatus) {
@@ -223,13 +249,18 @@ export const CrisisMode: React.FC = () => {
             mediaRecorder.start();
             setIsRecording(true);
         } catch (error) {
-            const err = error as DOMException;
-
             if (import.meta.env.DEV) {
                 console.error('Error accessing microphone:', error);
             }
 
-            switch (err.name) {
+            // Type guard for DOMException - handle non-DOMException errors first
+            if (!(error instanceof DOMException)) {
+                setAudioError(t('crisis.micUnknownError'));
+                return;
+            }
+
+            // Now error is guaranteed to be DOMException
+            switch (error.name) {
                 case 'NotAllowedError':
                     // Check if it's likely OS-level or browser-level
                     if (micPermissionState === 'denied') {
@@ -417,8 +448,8 @@ export const CrisisMode: React.FC = () => {
                     className="flex justify-between items-center mb-8"
                 >
                     <div className="flex items-center gap-2 text-red-500">
-                        <AlertTriangle size={28} />
-                        <span className="font-bold text-xl tracking-wider uppercase">{t('crisis.title')}</span>
+                        <AlertTriangle size={24} />
+                        <span className="font-bold text-lg tracking-wider uppercase">{t('crisis.title')}</span>
                     </div>
                 </motion.div>
 
@@ -440,9 +471,9 @@ export const CrisisMode: React.FC = () => {
                                 transition={prefersReducedMotion ? { duration: 0 } : { type: "spring", stiffness: 300, damping: 25 }}
                                 className="text-center"
                             >
-                                <p className="text-slate-400 text-lg mb-2 font-medium uppercase tracking-widest">{t('crisis.duration')}</p>
+                                <p className="text-slate-400 text-base mb-2 font-medium uppercase tracking-widest">{t('crisis.duration')}</p>
                                 <motion.div
-                                    className={`text-8xl font-bold tabular-nums tracking-tighter ${isActive ? 'text-white' : 'text-slate-300'}`}
+                                    className={`text-6xl sm:text-7xl font-bold tabular-nums tracking-tighter ${isActive ? 'text-white' : 'text-slate-300'}`}
                                     animate={isActive ? { opacity: [1, 0.7, 1] } : { opacity: 1 }}
                                     transition={isActive ? { repeat: Infinity, duration: 2 } : {}}
                                     role="timer"
@@ -464,14 +495,14 @@ export const CrisisMode: React.FC = () => {
                                 )}
                             </motion.div>
 
-                            <div className="flex flex-col gap-6 w-full max-w-xs">
+                            <div className="flex flex-col gap-4 w-full max-w-xs">
                                 <motion.button
                                     whileTap={{ scale: 0.95 }}
                                     onClick={handleStop}
-                                    className="w-full bg-red-600 hover:bg-red-700 transition-colors h-24 rounded-2xl flex items-center justify-center gap-4 shadow-lg shadow-red-900/50"
+                                    className="w-full bg-red-600 hover:bg-red-700 transition-colors h-16 rounded-2xl flex items-center justify-center gap-3 shadow-lg shadow-red-900/50"
                                 >
-                                    <Square size={32} fill="currentColor" />
-                                    <span className="text-2xl font-bold">{t('crisis.stopEvent')}</span>
+                                    <Square size={24} fill="currentColor" />
+                                    <span className="text-xl font-bold">{t('crisis.stopEvent')}</span>
                                 </motion.button>
 
                                 {/* Mic permission denied warning */}
@@ -508,21 +539,24 @@ export const CrisisMode: React.FC = () => {
                                 <motion.button
                                     whileTap={{ scale: 0.98 }}
                                     onClick={toggleRecording}
-                                    className={`w-full h-20 rounded-2xl flex items-center justify-center gap-3 transition-all border-2 ${isRecording
-                                        ? 'bg-red-500/20 border-red-500 text-red-500 animate-pulse'
-                                        : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700'
+                                    className={`w-full h-14 rounded-xl flex items-center justify-center gap-2 transition-all border ${isRecording
+                                        ? 'bg-red-500/20 border-red-500 text-red-400 animate-pulse'
+                                        : 'bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-700'
                                         }`}
                                     aria-label={isRecording ? t('crisis.stopRecording') : t('crisis.startRecording')}
                                     aria-pressed={isRecording}
                                 >
-                                    <Mic size={24} aria-hidden="true" />
-                                    <span className="text-lg font-bold">{isRecording ? t('crisis.stopRecording') : t('crisis.startRecording')}</span>
+                                    <Mic size={20} aria-hidden="true" />
+                                    <span className="text-base font-medium">{isRecording ? t('crisis.stopRecording') : t('crisis.startRecording')}</span>
                                 </motion.button>
                             </div>
 
-                            <p className="text-slate-500 text-sm text-center">
-                                {t('crisis.recordingActive')}
-                            </p>
+                            {isRecording && (
+                                <p className="text-red-400 text-sm text-center flex items-center justify-center gap-2">
+                                    <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                                    {t('crisis.recordingActive')}
+                                </p>
+                            )}
                         </motion.div>
                     ) : showDetailsForm && !showRecoveryCapture ? (
                         // Details Form
@@ -534,13 +568,17 @@ export const CrisisMode: React.FC = () => {
                             transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.2 }}
                             className="flex-1 overflow-y-auto pb-48"
                         >
-                            <div className="bg-green-500/10 border border-green-500/20 p-4 rounded-2xl text-center mb-6">
-                                <CheckCircle className="mx-auto text-green-500 mb-2" size={36} />
-                                <h3 className="text-lg font-bold text-white">{t('crisis.eventEnded')}</h3>
-                                <p className="text-slate-400">{t('crisis.duration')}: {formatTime(seconds)}</p>
+                            <div className="bg-green-500/10 border border-green-500/20 p-3 rounded-xl text-center mb-5">
+                                <div className="flex items-center justify-center gap-3">
+                                    <CheckCircle className="text-green-500" size={24} />
+                                    <div className="text-left">
+                                        <h3 className="text-base font-bold text-white">{t('crisis.eventEnded')}</h3>
+                                        <p className="text-slate-400 text-sm">{t('crisis.duration')}: {formatTime(seconds)}</p>
+                                    </div>
+                                </div>
                             </div>
 
-                            <h2 className="text-white text-lg font-bold mb-4">{t('crisis.documentEvent')}</h2>
+                            <h2 className="text-white text-base font-bold mb-3">{t('crisis.documentEvent')}</h2>
 
                             {/* Audio Player if recorded */}
                             {audioUrl && (
@@ -570,18 +608,18 @@ export const CrisisMode: React.FC = () => {
                                 </div>
                             )}
 
-                            <p className="text-slate-400 text-sm mb-6">{t('crisis.helperText')}</p>
+                            <p className="text-slate-400 text-sm mb-4">{t('crisis.helperText')}</p>
 
-                            <div className="space-y-6">
+                            <div className="space-y-5">
                                 {/* Crisis Type */}
                                 <div>
                                     <label className="text-slate-300 font-medium text-sm block mb-2">{t('crisis.type')}</label>
-                                    <div className="grid grid-cols-2 gap-2">
+                                    <div className="grid grid-cols-2 gap-1.5">
                                         {CRISIS_TYPES.map((type) => (
                                             <button
                                                 key={type.value}
                                                 onClick={() => setCrisisType(type.value)}
-                                                className={`p-3 rounded-xl text-sm font-medium transition-all ${crisisType === type.value
+                                                className={`py-2.5 px-3 rounded-lg text-sm font-medium transition-all ${crisisType === type.value
                                                     ? 'bg-red-500 text-white'
                                                     : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                                                     }`}
@@ -649,12 +687,12 @@ export const CrisisMode: React.FC = () => {
                                 {/* Resolution */}
                                 <div>
                                     <label className="text-slate-300 font-medium text-sm block mb-2">{t('crisis.resolution')}</label>
-                                    <div className="space-y-2">
+                                    <div className="space-y-1.5">
                                         {resolutionOptions.map((opt) => (
                                             <button
                                                 key={opt.value}
                                                 onClick={() => setResolution(opt.value)}
-                                                className={`w-full p-3 rounded-xl text-sm font-medium text-left transition-all ${resolution === opt.value
+                                                className={`w-full py-2.5 px-3 rounded-lg text-sm font-medium text-left transition-all ${resolution === opt.value
                                                     ? 'bg-blue-500 text-white'
                                                     : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                                                     }`}
@@ -672,7 +710,7 @@ export const CrisisMode: React.FC = () => {
                                         value={notes}
                                         onChange={(e) => setNotes(e.target.value)}
                                         placeholder={t('crisis.notes.placeholder')}
-                                        className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 h-24 resize-none"
+                                        className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 h-28 resize-none"
                                     />
                                 </div>
                             </div>
@@ -685,26 +723,26 @@ export const CrisisMode: React.FC = () => {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0 }}
                             transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.2 }}
-                            className="flex-1 flex flex-col items-center justify-center gap-6 px-4"
+                            className="flex-1 flex flex-col items-center justify-center gap-4 px-4"
                         >
                             {/* Recovery Timer */}
-                            <div className="text-center mb-4">
-                                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-green-500/20 border-2 border-green-500/50 flex items-center justify-center">
-                                    <CheckCircle size={40} className="text-green-400" />
+                            <div className="text-center mb-2">
+                                <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-green-500/20 border-2 border-green-500/50 flex items-center justify-center">
+                                    <CheckCircle size={28} className="text-green-400" />
                                 </div>
-                                <h2 className="text-xl font-bold text-white mb-2">
+                                <h2 className="text-lg font-bold text-white mb-1">
                                     {t('crisis.recovery.title', 'Gjenopprettingsfase')}
                                 </h2>
-                                <p className="text-slate-400 text-sm mb-4">
+                                <p className="text-slate-400 text-sm mb-3">
                                     {t('crisis.recovery.subtitle', 'Når var barnet tilbake til normalt?')}
                                 </p>
 
                                 {/* Elapsed time since crisis end */}
-                                <div className="bg-slate-800/50 rounded-xl p-4 mb-6">
-                                    <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">
+                                <div className="bg-slate-800/50 rounded-lg px-4 py-3 mb-4 inline-block">
+                                    <p className="text-slate-400 text-xs uppercase tracking-wider mb-0.5">
                                         {t('crisis.recovery.timerLabel', 'Tid siden krise slutt')}
                                     </p>
-                                    <p className="text-3xl font-bold text-white tabular-nums">
+                                    <p className="text-2xl font-bold text-white tabular-nums">
                                         {formatTime(recoveryElapsed)}
                                     </p>
                                 </div>
@@ -712,10 +750,10 @@ export const CrisisMode: React.FC = () => {
 
                             {/* Quick Select Buttons */}
                             <div className="w-full max-w-sm">
-                                <p className="text-slate-400 text-sm mb-3 text-center">
+                                <p className="text-slate-400 text-xs mb-2 text-center uppercase tracking-wider">
                                     {t('crisis.recovery.quickOptions', 'Hurtigvalg')}
                                 </p>
-                                <div className="grid grid-cols-3 gap-2 mb-4">
+                                <div className="grid grid-cols-3 gap-1.5 mb-3">
                                     {[5, 10, 15, 20, 30, 45].map(mins => (
                                         <button
                                             key={mins}
@@ -740,7 +778,7 @@ export const CrisisMode: React.FC = () => {
                                                 });
                                                 navigate('/');
                                             }}
-                                            className="py-3 px-4 rounded-xl text-sm font-medium transition-all bg-slate-800 text-slate-300 hover:bg-slate-700 active:bg-green-500 active:text-white"
+                                            className="py-2.5 px-3 rounded-lg text-sm font-medium transition-all bg-slate-800 text-slate-300 hover:bg-slate-700 active:bg-green-500 active:text-white"
                                         >
                                             {mins} min
                                         </button>
@@ -748,7 +786,7 @@ export const CrisisMode: React.FC = () => {
                                 </div>
 
                                 {/* Manual Input */}
-                                <div className="flex gap-2 mb-6">
+                                <div className="flex gap-2 mb-4">
                                     <input
                                         type="number"
                                         min="1"
@@ -756,12 +794,12 @@ export const CrisisMode: React.FC = () => {
                                         value={recoveryTime || ''}
                                         onChange={(e) => setRecoveryTime(e.target.value ? Number(e.target.value) : undefined)}
                                         placeholder={t('crisis.recovery.customTime', 'Angi minutter...')}
-                                        className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-green-500"
+                                        className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-green-500"
                                     />
                                     {recoveryTime && (
                                         <button
                                             onClick={handleSaveWithRecovery}
-                                            className="px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-medium transition-colors"
+                                            className="px-5 py-2.5 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors"
                                         >
                                             OK
                                         </button>
@@ -769,16 +807,16 @@ export const CrisisMode: React.FC = () => {
                                 </div>
 
                                 {/* Action Buttons */}
-                                <div className="flex flex-col gap-3">
+                                <div className="flex flex-col gap-2">
                                     <button
                                         onClick={handleMarkRecoveredNow}
-                                        className="w-full py-4 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold transition-colors shadow-lg shadow-green-500/30"
+                                        className="w-full py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold transition-colors shadow-lg shadow-green-500/30"
                                     >
                                         {t('crisis.recovery.markRecovered', 'Gjenopprettet nå')} ({Math.max(1, Math.round(recoveryElapsed / 60))} min)
                                     </button>
                                     <button
                                         onClick={handleSkipRecovery}
-                                        className="w-full py-4 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-medium transition-colors"
+                                        className="w-full py-3 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-xl font-medium transition-colors"
                                     >
                                         {t('crisis.recovery.skip', 'Hopp over (logg senere)')}
                                     </button>
@@ -795,18 +833,18 @@ export const CrisisMode: React.FC = () => {
                         animate={{ opacity: 1, y: 0 }}
                         transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.15 }}
                         className="fixed bottom-0 left-0 right-0 z-[60] bg-slate-900/95 backdrop-blur-lg border-t border-white/10"
-                        style={{ paddingBottom: 'max(6rem, calc(env(safe-area-inset-bottom) + 5rem))' }}
+                        style={{ paddingBottom: 'max(5rem, calc(env(safe-area-inset-bottom) + 4rem))' }}
                     >
-                        <div className="flex gap-3 max-w-md mx-auto px-6 pt-4">
+                        <div className="flex gap-3 max-w-md mx-auto px-4 pt-3">
                             <button
                                 onClick={handleSkipDetails}
-                                className="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-4 rounded-xl font-bold transition-colors shadow-lg"
+                                className="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 py-3 rounded-xl font-medium transition-colors"
                             >
                                 {t('crisis.actions.skip')}
                             </button>
                             <button
                                 onClick={handleSave}
-                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold transition-colors shadow-lg shadow-blue-600/30"
+                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold transition-colors shadow-lg shadow-blue-600/30"
                             >
                                 {t('crisis.actions.save')}
                             </button>

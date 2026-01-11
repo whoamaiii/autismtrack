@@ -5,7 +5,7 @@
   --color-primary-foreground: #FFFFFF;
 
   --color-background-light: #F5F5F7;
-  --color-background-dark: #0a0a0f;
+  --color-background-dark: #050508;
 
   --color-surface-light: #FFFFFF;
   --color-surface-dark: #1C1C1E;
@@ -41,7 +41,7 @@
 @layer base {
   body {
     font-family: var(--font-display);
-    @apply bg-black text-slate-900 dark:text-white antialiased selection:bg-primary selection:text-white;
+    @apply bg-black text-slate-900 dark:text-slate-100 antialiased selection:bg-primary selection:text-white;
   }
 
   /* Dark mode gradient background for liquid glass aesthetic */
@@ -53,11 +53,11 @@
 }
 
 @utility glass {
-  @apply backdrop-blur-2xl bg-white/10 dark:bg-black/20 border border-white/20 shadow-lg;
+  @apply backdrop-blur-3xl bg-white/10 dark:bg-black/30 border border-white/20 shadow-lg;
 }
 
 @utility glass-dark {
-  @apply backdrop-blur-2xl bg-black/40 border border-white/10 shadow-lg;
+  @apply backdrop-blur-3xl bg-black/50 border border-white/10 shadow-lg;
 }
 
 /* Liquid Glass Utilities - Enhanced */

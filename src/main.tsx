@@ -28,4 +28,8 @@ if ('serviceWorker' in navigator) {
 // NOTE: StrictMode disabled due to React 19 + Recharts 3.x compatibility issue
 // Recharts internally uses Redux/Immer which conflicts with React 19's concurrent rendering
 // Re-enable when Recharts fixes this: https://github.com/recharts/recharts/issues
-createRoot(document.getElementById('root')!).render(<App />)
+const rootElement = document.getElementById('root');
+if (!rootElement) {
+  throw new Error('Root element not found. Ensure index.html contains <div id="root"></div>');
+}
+createRoot(rootElement).render(<App />)
