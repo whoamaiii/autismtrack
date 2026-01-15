@@ -126,7 +126,7 @@ export const BiometricPrompt: React.FC = () => {
             <p className="text-red-400 text-sm">{error.message}</p>
             {failCount >= 3 && (
               <p className="text-red-400/60 text-xs mt-1">
-                Multiple failed attempts. Try again or use QR code.
+                Multiple failed attempts. Please try again.
               </p>
             )}
           </div>
@@ -164,7 +164,7 @@ export const BiometricPrompt: React.FC = () => {
         className="mt-8 text-center text-xs text-slate-500 max-w-xs"
       >
         {failCount >= 5
-          ? 'Too many failed attempts. Please use your QR code to unlock.'
+          ? 'Too many failed attempts. Please try again later.'
           : 'Biometric authentication keeps your data secure.'}
       </motion.p>
     </div>

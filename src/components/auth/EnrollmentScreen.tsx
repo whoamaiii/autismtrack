@@ -17,7 +17,7 @@ import { useAuth } from '../../contexts/AuthContext';
 type EnrollmentStep = 'welcome' | 'biometric' | 'complete';
 
 export const EnrollmentScreen: React.FC = () => {
-  const { enrollBiometric, completeEnrollment, biometricCapability } = useAuth();
+  const { enrollBiometric, completeEnrollment, biometricCapability, devModeUnlock } = useAuth();
   const [step, setStep] = useState<EnrollmentStep>('welcome');
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -133,6 +133,15 @@ export const EnrollmentScreen: React.FC = () => {
               className="w-full py-4 bg-cyan-500/20 hover:bg-cyan-500/30 disabled:bg-slate-800/50 border border-cyan-500/30 rounded-xl text-cyan-400 font-medium transition-colors"
             >
               {isProcessing ? 'Setting Up...' : 'Enable Biometric'}
+            </button>
+
+            {/* Dev mode skip button */}
+            <button
+              onClick={devModeUnlock}
+              disabled={isProcessing}
+              className="w-full py-3 mt-3 text-slate-500 hover:text-slate-400 text-sm transition-colors border border-dashed border-slate-700 rounded-xl"
+            >
+              Skip (Dev Mode)
             </button>
           </motion.div>
         )}
