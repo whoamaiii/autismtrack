@@ -70,12 +70,12 @@ All data persists to `localStorage` with `kreativium_*` key prefix.
 Three-tier AI support in `src/services/`:
 
 **Local Model (Android Native - Primary):**
-- `localModel.ts` - Gemma 3 4B via MediaPipe LLM Inference
+- `localModel.ts` - Kreativium 4B via MediaPipe LLM Inference
 - Runs entirely on-device using Snapdragon NPU (90+ tokens/sec on S25 Ultra)
 - Model size: ~2.6GB (int4 quantized)
 - Context: `src/contexts/ModelContext.tsx` manages download/loading state
 - UI: `ModelDownloadPrompt.tsx` (first-launch), `ModelManager.tsx` (settings)
-- Native plugin: `android/app/src/main/java/.../GemmaPlugin.java`
+- Native plugin: `android/app/src/main/java/.../KreativiumPlugin.java`
 
 **Bundled Model Support:**
 - Model can be bundled directly in the APK for offline-first deployment
@@ -89,7 +89,7 @@ Three-tier AI support in `src/services/`:
 - `gemini.ts` - Google Gemini API (alternative)
 
 **AI Priority Order (on Android):**
-1. Local Gemma 3 4B (bundled in APK or downloaded)
+1. Local Kreativium 4B (bundled in APK or downloaded)
 2. Google Gemini API (if configured)
 3. OpenRouter API (if configured)
 4. Mock data (development fallback)
@@ -107,7 +107,7 @@ App works without API keys using mock data on web, or local model on Android.
 
 1. **API Keys are Temporary**
    - Current cloud AI (OpenRouter/Gemini) is for development/testing only
-   - Production will use local LLM inference (WebLLM with fine-tuned Gemma)
+   - Production will use local LLM inference (WebLLM with fine-tuned Kreativium)
    - No API keys will be needed in final release
    - Do NOT treat API key exposure as a security issue to fix - it's a known dev-only pattern
 
@@ -122,6 +122,67 @@ App works without API keys using mock data on web, or local model on Android.
    - Works completely offline after initial load
    - No user accounts, no cloud sync, no telemetry
    - Parents/caregivers own their data entirely
+
+### Authentication System
+
+The app uses a **biometric + QR code** two-factor authentication system for device security:
+
+**Auth Flow:**
+1. **App Launch** → Biometric prompt (fingerprint/face)
+2. **QR TTL Check** → If 30-minute session expired, scan QR code
+3. **Unlock** → App accessible with derived encryption key
+
+**Key Files:**
+- `src/contexts/AuthContext.tsx` - Auth state machine and enrollment logic
+- `src/services/biometricAuth.ts` - Cross-platform biometric wrapper
+- `src/services/qrScanner.ts` - ML Kit QR scanning service
+- `src/services/crypto/` - AES-256-GCM encryption, HKDF key derivation
+- `src/utils/qrPayloadSchema.ts` - QR payload validation (Zod schema)
+- `src/utils/qrPayloadGenerator.ts` - Generate test/admin QR payloads
+- `src/components/auth/` - UI components (LockScreen, BiometricPrompt, QRScanScreen, etc.)
+- `android/app/src/main/java/.../BiometricPlugin.java` - Native Android biometric
+
+**Auth States:**
+```
+initializing → locked → biometricPending → qrPending → unlocked
+                  ↓              ↓               ↓
+                error ←←←←←←←←←←←←←←←←←←←←←←←←←←
+```
+
+**QR Payload Format:**
+```json
+{
+  "version": "1.0.0",
+  "deviceKey": "<base64 256-bit key>",
+  "pgpPublicKey": "<armored PGP public key>",
+  "issuedAt": "2025-01-14T...",
+  "permissions": {
+    "canExport": true,
+    "canDeleteData": false,
+    "canModifyProfile": true
+  }
+}
+```
+
+**Development/Testing:**
+```javascript
+// In browser console (dev mode):
+generateTestQR()  // Creates a valid test QR payload
+```
+
+**Toggle Auth (for development):**
+```typescript
+// In src/App.tsx:
+const BYPASS_AUTH = true;  // Skip auth for development
+const BYPASS_AUTH = false; // Enable full auth (default)
+```
+
+**Security Features:**
+- Biometric via AndroidX BiometricPrompt (Class 3 strong authentication)
+- QR-derived encryption key using HKDF (SHA-256)
+- AES-256-GCM for local storage encryption
+- 30-minute QR TTL requires physical QR possession
+- Device salt stored locally, key never stored
 
 ### Native App (Android)
 
@@ -139,6 +200,8 @@ import { isNative, isAndroid, isWeb } from './utils/platform';
 | Audio recording | Full support | **Disabled** (UI hidden) |
 | Data export | Browser download | `@capacitor/filesystem` + `@capacitor/share` |
 | Microphone permission | Checked on mount | Skipped (unavailable) |
+| Biometric auth | Manual input only | Native BiometricPrompt |
+| QR code scanning | Manual input only | ML Kit camera scanner |
 
 **Why Audio Recording is Disabled on Native:**
 - Simplifies implementation (no native audio plugins needed)
@@ -150,6 +213,7 @@ import { isNative, isAndroid, isWeb } from './utils/platform';
 - `@capacitor/haptics` - Native vibration feedback
 - `@capacitor/filesystem` - File system access for exports
 - `@capacitor/share` - Native share dialog for exports
+- `@capacitor-mlkit/barcode-scanning` - QR code camera scanning (ML Kit)
 
 **Files Modified for Native Support:**
 - `src/utils/platform.ts` - Platform detection utilities
@@ -167,7 +231,7 @@ import { isNative, isAndroid, isWeb } from './utils/platform';
 - **i18n**: i18next (Norwegian primary, English fallback) - translations in `src/locales/`
 - **PDF**: jsPDF + jspdf-autotable
 - **Native**: Capacitor with @capacitor/haptics, @capacitor/filesystem, @capacitor/share
-- **Local AI**: MediaPipe LLM Inference with Gemma 3 4B (Android native, fully functional)
+- **Local AI**: MediaPipe LLM Inference with Kreativium 4B (Android native, fully functional)
 
 ### Design System
 "Liquid Glass" dark theme aesthetic:
@@ -191,23 +255,34 @@ VITE_SITE_URL=...            # For AI API headers
 
 ```
 src/
-├── components/     # React components (23 files)
+├── components/     # React components
+│   ├── auth/       # Auth UI (LockScreen, BiometricPrompt, QRScanScreen, etc.)
 │   └── onboarding/ # Onboarding wizard steps
-├── contexts/       # React contexts (ModelContext for local AI)
-├── services/       # AI APIs (ai.ts, gemini.ts, localModel.ts) + PDF generation
-├── utils/          # Data generation, export, predictions, transition analysis
-│   └── platform.ts # Platform detection (isNative, isAndroid, isWeb)
+├── contexts/       # React contexts (AuthContext, ModelContext)
+├── services/       # AI, auth, crypto services
+│   ├── crypto/     # AES-GCM encryption, HKDF key derivation
+│   ├── biometricAuth.ts  # Cross-platform biometric wrapper
+│   ├── qrScanner.ts      # ML Kit QR scanning
+│   └── ai.ts, gemini.ts, localModel.ts  # AI APIs
+├── utils/          # Data generation, export, predictions
+│   ├── platform.ts       # Platform detection (isNative, isAndroid, isWeb)
+│   ├── qrPayloadSchema.ts    # QR validation (Zod)
+│   └── qrPayloadGenerator.ts # Generate test QR payloads
 ├── locales/        # i18n translations (en.json, no.json)
 ├── test/           # Vitest setup and mocks
 ├── store/          # React Context providers (split by domain)
-├── constants/      # Storage keys and app constants
-└── types.ts        # TypeScript data models with enums/constants
+├── constants/      # Storage keys, auth config
+├── types/          # TypeScript types
+│   └── auth.ts     # Auth type definitions
+└── types.ts        # Core data models with enums/constants
 
 android/            # Capacitor Android project (generated)
 ├── app/            # Android app module
 │   ├── src/main/   # Android source and resources
 │   │   ├── assets/models/  # Bundled model (optional, ~2.6GB)
-│   │   └── java/.../GemmaPlugin.java  # MediaPipe LLM native plugin
+│   │   └── java/.../
+│   │       ├── KreativiumPlugin.java     # MediaPipe LLM native plugin
+│   │       └── BiometricPlugin.java # Native biometric authentication
 │   └── build/outputs/apk/  # Built APK files
 └── gradle/         # Gradle wrapper
 

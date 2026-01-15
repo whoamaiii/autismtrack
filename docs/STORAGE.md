@@ -30,13 +30,17 @@ NeuroLogg Pro uses browser localStorage for all data persistence. This is an int
 All app data uses the `kreativium_` prefix to avoid conflicts:
 
 ```
-kreativium_logs          # Log entries
-kreativium_crisis_events # Crisis events
-kreativium_schedule      # Schedule entries
-kreativium_goals         # IEP goals
-kreativium_child_profile # Child profile
-kreativium_current_context # home/school toggle
-kreativium_daily_YYYY-MM-DD_context # Daily schedule modifications
+kreativium_logs                 # Log entries
+kreativium_crisis_events        # Crisis events
+kreativium_crisis_reflections   # Crisis reflections
+kreativium_schedule_entries     # Schedule entries
+kreativium_schedule_templates   # Schedule templates
+kreativium_goals                # IEP goals
+kreativium_child_profile        # Child profile
+kreativium_current_context      # Home/school toggle
+kreativium_onboarding_completed # Onboarding status
+kreativium_analysis_settings    # Analysis settings
+kreativium_daily_schedule_YYYY-MM-DD_context # Daily schedule modifications
 ```
 
 ### Data Flow
@@ -55,16 +59,18 @@ User Action → React Context → localStorage → Other Tabs (via StorageEvent)
 export const STORAGE_KEYS = {
   LOGS: 'kreativium_logs',
   CRISIS_EVENTS: 'kreativium_crisis_events',
-  SCHEDULE_ENTRIES: 'kreativium_schedule',
+  CRISIS_REFLECTIONS: 'kreativium_crisis_reflections',
+  SCHEDULE_ENTRIES: 'kreativium_schedule_entries',
   SCHEDULE_TEMPLATES: 'kreativium_schedule_templates',
   GOALS: 'kreativium_goals',
   CHILD_PROFILE: 'kreativium_child_profile',
   CURRENT_CONTEXT: 'kreativium_current_context',
-  ONBOARDING_COMPLETE: 'kreativium_onboarding_complete',
+  ONBOARDING_COMPLETED: 'kreativium_onboarding_completed',
+  ANALYSIS_SETTINGS: 'kreativium_analysis_settings',
 } as const;
 
 export const STORAGE_PREFIXES = {
-  DAILY_SCHEDULE: 'kreativium_daily_',
+  DAILY_SCHEDULE: 'kreativium_daily_schedule_',
 } as const;
 ```
 
@@ -149,33 +155,46 @@ const context = getStorageContext(STORAGE_KEYS.CURRENT_CONTEXT, 'home');
 // Returns: 'home' | 'school'
 ```
 
+#### `createStorageSyncHandlers()`
+
+Creates consistent `StorageEvent` and refresh handlers for context providers.
+
+```typescript
+import { createStorageSyncHandlers } from '../store/storage';
+
+const sync = createStorageSyncHandlers({
+  key: STORAGE_KEYS.LOGS,
+  getLatest: () => getStorageItem(STORAGE_KEYS.LOGS, [], z.array(LogEntrySchema)),
+  onUpdate: setLogs,
+  refreshDelay: 100
+});
+```
+
 ---
 
 ## Multi-Tab Synchronization
 
 ### How It Works
 
-Each context provider listens for `StorageEvent` to sync across tabs:
+Each context provider uses `createStorageSyncHandlers` to sync across tabs:
 
 ```typescript
-// In each provider (logs.tsx, crisis.tsx, etc.)
+import { createStorageSyncHandlers, getStorageItem, STORAGE_REFRESH_EVENT } from '../store/storage';
+
 useEffect(() => {
-  const handleStorageChange = (e: StorageEvent) => {
-    if (e.key !== STORAGE_KEYS.LOGS || !e.newValue) return;
+  const sync = createStorageSyncHandlers({
+    key: STORAGE_KEYS.LOGS,
+    getLatest: () => getStorageItem(STORAGE_KEYS.LOGS, [], z.array(LogEntrySchema)),
+    onUpdate: setLogs,
+    refreshDelay: 100
+  });
 
-    try {
-      const parsed = JSON.parse(e.newValue);
-      const result = z.array(LogEntrySchema).safeParse(parsed);
-      if (result.success) {
-        setLogs(result.data);
-      }
-    } catch {
-      // Ignore invalid data from other tabs
-    }
+  window.addEventListener('storage', sync.handleStorageChange);
+  window.addEventListener(STORAGE_REFRESH_EVENT, sync.handleRefresh);
+  return () => {
+    window.removeEventListener('storage', sync.handleStorageChange);
+    window.removeEventListener(STORAGE_REFRESH_EVENT, sync.handleRefresh);
   };
-
-  window.addEventListener('storage', handleStorageChange);
-  return () => window.removeEventListener('storage', handleStorageChange);
 }, []);
 ```
 
@@ -190,14 +209,17 @@ import { STORAGE_REFRESH_EVENT } from '../store/storage';
 window.dispatchEvent(new Event(STORAGE_REFRESH_EVENT));
 ```
 
-Providers listen and debounce refresh:
+Providers can debounce refresh by passing `refreshDelay`:
 
 ```typescript
-const handleRefresh = debounce(() => {
-  setLogs(getStorageItem(STORAGE_KEYS.LOGS, [], z.array(LogEntrySchema)));
-}, 100);
+const sync = createStorageSyncHandlers({
+  key: STORAGE_KEYS.LOGS,
+  getLatest: () => getStorageItem(STORAGE_KEYS.LOGS, [], z.array(LogEntrySchema)),
+  onUpdate: setLogs,
+  refreshDelay: 100
+});
 
-window.addEventListener(STORAGE_REFRESH_EVENT, handleRefresh);
+window.addEventListener(STORAGE_REFRESH_EVENT, sync.handleRefresh);
 ```
 
 ---

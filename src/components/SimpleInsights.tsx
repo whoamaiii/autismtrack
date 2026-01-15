@@ -141,6 +141,50 @@ export const SimpleInsights: React.FC<SimpleInsightsProps> = ({
 }) => {
     const { t } = useTranslation();
 
+    const logStats = useMemo(() => {
+        if (logs.length === 0) {
+            return {
+                avgArousal: 0,
+                highArousalCount: 0,
+                morningAvg: null as number | null,
+                afternoonAvg: null as number | null,
+                morningCount: 0,
+                afternoonCount: 0
+            };
+        }
+
+        let arousalSum = 0;
+        let highArousalCount = 0;
+        let morningSum = 0;
+        let morningCount = 0;
+        let afternoonSum = 0;
+        let afternoonCount = 0;
+
+        logs.forEach(log => {
+            arousalSum += log.arousal;
+            if (log.arousal >= 8) {
+                highArousalCount += 1;
+            }
+            const hour = new Date(log.timestamp).getHours();
+            if (hour >= 6 && hour < 12) {
+                morningSum += log.arousal;
+                morningCount += 1;
+            } else if (hour >= 12 && hour < 18) {
+                afternoonSum += log.arousal;
+                afternoonCount += 1;
+            }
+        });
+
+        return {
+            avgArousal: arousalSum / logs.length,
+            highArousalCount,
+            morningAvg: morningCount > 0 ? morningSum / morningCount : null,
+            afternoonAvg: afternoonCount > 0 ? afternoonSum / afternoonCount : null,
+            morningCount,
+            afternoonCount
+        };
+    }, [logs]);
+
     // Calculate today's status
     const todayStatus = useMemo((): StatusIndicator => {
         if (logs.length === 0) {
@@ -152,11 +196,10 @@ export const SimpleInsights: React.FC<SimpleInsightsProps> = ({
             };
         }
 
-        // Calculate average arousal
-        const avgArousal = logs.reduce((sum, log) => sum + log.arousal, 0) / logs.length;
-        const highArousalCount = logs.filter(log => log.arousal >= 8).length;
+        const { avgArousal, highArousalCount } = logStats;
+        const todayDate = new Date().toDateString();
         const hadCrisisToday = recentCrisisEvents.some(e =>
-            new Date(e.timestamp).toDateString() === new Date().toDateString()
+            new Date(e.timestamp).toDateString() === todayDate
         );
 
         if (hadCrisisToday || avgArousal >= 7) {
@@ -183,7 +226,7 @@ export const SimpleInsights: React.FC<SimpleInsightsProps> = ({
             color: 'green',
             description: `${childName} har hatt jevnt godt humør`
         };
-    }, [logs, recentCrisisEvents, childName]);
+    }, [logs.length, logStats, recentCrisisEvents, childName]);
 
     // Calculate energy trend
     const energyTrend = useMemo(() => {
@@ -248,30 +291,18 @@ export const SimpleInsights: React.FC<SimpleInsightsProps> = ({
         }
 
         // Generate pattern from logs
-        if (logs.length >= 3) {
-            const morningLogs = logs.filter(log => {
-                const hour = new Date(log.timestamp).getHours();
-                return hour >= 6 && hour < 12;
-            });
+        if (logs.length >= 3 && logStats.morningAvg !== null && logStats.afternoonAvg !== null) {
+            const avgMorning = logStats.morningAvg;
+            const avgAfternoon = logStats.afternoonAvg;
 
-            const afternoonLogs = logs.filter(log => {
-                const hour = new Date(log.timestamp).getHours();
-                return hour >= 12 && hour < 18;
-            });
-
-            if (morningLogs.length > 0 && afternoonLogs.length > 0) {
-                const avgMorning = morningLogs.reduce((sum, log) => sum + log.arousal, 0) / morningLogs.length;
-                const avgAfternoon = afternoonLogs.reduce((sum, log) => sum + log.arousal, 0) / afternoonLogs.length;
-
-                if (avgAfternoon > avgMorning + 2) {
-                    return 'Spenning øker ofte på ettermiddagen';
-                } else if (avgMorning > avgAfternoon + 2) {
-                    return 'Roligere etter morgenrutiner er ferdig';
-                }
+            if (avgAfternoon > avgMorning + 2) {
+                return 'Spenning øker ofte på ettermiddagen';
+            } else if (avgMorning > avgAfternoon + 2) {
+                return 'Roligere etter morgenrutiner er ferdig';
             }
         }
         return null;
-    }, [analysis, logs]);
+    }, [analysis, logStats, logs.length]);
 
     // Loading state
     if (isLoading) {

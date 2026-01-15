@@ -7,7 +7,7 @@ import type { ChildProfile } from '../types';
 import { STORAGE_KEYS } from '../constants/storage';
 import { ChildProfileSchema } from '../utils/validation';
 import { generateUUID } from '../utils/uuid';
-import { getStorageItem, safeSetItem, safeRemoveItem, STORAGE_REFRESH_EVENT } from './storage';
+import { createStorageSyncHandlers, getStorageItem, safeSetItem, safeRemoveItem, STORAGE_REFRESH_EVENT } from './storage';
 import type { ChildProfileContextType } from './types';
 
 const ChildProfileContext = createContext<ChildProfileContextType | undefined>(undefined);
@@ -23,30 +23,17 @@ export const ChildProfileProvider: React.FC<ChildProfileProviderProps> = ({ chil
 
     // Multi-tab sync and refresh event handling
     useEffect(() => {
-        const handleStorageChange = (e: StorageEvent) => {
-            if (e.key !== STORAGE_KEYS.CHILD_PROFILE || !e.newValue) return;
-            try {
-                const parsed = JSON.parse(e.newValue);
-                const result = ChildProfileSchema.nullable().safeParse(parsed);
-                if (result.success) {
-                    setChildProfileState(result.data);
-                } else if (import.meta.env.DEV) {
-                    console.warn('[Storage Sync] Invalid child profile from other tab');
-                }
-            } catch {
-                // Ignore parse errors
-            }
-        };
+        const profileSync = createStorageSyncHandlers({
+            key: STORAGE_KEYS.CHILD_PROFILE,
+            getLatest: () => getStorageItem(STORAGE_KEYS.CHILD_PROFILE, null, ChildProfileSchema.nullable()),
+            onUpdate: setChildProfileState
+        });
 
-        const handleRefresh = () => {
-            setChildProfileState(getStorageItem(STORAGE_KEYS.CHILD_PROFILE, null, ChildProfileSchema.nullable()));
-        };
-
-        window.addEventListener('storage', handleStorageChange);
-        window.addEventListener(STORAGE_REFRESH_EVENT, handleRefresh);
+        window.addEventListener('storage', profileSync.handleStorageChange);
+        window.addEventListener(STORAGE_REFRESH_EVENT, profileSync.handleRefresh);
         return () => {
-            window.removeEventListener('storage', handleStorageChange);
-            window.removeEventListener(STORAGE_REFRESH_EVENT, handleRefresh);
+            window.removeEventListener('storage', profileSync.handleStorageChange);
+            window.removeEventListener(STORAGE_REFRESH_EVENT, profileSync.handleRefresh);
         };
     }, []);
 

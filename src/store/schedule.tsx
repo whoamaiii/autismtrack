@@ -7,7 +7,7 @@ import { z } from 'zod';
 import type { ScheduleEntry, DailyScheduleTemplate } from '../types';
 import { STORAGE_KEYS } from '../constants/storage';
 import { ScheduleEntrySchema, DailyScheduleTemplateSchema } from '../utils/validation';
-import { getStorageItem, safeSetItem, STORAGE_REFRESH_EVENT } from './storage';
+import { createStorageSyncHandlers, getStorageItem, safeSetItem, STORAGE_REFRESH_EVENT } from './storage';
 import type { ScheduleContextType } from './types';
 
 const ScheduleContext = createContext<ScheduleContextType | undefined>(undefined);
@@ -26,33 +26,26 @@ export const ScheduleProvider: React.FC<ScheduleProviderProps> = ({ children }) 
 
     // Multi-tab sync and refresh event handling
     useEffect(() => {
+        const entriesSync = createStorageSyncHandlers({
+            key: STORAGE_KEYS.SCHEDULE_ENTRIES,
+            getLatest: () => getStorageItem(STORAGE_KEYS.SCHEDULE_ENTRIES, [], z.array(ScheduleEntrySchema)),
+            onUpdate: setScheduleEntries
+        });
+
+        const templatesSync = createStorageSyncHandlers({
+            key: STORAGE_KEYS.SCHEDULE_TEMPLATES,
+            getLatest: () => getStorageItem(STORAGE_KEYS.SCHEDULE_TEMPLATES, [], z.array(DailyScheduleTemplateSchema)),
+            onUpdate: setScheduleTemplates
+        });
+
         const handleStorageChange = (e: StorageEvent) => {
-            if (!e.newValue) return;
-            try {
-                const parsed = JSON.parse(e.newValue);
-                if (e.key === STORAGE_KEYS.SCHEDULE_ENTRIES) {
-                    const result = z.array(ScheduleEntrySchema).safeParse(parsed);
-                    if (result.success) {
-                        setScheduleEntries(result.data);
-                    } else if (import.meta.env.DEV) {
-                        console.warn('[Storage Sync] Invalid schedule entries from other tab');
-                    }
-                } else if (e.key === STORAGE_KEYS.SCHEDULE_TEMPLATES) {
-                    const result = z.array(DailyScheduleTemplateSchema).safeParse(parsed);
-                    if (result.success) {
-                        setScheduleTemplates(result.data);
-                    } else if (import.meta.env.DEV) {
-                        console.warn('[Storage Sync] Invalid schedule templates from other tab');
-                    }
-                }
-            } catch {
-                // Ignore parse errors
-            }
+            entriesSync.handleStorageChange(e);
+            templatesSync.handleStorageChange(e);
         };
 
         const handleRefresh = () => {
-            setScheduleEntries(getStorageItem(STORAGE_KEYS.SCHEDULE_ENTRIES, [], z.array(ScheduleEntrySchema)));
-            setScheduleTemplates(getStorageItem(STORAGE_KEYS.SCHEDULE_TEMPLATES, [], z.array(DailyScheduleTemplateSchema)));
+            entriesSync.handleRefresh();
+            templatesSync.handleRefresh();
         };
 
         window.addEventListener('storage', handleStorageChange);
@@ -63,43 +56,49 @@ export const ScheduleProvider: React.FC<ScheduleProviderProps> = ({ children }) 
         };
     }, []);
 
-    const saveScheduleEntries = useCallback((newEntries: ScheduleEntry[]) => {
-        setScheduleEntries(newEntries);
-        safeSetItem(STORAGE_KEYS.SCHEDULE_ENTRIES, JSON.stringify(newEntries));
+    const saveScheduleEntries = useCallback((updater: ScheduleEntry[] | ((prev: ScheduleEntry[]) => ScheduleEntry[])) => {
+        setScheduleEntries(prevEntries => {
+            const nextEntries = typeof updater === 'function' ? updater(prevEntries) : updater;
+            safeSetItem(STORAGE_KEYS.SCHEDULE_ENTRIES, JSON.stringify(nextEntries));
+            return nextEntries;
+        });
     }, []);
 
-    const saveScheduleTemplates = useCallback((newTemplates: DailyScheduleTemplate[]) => {
-        setScheduleTemplates(newTemplates);
-        safeSetItem(STORAGE_KEYS.SCHEDULE_TEMPLATES, JSON.stringify(newTemplates));
+    const saveScheduleTemplates = useCallback((updater: DailyScheduleTemplate[] | ((prev: DailyScheduleTemplate[]) => DailyScheduleTemplate[])) => {
+        setScheduleTemplates(prevTemplates => {
+            const nextTemplates = typeof updater === 'function' ? updater(prevTemplates) : updater;
+            safeSetItem(STORAGE_KEYS.SCHEDULE_TEMPLATES, JSON.stringify(nextTemplates));
+            return nextTemplates;
+        });
     }, []);
 
     const addScheduleEntry = useCallback((entry: ScheduleEntry) => {
-        saveScheduleEntries([...scheduleEntries, entry]);
-    }, [scheduleEntries, saveScheduleEntries]);
+        saveScheduleEntries(prev => [...prev, entry]);
+    }, [saveScheduleEntries]);
 
     const updateScheduleEntry = useCallback((id: string, updates: Partial<ScheduleEntry>) => {
-        saveScheduleEntries(scheduleEntries.map(e => e.id === id ? { ...e, ...updates } : e));
-    }, [scheduleEntries, saveScheduleEntries]);
+        saveScheduleEntries(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e));
+    }, [saveScheduleEntries]);
 
     const deleteScheduleEntry = useCallback((id: string) => {
-        saveScheduleEntries(scheduleEntries.filter(e => e.id !== id));
-    }, [scheduleEntries, saveScheduleEntries]);
+        saveScheduleEntries(prev => prev.filter(e => e.id !== id));
+    }, [saveScheduleEntries]);
 
     const getEntriesByDate = useCallback((date: string) => {
         return scheduleEntries.filter(e => e.date === date);
     }, [scheduleEntries]);
 
     const addTemplate = useCallback((template: DailyScheduleTemplate) => {
-        saveScheduleTemplates([...scheduleTemplates, template]);
-    }, [scheduleTemplates, saveScheduleTemplates]);
+        saveScheduleTemplates(prev => [...prev, template]);
+    }, [saveScheduleTemplates]);
 
     const updateTemplate = useCallback((id: string, updates: Partial<DailyScheduleTemplate>) => {
-        saveScheduleTemplates(scheduleTemplates.map(t => t.id === id ? { ...t, ...updates } : t));
-    }, [scheduleTemplates, saveScheduleTemplates]);
+        saveScheduleTemplates(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+    }, [saveScheduleTemplates]);
 
     const deleteTemplate = useCallback((id: string) => {
-        saveScheduleTemplates(scheduleTemplates.filter(t => t.id !== id));
-    }, [scheduleTemplates, saveScheduleTemplates]);
+        saveScheduleTemplates(prev => prev.filter(t => t.id !== id));
+    }, [saveScheduleTemplates]);
 
     const getCompletionRate = useCallback((dateRange?: { start: Date; end: Date }) => {
         let entries = scheduleEntries;

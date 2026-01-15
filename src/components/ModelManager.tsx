@@ -135,7 +135,7 @@ export function ModelManager({ className = '' }: ModelManagerProps) {
                                 {t('model.settingsTitle', 'Local AI model')}
                             </h3>
                             <p className="text-xs text-slate-400">
-                                {t('model.modelName', 'Gemma 3 4B')}
+                                {t('model.modelName', 'Kreativium 4B')}
                             </p>
                         </div>
                     </div>
@@ -258,7 +258,7 @@ export function ModelManager({ className = '' }: ModelManagerProps) {
                                     {t('model.tokenRequired', 'Hugging Face Token Required')}
                                 </h4>
                                 <p className="text-[11px] text-slate-300 mb-1.5">
-                                    {t('model.tokenInstructions', 'Gemma 3 4B is a gated model. Follow these steps:')}
+                                    {t('model.tokenInstructions', 'Kreativium 4B is a gated model. Follow these steps:')}
                                 </p>
                                 <ol className="text-[11px] text-slate-300 space-y-0.5 list-decimal list-inside mb-2">
                                     <li>
@@ -423,7 +423,7 @@ export function ModelManager({ className = '' }: ModelManagerProps) {
                 <p className="text-xs text-slate-500">
                     {status.downloaded
                         ? t('model.descriptionDownloaded', 'Analysis runs locally on device. Data is never sent to external servers.')
-                        : t('model.descriptionNotDownloaded', 'Download Gemma 3 to run analysis offline. Requires WiFi for download.')}
+                        : t('model.descriptionNotDownloaded', 'Download Kreativium 4B to run analysis offline. Requires WiFi for download.')}
                 </p>
             </div>
         </div>

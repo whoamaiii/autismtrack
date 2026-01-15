@@ -19,12 +19,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             {/* Background Shader is handled in App.tsx */}
 
             {/* Content */}
-            <main className="relative z-10 w-full max-w-md md:max-w-2xl lg:max-w-6xl mx-auto min-h-screen p-4 pb-32">
+            <main className="relative z-10 w-full max-w-md md:max-w-2xl lg:max-w-6xl mx-auto min-h-screen px-4 pt-2 pb-32">
                 {/* Context Toggle - Enhanced with icons and larger touch targets */}
                 <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex justify-center mb-2"
+                    className="flex justify-center"
                 >
                     <div className="bg-white/10 dark:bg-black/20 backdrop-blur-md p-1.5 rounded-full flex gap-1 border border-white/10 relative">
                         <motion.div

@@ -33,16 +33,16 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Capacitor plugin for running Gemma 3 locally using MediaPipe LLM Inference.
+ * Capacitor plugin for running Kreativium 4B locally using MediaPipe LLM Inference.
  * Provides model download, loading, and text generation capabilities.
  */
-@CapacitorPlugin(name = "Gemma")
-public class GemmaPlugin extends Plugin {
-    private static final String TAG = "GemmaPlugin";
+@CapacitorPlugin(name = "Kreativium")
+public class KreativiumPlugin extends Plugin {
+    private static final String TAG = "KreativiumPlugin";
 
     // Model configuration
     // Model from LiteRT Community on Hugging Face (official MediaPipe-compatible format)
-    // NOTE: This is a gated model - requires accepting Gemma license on Hugging Face
+    // NOTE: This is a gated model - requires accepting the model license on Hugging Face
     private static final String MODEL_FILENAME = "gemma3-4b-it-int4-web.task";
     private static final String MODEL_URL = "https://huggingface.co/litert-community/Gemma3-4B-IT/resolve/main/gemma3-4b-it-int4-web.task";
     private static final long EXPECTED_MODEL_SIZE = 2560000000L; // ~2.56GB (actual size)
@@ -81,7 +81,7 @@ public class GemmaPlugin extends Plugin {
 
     /**
      * Debug logging helper - uses Android's isLoggable to check if DEBUG logging is enabled
-     * Enable with: adb shell setprop log.tag.GemmaPlugin DEBUG
+     * Enable with: adb shell setprop log.tag.KreativiumPlugin DEBUG
      */
     private void logDebug(String message) {
         if (Log.isLoggable(TAG, Log.DEBUG)) {
@@ -473,7 +473,7 @@ public class GemmaPlugin extends Plugin {
     }
 
     /**
-     * Download the Gemma 3 4B model file with retry and resume support
+     * Download the Kreativium 4B model file with retry and resume support
      */
     @PluginMethod
     public void downloadModel(PluginCall call) {
@@ -873,7 +873,7 @@ public class GemmaPlugin extends Plugin {
      */
     private String getStoredHfToken() {
         try {
-            return getContext().getSharedPreferences("gemma_prefs", 0)
+            return getContext().getSharedPreferences("kreativium_prefs", 0)
                     .getString("hf_token", null);
         } catch (Exception e) {
             Log.w(TAG, "Failed to read HF token: " + e.getMessage());
@@ -944,7 +944,7 @@ public class GemmaPlugin extends Plugin {
         }
 
         try {
-            getContext().getSharedPreferences("gemma_prefs", 0)
+            getContext().getSharedPreferences("kreativium_prefs", 0)
                     .edit()
                     .putString("hf_token", token.trim())
                     .apply();
@@ -963,7 +963,7 @@ public class GemmaPlugin extends Plugin {
     @PluginMethod
     public void clearHfToken(PluginCall call) {
         try {
-            getContext().getSharedPreferences("gemma_prefs", 0)
+            getContext().getSharedPreferences("kreativium_prefs", 0)
                     .edit()
                     .remove("hf_token")
                     .apply();
@@ -980,7 +980,7 @@ public class GemmaPlugin extends Plugin {
      * Setup HTTP connection with proper headers
      */
     private void setupConnection(HttpURLConnection connection, String hfToken) {
-        connection.setRequestProperty("User-Agent", "NeuroLoggPro/1.0 (Android; Gemma3Download)");
+        connection.setRequestProperty("User-Agent", "NeuroLoggPro/1.0 (Android; Kreativium4BDownload)");
         connection.setRequestProperty("Accept", "application/octet-stream");
         connection.setConnectTimeout(60000);
         connection.setReadTimeout(600000);
@@ -1009,7 +1009,7 @@ public class GemmaPlugin extends Plugin {
         if (responseCode == 401) {
             return "Authentication required. Please provide a valid Hugging Face token.";
         } else if (responseCode == 403) {
-            return "Access denied. Please accept the Gemma license on Hugging Face and provide a valid token.";
+            return "Access denied. Please accept the model license on Hugging Face and provide a valid token.";
         }
 
         try (InputStream errorStream = connection.getErrorStream()) {

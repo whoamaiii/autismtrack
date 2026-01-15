@@ -56,7 +56,7 @@
     },
     "home": {
         "title": "KREATIVIUM",
-        "subtitle": "",
+        "subtitle": "Spor mønstre og støtt regulering",
         "crisisMode": {
             "title": "Krisemodus",
             "subtitle": "Start pusteøvelse",
@@ -684,6 +684,8 @@
     },
     "navigation": {
         "home": "Hjem",
+        "dashboard": "Oversikt",
+        "analysis": "Analyse",
         "stats": "Statistikk",
         "log": "Logg",
         "trends": "Trender",
@@ -1036,7 +1038,7 @@
         "downloadFailed": "Nedlasting feilet",
         "modelInfo": {
             "model": "Modell",
-            "modelName": "Gemma 2B (optimalisert)",
+            "modelName": "Kreativium 2B (optimalisert)",
             "size": "Størrelse",
             "sizeValue": "~600 MB",
             "vramRequired": "VRAM krav"
@@ -1069,10 +1071,10 @@
         "downloadProgress": "Nedlastingsfremdrift",
         "errorGatedModel": "Denne modellen krever en Hugging Face-token. Klikk \"Trenger token?\" for instruksjoner.",
         "tokenRequired": "Hugging Face Token Kreves",
-        "tokenInstructions": "Gemma 3 4B er en begrenset modell. Følg disse trinnene for tilgang:",
+        "tokenInstructions": "Kreativium 4B er en begrenset modell. Følg disse trinnene for tilgang:",
         "tokenStep3": "Lim inn tokenet ditt nedenfor",
         "tokenInputLabel": "Hugging Face-token",
-        "acceptLicense": "Godta Gemma-lisensen",
+        "acceptLicense": "Godta modell-lisensen",
         "createToken": "Opprett en token med \"read\"-tilgang",
         "downloadingButton": "Laster ned...",
         "downloadButton": "Last ned AI-modell",
@@ -1080,7 +1082,7 @@
         "needToken": "Trenger token?",
         "settingsHint": "Du kan laste ned modellen senere fra Innstillinger",
         "settingsTitle": "Lokal AI-modell",
-        "modelName": "Gemma 3 4B",
+        "modelName": "Kreativium 4B",
         "statusDownloaded": "Lastet ned",
         "statusExtracting": "Pakker ut...",
         "statusNotDownloaded": "Ikke lastet ned",
@@ -1089,7 +1091,7 @@
         "deleteConfirm": "Er du sikker på at du vil slette modellen? Du må laste den ned på nytt for å bruke lokal analyse.",
         "deleteButton": "Slett modell",
         "descriptionDownloaded": "Analyse kjøres lokalt på enheten. Data sendes aldri til eksterne servere.",
-        "descriptionNotDownloaded": "Last ned Gemma 3 for å kjøre analyse uten internett. Krever WiFi for nedlasting.",
+        "descriptionNotDownloaded": "Last ned Kreativium 4B for å kjøre analyse uten internett. Krever WiFi for nedlasting.",
         "etaRemaining": "~{{time}} igjen",
         "extractingModel": "Pakker ut modell...",
         "extractionProgress": "Utpakkingsfremdrift",

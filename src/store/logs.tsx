@@ -8,7 +8,7 @@ import type { LogEntry, ContextType } from '../types';
 import { enrichLogEntry } from '../types';
 import { STORAGE_KEYS } from '../constants/storage';
 import { LogEntrySchema, validateLogEntryInput } from '../utils/validation';
-import { getStorageItem, safeSetItem, STORAGE_REFRESH_EVENT, debounce } from './storage';
+import { createStorageSyncHandlers, getStorageItem, safeSetItem, STORAGE_REFRESH_EVENT } from './storage';
 import type { LogsContextType } from './types';
 
 const LogsContext = createContext<LogsContextType | undefined>(undefined);
@@ -24,34 +24,18 @@ export const LogsProvider: React.FC<LogsProviderProps> = ({ children }) => {
 
     // Multi-tab sync and refresh event handling
     useEffect(() => {
-        const handleStorageChange = (e: StorageEvent) => {
-            if (e.key !== STORAGE_KEYS.LOGS || !e.newValue) return;
-            try {
-                const parsed = JSON.parse(e.newValue);
-                const result = z.array(LogEntrySchema).safeParse(parsed);
-                if (result.success) {
-                    setLogs(result.data);
-                } else if (import.meta.env.DEV) {
-                    console.warn('[Storage Sync] Invalid logs data from other tab');
-                }
-            } catch (e) {
-                // Log parse errors in DEV mode for debugging
-                if (import.meta.env.DEV) {
-                    console.warn('[Storage Sync] Failed to parse logs from other tab:', e);
-                }
-            }
-        };
+        const syncHandlers = createStorageSyncHandlers({
+            key: STORAGE_KEYS.LOGS,
+            getLatest: () => getStorageItem(STORAGE_KEYS.LOGS, [], z.array(LogEntrySchema)),
+            onUpdate: setLogs,
+            refreshDelay: 100
+        });
 
-        // Handle refresh event from settings.refreshData() - debounced to prevent rapid re-renders
-        const handleRefresh = debounce(() => {
-            setLogs(getStorageItem(STORAGE_KEYS.LOGS, [], z.array(LogEntrySchema)));
-        }, 100);
-
-        window.addEventListener('storage', handleStorageChange);
-        window.addEventListener(STORAGE_REFRESH_EVENT, handleRefresh);
+        window.addEventListener('storage', syncHandlers.handleStorageChange);
+        window.addEventListener(STORAGE_REFRESH_EVENT, syncHandlers.handleRefresh);
         return () => {
-            window.removeEventListener('storage', handleStorageChange);
-            window.removeEventListener(STORAGE_REFRESH_EVENT, handleRefresh);
+            window.removeEventListener('storage', syncHandlers.handleStorageChange);
+            window.removeEventListener(STORAGE_REFRESH_EVENT, syncHandlers.handleRefresh);
         };
     }, []);
 

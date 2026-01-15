@@ -1,7 +1,7 @@
 /**
  * Model Download Prompt
  * First-launch modal prompting user to download the local AI model
- * Shows on Android devices that haven't yet downloaded Gemma 3
+ * Shows on Android devices that haven't yet downloaded Kreativium 4B
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -223,7 +223,7 @@ export function ModelDownloadPrompt() {
                                             {t('model.tokenRequired', 'Hugging Face Token Required')}
                                         </h4>
                                         <p className="text-xs text-slate-300 mb-2">
-                                            {t('model.tokenInstructions', 'Gemma 3 4B is a gated model. Follow these steps to get access:')}
+                                            {t('model.tokenInstructions', 'Kreativium 4B is a gated model. Follow these steps to get access:')}
                                         </p>
                                         <ol className="text-xs text-slate-300 space-y-1 list-decimal list-inside mb-2">
                                             <li>
@@ -233,7 +233,7 @@ export function ModelDownloadPrompt() {
                                                     rel="noopener noreferrer"
                                                     className="text-cyan-400 hover:text-cyan-300 underline inline-flex items-center gap-1"
                                                 >
-                                                    {t('model.acceptLicense', 'Accept the Gemma license')}
+                                                    {t('model.acceptLicense', 'Accept the model license')}
                                                     <ExternalLink size={10} />
                                                 </a>
                                             </li>

@@ -7,6 +7,12 @@ import { RouteErrorBoundary } from './components/RouteErrorBoundary';
 import { ToastProvider, StorageErrorListener } from './components/Toast';
 import { ModelProvider } from './contexts/ModelContext';
 import { ModelDownloadPrompt } from './components/ModelDownloadPrompt';
+import { AuthProvider } from './contexts/AuthContext';
+import { AuthGate } from './components/auth';
+
+// Feature flag for auth - set to false to enable biometric/QR unlock
+// Set to true during development to bypass auth requirements
+const BYPASS_AUTH = import.meta.env.MODE === 'test' || false; // Auto-bypass for tests
 
 // Eagerly loaded - these are on the main navigation path
 import { Home } from './components/Home';
@@ -36,6 +42,9 @@ const DysregulationHeatmap = lazy(() => import('./components/DysregulationHeatma
 const TransitionInsights = lazy(() => import('./components/TransitionInsights').then(m => ({ default: m.TransitionInsights })));
 const Settings = lazy(() => import('./components/Settings').then(m => ({ default: m.Settings })));
 const NotFound = lazy(() => import('./components/NotFound').then(m => ({ default: m.NotFound })));
+
+// Logo preview - for testing animated logo
+const LogoPreview = lazy(() => import('./components/LogoPreview').then(m => ({ default: m.LogoPreview })));
 
 // Lazy loaded onboarding
 const OnboardingWizard = lazy(() => import('./components/onboarding/OnboardingWizard').then(m => ({ default: m.OnboardingWizard })));
@@ -146,6 +155,13 @@ const AppContent = () => {
       {/* Onboarding route - standalone, no Layout */}
       <Route path="/onboarding" element={<OnboardingRoute />} />
 
+      {/* Logo preview - standalone for testing */}
+      <Route path="/logo-preview" element={
+        <Suspense fallback={<PageLoader />}>
+          <LogoPreview />
+        </Suspense>
+      } />
+
       {/* Protected routes - require onboarding completion */}
       <Route element={<ProtectedRoute />}>
         <Route element={<ProtectedLayout />}>
@@ -180,18 +196,24 @@ function App() {
     <ErrorBoundary>
       <BrowserRouter>
         <ScrollToTop />
-        <DataProvider>
-          <ModelProvider>
-            <ToastProvider>
-              <StorageErrorListener />
-              {/* First-launch model download prompt (Android only) */}
-              <ModelDownloadPrompt />
-              {/* CSS background always visible - shader loads in ProtectedLayout */}
-              <CSSBackground />
-              <AppContent />
-            </ToastProvider>
-          </ModelProvider>
-        </DataProvider>
+        {/* AuthProvider wraps everything - manages biometric + QR unlock state */}
+        <AuthProvider bypassAuth={BYPASS_AUTH}>
+          {/* AuthGate blocks content until user is authenticated */}
+          <AuthGate>
+            <DataProvider>
+              <ModelProvider>
+                <ToastProvider>
+                  <StorageErrorListener />
+                  {/* First-launch model download prompt (Android only) */}
+                  <ModelDownloadPrompt />
+                  {/* CSS background always visible - shader loads in ProtectedLayout */}
+                  <CSSBackground />
+                  <AppContent />
+                </ToastProvider>
+              </ModelProvider>
+            </DataProvider>
+          </AuthGate>
+        </AuthProvider>
       </BrowserRouter>
     </ErrorBoundary>
   );

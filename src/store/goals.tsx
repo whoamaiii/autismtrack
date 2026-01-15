@@ -8,7 +8,7 @@ import type { Goal, GoalProgress, GoalStatus } from '../types';
 import { STORAGE_KEYS } from '../constants/storage';
 import { GoalSchema } from '../utils/validation';
 import { generateUUID } from '../utils/uuid';
-import { getStorageItem, safeSetItem, STORAGE_REFRESH_EVENT } from './storage';
+import { createStorageSyncHandlers, getStorageItem, safeSetItem, STORAGE_REFRESH_EVENT } from './storage';
 import type { GoalsContextType } from './types';
 
 const GoalsContext = createContext<GoalsContextType | undefined>(undefined);
@@ -24,49 +24,39 @@ export const GoalsProvider: React.FC<GoalsProviderProps> = ({ children }) => {
 
     // Multi-tab sync and refresh event handling
     useEffect(() => {
-        const handleStorageChange = (e: StorageEvent) => {
-            if (e.key !== STORAGE_KEYS.GOALS || !e.newValue) return;
-            try {
-                const parsed = JSON.parse(e.newValue);
-                const result = z.array(GoalSchema).safeParse(parsed);
-                if (result.success) {
-                    setGoals(result.data);
-                } else if (import.meta.env.DEV) {
-                    console.warn('[Storage Sync] Invalid goals data from other tab');
-                }
-            } catch {
-                // Ignore parse errors
-            }
-        };
+        const goalsSync = createStorageSyncHandlers({
+            key: STORAGE_KEYS.GOALS,
+            getLatest: () => getStorageItem(STORAGE_KEYS.GOALS, [], z.array(GoalSchema)),
+            onUpdate: setGoals
+        });
 
-        const handleRefresh = () => {
-            setGoals(getStorageItem(STORAGE_KEYS.GOALS, [], z.array(GoalSchema)));
-        };
-
-        window.addEventListener('storage', handleStorageChange);
-        window.addEventListener(STORAGE_REFRESH_EVENT, handleRefresh);
+        window.addEventListener('storage', goalsSync.handleStorageChange);
+        window.addEventListener(STORAGE_REFRESH_EVENT, goalsSync.handleRefresh);
         return () => {
-            window.removeEventListener('storage', handleStorageChange);
-            window.removeEventListener(STORAGE_REFRESH_EVENT, handleRefresh);
+            window.removeEventListener('storage', goalsSync.handleStorageChange);
+            window.removeEventListener(STORAGE_REFRESH_EVENT, goalsSync.handleRefresh);
         };
     }, []);
 
-    const saveGoals = useCallback((newGoals: Goal[]) => {
-        setGoals(newGoals);
-        safeSetItem(STORAGE_KEYS.GOALS, JSON.stringify(newGoals));
+    const saveGoals = useCallback((updater: Goal[] | ((prev: Goal[]) => Goal[])) => {
+        setGoals(prevGoals => {
+            const nextGoals = typeof updater === 'function' ? updater(prevGoals) : updater;
+            safeSetItem(STORAGE_KEYS.GOALS, JSON.stringify(nextGoals));
+            return nextGoals;
+        });
     }, []);
 
     const addGoal = useCallback((goal: Goal) => {
-        saveGoals([...goals, goal]);
-    }, [goals, saveGoals]);
+        saveGoals(prev => [...prev, goal]);
+    }, [saveGoals]);
 
     const updateGoal = useCallback((id: string, updates: Partial<Goal>) => {
-        saveGoals(goals.map(g => g.id === id ? { ...g, ...updates } : g));
-    }, [goals, saveGoals]);
+        saveGoals(prev => prev.map(g => g.id === id ? { ...g, ...updates } : g));
+    }, [saveGoals]);
 
     const deleteGoal = useCallback((id: string) => {
-        saveGoals(goals.filter(g => g.id !== id));
-    }, [goals, saveGoals]);
+        saveGoals(prev => prev.filter(g => g.id !== id));
+    }, [saveGoals]);
 
     const addGoalProgress = useCallback((goalId: string, progress: Omit<GoalProgress, 'id' | 'goalId'>) => {
         const newProgress: GoalProgress = {
@@ -74,7 +64,7 @@ export const GoalsProvider: React.FC<GoalsProviderProps> = ({ children }) => {
             id: generateUUID(),
             goalId
         };
-        saveGoals(goals.map(g => {
+        saveGoals(prev => prev.map(g => {
             if (g.id === goalId) {
                 const updatedHistory = [...g.progressHistory, newProgress];
                 const latestValue = newProgress.value;
@@ -124,7 +114,7 @@ export const GoalsProvider: React.FC<GoalsProviderProps> = ({ children }) => {
             }
             return g;
         }));
-    }, [goals, saveGoals]);
+    }, [saveGoals]);
 
     const getGoalProgress = useCallback((goalId: string) => {
         const goal = goals.find(g => g.id === goalId);

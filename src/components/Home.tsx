@@ -12,6 +12,7 @@ import { useSettings, useLogs, useCrisis, useChildProfile } from '../store';
 import { RiskForecast } from './RiskForecast';
 import { SimpleInsights } from './SimpleInsights';
 import { CollapsibleSection } from './CollapsibleSection';
+import { AnimatedLogo } from './AnimatedLogo';
 import { useTranslation } from 'react-i18next';
 import { useToast } from './Toast';
 
@@ -123,7 +124,7 @@ export const Home: React.FC = () => {
     };
 
     return (
-        <div className="flex flex-col gap-3 pt-2 pb-28 relative">
+        <div className="flex flex-col gap-2 pt-0 pb-28 relative">
             {/* Skip Link for keyboard navigation */}
             <a
                 href="#main-content"
@@ -152,7 +153,7 @@ export const Home: React.FC = () => {
                     {/* Settings - top left */}
                     <Link
                         to="/settings"
-                        className="absolute top-0 left-0 z-50 p-2.5 bg-white/10 hover:bg-white/20 rounded-full transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+                        className="absolute top-2 left-0 z-50 p-2.5 bg-white/5 hover:bg-white/10 rounded-full transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center backdrop-blur-sm"
                         aria-label={t('navigation.settings')}
                     >
                         <Settings className="text-slate-400 dark:text-slate-300" size={20} aria-hidden="true" />
@@ -161,24 +162,20 @@ export const Home: React.FC = () => {
                     {/* Language toggle - top right */}
                     <button
                         onClick={toggleLanguage}
-                        className="absolute top-0 right-0 z-50 p-2.5 bg-white/10 hover:bg-white/20 rounded-full transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+                        className="absolute top-2 right-0 z-50 p-2.5 bg-white/5 hover:bg-white/10 rounded-full transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center backdrop-blur-sm"
                         aria-label={t('home.switchLanguage')}
                     >
                         <Globe className="text-slate-400 dark:text-slate-300" size={20} aria-hidden="true" />
                     </button>
 
-                    <motion.div
-                        initial={prefersReducedMotion ? { opacity: 0 } : { scale: 0.95 }}
-                        animate={prefersReducedMotion ? { opacity: 1 } : { scale: 1 }}
-                        transition={prefersReducedMotion ? { duration: 0.01 } : { type: "spring", stiffness: 400, damping: 25, delay: 0.05 }}
-                        className="inline-flex items-center justify-center -mb-6"
-                    >
-                        <img
-                            src="/logo.png"
-                            alt="KREATIVIUM"
-                            className="h-56 md:h-72 w-auto object-contain drop-shadow-[0_0_60px_rgba(56,189,248,0.7)]"
+                    <div className="flex items-center justify-center -mb-4">
+                        <AnimatedLogo
+                            width="100%"
+                            showBackground={true}
+                            isAnimating={!prefersReducedMotion}
+                            className="w-full"
                         />
-                    </motion.div>
+                    </div>
                 </motion.div>
 
                 {/* Primary Action - New Log (Above fold for easy access) */}

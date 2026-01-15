@@ -101,6 +101,36 @@ export function getStorageContext(key: string, fallback: 'home' | 'school'): 'ho
 }
 
 /**
+ * Creates storage event handlers to keep state in sync.
+ */
+export interface StorageSyncOptions<T> {
+    key: string;
+    getLatest: () => T;
+    onUpdate: (value: T) => void;
+    refreshDelay?: number;
+}
+
+export function createStorageSyncHandlers<T>({
+    key,
+    getLatest,
+    onUpdate,
+    refreshDelay = 0
+}: StorageSyncOptions<T>) {
+    const refresh = () => {
+        onUpdate(getLatest());
+    };
+
+    const handleRefresh = refreshDelay > 0 ? debounce(refresh, refreshDelay) : refresh;
+
+    const handleStorageChange = (e: StorageEvent) => {
+        if (e.key !== key) return;
+        refresh();
+    };
+
+    return { handleStorageChange, handleRefresh };
+}
+
+/**
  * Safely sets an item in localStorage with quota error handling.
  * Dispatches STORAGE_ERROR_EVENT if quota is exceeded.
  * @returns true if successful, false if failed

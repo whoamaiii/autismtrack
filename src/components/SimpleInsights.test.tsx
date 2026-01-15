@@ -25,9 +25,13 @@ const createMockLog = (overrides: Partial<LogEntry> = {}): LogEntry => ({
     timestamp: new Date().toISOString(),
     context: 'home',
     arousal: 5,
+    valence: 5,
     energy: 5,
-    mood: 'neutral',
-    notes: '',
+    sensoryTriggers: [],
+    contextTriggers: [],
+    strategies: [],
+    duration: 0,
+    note: '',
     ...overrides
 });
 
@@ -44,6 +48,7 @@ const createMockCrisis = (overrides: Partial<CrisisEvent> = {}): CrisisEvent => 
     strategiesUsed: [],
     resolution: 'self_regulated',
     hasAudioRecording: false,
+    notes: '',
     ...overrides
 });
 
@@ -54,8 +59,8 @@ describe('SimpleInsights', () => {
                 <SimpleInsights logs={[]} />
             );
 
-            expect(screen.getByText(/Logg din første observasjon/i)).toBeInTheDocument();
-            expect(screen.getByText(/Legg til observasjon/i)).toBeInTheDocument();
+            expect(screen.getByText(/Log your first observation/i)).toBeInTheDocument();
+            expect(screen.getByText(/Add observation/i)).toBeInTheDocument();
         });
 
         it('shows link to log page in empty state', () => {
@@ -63,7 +68,7 @@ describe('SimpleInsights', () => {
                 <SimpleInsights logs={[]} />
             );
 
-            const link = screen.getByRole('link', { name: /Legg til observasjon/i });
+            const link = screen.getByRole('link', { name: /Add observation/i });
             expect(link).toHaveAttribute('href', '/log');
         });
     });

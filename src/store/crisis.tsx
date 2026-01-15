@@ -8,7 +8,7 @@ import type { CrisisEvent, CrisisReflection, ContextType } from '../types';
 import { enrichCrisisEvent } from '../types';
 import { STORAGE_KEYS } from '../constants/storage';
 import { CrisisEventSchema, CrisisReflectionSchema, validateCrisisEvent } from '../utils/validation';
-import { getStorageItem, safeSetItem, STORAGE_REFRESH_EVENT, debounce } from './storage';
+import { createStorageSyncHandlers, getStorageItem, safeSetItem, STORAGE_REFRESH_EVENT } from './storage';
 import type { CrisisContextType } from './types';
 
 const CrisisContext = createContext<CrisisContextType | undefined>(undefined);
@@ -27,28 +27,29 @@ export const CrisisProvider: React.FC<CrisisProviderProps> = ({ children }) => {
 
     // Multi-tab sync and refresh event handling
     useEffect(() => {
+        const eventsSync = createStorageSyncHandlers({
+            key: STORAGE_KEYS.CRISIS_EVENTS,
+            getLatest: () => getStorageItem(STORAGE_KEYS.CRISIS_EVENTS, [], z.array(CrisisEventSchema)),
+            onUpdate: setCrisisEvents,
+            refreshDelay: 100
+        });
+
+        const reflectionsSync = createStorageSyncHandlers({
+            key: STORAGE_KEYS.CRISIS_REFLECTIONS,
+            getLatest: () => getStorageItem(STORAGE_KEYS.CRISIS_REFLECTIONS, [], z.array(CrisisReflectionSchema)),
+            onUpdate: setCrisisReflections,
+            refreshDelay: 100
+        });
+
         const handleStorageChange = (e: StorageEvent) => {
-            if (e.key !== STORAGE_KEYS.CRISIS_EVENTS || !e.newValue) return;
-            try {
-                const parsed = JSON.parse(e.newValue);
-                const result = z.array(CrisisEventSchema).safeParse(parsed);
-                if (result.success) {
-                    setCrisisEvents(result.data);
-                } else if (import.meta.env.DEV) {
-                    console.warn('[Storage Sync] Invalid crisis events data from other tab');
-                }
-            } catch (e) {
-                // Log parse errors in DEV mode for debugging
-                if (import.meta.env.DEV) {
-                    console.warn('[Storage Sync] Failed to parse crisis events from other tab:', e);
-                }
-            }
+            eventsSync.handleStorageChange(e);
+            reflectionsSync.handleStorageChange(e);
         };
 
-        // Handle refresh event - debounced to prevent rapid re-renders
-        const handleRefresh = debounce(() => {
-            setCrisisEvents(getStorageItem(STORAGE_KEYS.CRISIS_EVENTS, [], z.array(CrisisEventSchema)));
-        }, 100);
+        const handleRefresh = () => {
+            eventsSync.handleRefresh();
+            reflectionsSync.handleRefresh();
+        };
 
         window.addEventListener('storage', handleStorageChange);
         window.addEventListener(STORAGE_REFRESH_EVENT, handleRefresh);

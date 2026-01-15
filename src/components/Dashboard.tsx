@@ -53,11 +53,12 @@ export const Dashboard: React.FC = () => {
     }, [logs]);
 
     // Calculate latest energy - get most recent log by timestamp
-    const latestLog = todaysLogs.length > 0
-        ? todaysLogs.reduce((latest, log) =>
+    const latestLog = useMemo(() => {
+        if (todaysLogs.length === 0) return null;
+        return todaysLogs.reduce((latest, log) =>
             new Date(log.timestamp) > new Date(latest.timestamp) ? log : latest
-        )
-        : null;
+        );
+    }, [todaysLogs]);
     const currentEnergy = latestLog ? latestLog.energy : 10; // Default to full battery
 
     // Track if deep analysis is running

@@ -43,6 +43,9 @@ dependencies {
 
     // MediaPipe GenAI for local Gemma 3 inference
     implementation 'com.google.mediapipe:tasks-genai:0.10.22'
+
+    // AndroidX Biometric for fingerprint/face authentication
+    implementation 'androidx.biometric:biometric:1.1.0'
 }
 
 apply from: 'capacitor.build.gradle'

@@ -5,6 +5,16 @@ import './i18n';
 import App from './App.tsx';
 import { runDataMigrations } from './store/dataMigration';
 
+// Make QR generator available in dev mode console
+// Usage: generateTestQR() to create a test QR payload
+if (import.meta.env.DEV) {
+  import('./utils/qrPayloadGenerator').then((module) => {
+    console.log('[Dev] QR Generator loaded. Use generateTestQR() in console to create test QR payloads.');
+    // Functions are auto-attached to window by the module
+    void module; // Suppress unused warning
+  });
+}
+
 // Run data migrations before React renders
 // This migrates legacy Norwegian strings to i18n keys
 runDataMigrations();

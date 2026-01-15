@@ -92,7 +92,7 @@ export function useModel(): ModelContextState { ... }
 | i18n | i18next (Norwegian/English) |
 | PDF | jsPDF + jspdf-autotable |
 | Native | Capacitor 8 (Android) |
-| Local AI | MediaPipe LLM + Gemma 3 4B |
+| Local AI | MediaPipe LLM + Kreativium 4B |
 | Testing | Vitest + happy-dom |
 
 ### State Management
@@ -113,7 +113,7 @@ All data persists to localStorage with `kreativium_*` key prefix.
 
 ### AI Integration Priority
 
-1. **Local Gemma 3 4B** (Android only, ~2.6GB download)
+1. **Local Kreativium 4B** (Android only, ~2.6GB download)
 2. **Google Gemini API** (cloud fallback)
 3. **OpenRouter API** (cloud fallback)
 4. **Mock data** (development/offline)

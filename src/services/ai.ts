@@ -603,13 +603,13 @@ export const analyzeLogs = async (
     // Deduplicate concurrent requests
     const dedupeKey = `regular:${generateLogsHash(logs, crisisEvents)}`;
     return deduplicatedRequest(dedupeKey, async () => {
-    // LOCAL MODEL FIRST: Try local Gemma 3 on native Android
+    // LOCAL MODEL FIRST: Try local Kreativium 4B on native Android
     if (isNative()) {
         try {
             const localReady = await isLocalModelReady();
             if (localReady) {
                 if (import.meta.env.DEV) {
-                    console.log('[AI] Using local Gemma 3 model for analysis...');
+                    console.log('[AI] Using local Kreativium 4B model for analysis...');
                 }
                 return await analyzeLogsWithLocalModel(logs, crisisEvents, options.childProfile);
             }
@@ -713,7 +713,7 @@ export const analyzeLogs = async (
 
 /**
  * Performs DEEP analysis using premium cloud models
- * Uses local Gemma 3 if available, then Gemini, falls back to OpenRouter premium models
+ * Uses local Kreativium 4B if available, then Gemini, falls back to OpenRouter premium models
  */
 export const analyzeLogsDeep = async (
     logs: LogEntry[],
@@ -728,18 +728,18 @@ export const analyzeLogsDeep = async (
     // Deduplicate concurrent requests
     const dedupeKey = `deep:${generateLogsHash(logs, crisisEvents)}`;
     return deduplicatedRequest(dedupeKey, async () => {
-    // LOCAL MODEL FIRST: Try local Gemma 3 on native Android
+    // LOCAL MODEL FIRST: Try local Kreativium 4B on native Android
     if (isNative()) {
         try {
             const localReady = await isLocalModelReady();
             if (localReady) {
                 if (import.meta.env.DEV) {
-                    console.log('[AI] Using local Gemma 3 model for deep analysis...');
+                    console.log('[AI] Using local Kreativium 4B model for deep analysis...');
                 }
                 const result = await analyzeLogsWithLocalModel(logs, crisisEvents, options.childProfile);
                 // Mark as deep analysis from local model
                 result.isDeepAnalysis = true;
-                return { ...result, modelUsed: 'gemma-3-4b-it-int4 (local)' };
+                return { ...result, modelUsed: 'kreativium-4b-it-int4 (local)' };
             }
         } catch (localError) {
             if (import.meta.env.DEV) {
@@ -914,7 +914,7 @@ export const getApiStatus = (): {
 
 /**
  * Streaming analysis - Shows AI "thinking" in real-time for WOW factor
- * Uses local Gemma 3 if available (non-streaming), then Gemini, falls back to OpenRouter
+ * Uses local Kreativium 4B if available (non-streaming), then Gemini, falls back to OpenRouter
  */
 export const analyzeLogsStreaming = async (
     logs: LogEntry[],
@@ -922,13 +922,13 @@ export const analyzeLogsStreaming = async (
     callbacks: StreamCallbacks,
     options: { childProfile?: ChildProfile | null } = {}
 ): Promise<AnalysisResult> => {
-    // LOCAL MODEL FIRST: Use local Gemma 3 on native Android (non-streaming, but private)
+    // LOCAL MODEL FIRST: Use local Kreativium 4B on native Android (non-streaming, but private)
     if (isNative()) {
         try {
             const localReady = await isLocalModelReady();
             if (localReady) {
                 if (import.meta.env.DEV) {
-                    console.log('[AI] Using local Gemma 3 for analysis (non-streaming)...');
+                    console.log('[AI] Using local Kreativium 4B for analysis (non-streaming)...');
                 }
                 // Local model doesn't support streaming, but privacy is more important
                 const result = await analyzeLogsWithLocalModel(logs, crisisEvents, options.childProfile);

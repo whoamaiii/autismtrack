@@ -2,7 +2,7 @@
 
 **Created**: 2026-01-11
 **Target Platform**: Android PWA (100% local, offline-first)
-**AI Strategy**: OpenRouter API (current) → Local Gemma 3 27B (future)
+**AI Strategy**: OpenRouter API (current) → Local Kreativium 27B (future)
 **Database**: localStorage (current) → IndexedDB (migration planned)
 
 ---
@@ -16,7 +16,7 @@ This roadmap addresses critical issues identified in the app analysis, organized
 - No user accounts or authentication
 - Must work 100% offline after initial install
 - Final deployment: Android PWA with local AI inference
-- AI transition: OpenRouter → Gemma 3 27B (local)
+- AI transition: OpenRouter → Kreativium 27B (local)
 
 ---
 
@@ -415,7 +415,7 @@ interface SleepEntry {
 
 #### 4.3.2 Dynamic AI Model Loading
 - [ ] **File**: `src/services/localModel.ts`
-- [ ] Download Gemma 3 27B only when user opts in
+- [ ] Download Kreativium 27B only when user opts in
 - [ ] Show download progress (model is large)
 - [ ] Store model in IndexedDB/Cache API
 - [ ] Graceful fallback if download fails
@@ -424,12 +424,12 @@ interface SleepEntry {
 
 ## Phase 5: Local AI Transition
 
-**Goal**: Replace OpenRouter API with fully local Gemma 3 27B inference.
+**Goal**: Replace OpenRouter API with fully local Kreativium 27B inference.
 
-### 5.1 Gemma 3 27B Integration
+### 5.1 Kreativium 27B Integration
 
 #### 5.1.1 Model Selection & Quantization
-- [ ] Research Gemma 3 27B quantization options (Q4, Q8)
+- [ ] Research Kreativium 27B quantization options (Q4, Q8)
 - [ ] Test model size vs quality tradeoffs
 - [ ] Target: < 2GB download for mobile viability
 - [ ] Benchmark inference speed on mid-range Android
@@ -450,7 +450,7 @@ interface SleepEntry {
 
 #### 5.1.4 Hybrid AI Strategy
 - [ ] **File**: `src/services/aiRouter.ts` (new file)
-- [ ] Default: Local Gemma 3 27B
+- [ ] Default: Local Kreativium 27B
 - [ ] Fallback: OpenRouter API (if user has key)
 - [ ] User setting: "Always use local" / "Use cloud if available"
 - [ ] Seamless switching based on availability
@@ -614,7 +614,7 @@ interface SleepEntry {
 ### Nice to Have (v1.x)
 | Item | Phase | Effort | Impact |
 |------|-------|--------|--------|
-| Local Gemma 3 27B (5.1) | 5 | High | High |
+| Local Kreativium 27B (5.1) | 5 | High | High |
 | Multi-Child Support (3.4) | 3 | Medium | Medium |
 | QR Data Sharing (6.1.1) | 6 | Medium | Medium |
 | Voice Notes (3.3.3) | 3 | Medium | Low |
@@ -668,7 +668,7 @@ interface SleepEntry {
 
 | Risk | Likelihood | Impact | Mitigation |
 |------|------------|--------|------------|
-| Gemma 3 27B too slow on mobile | Medium | High | Benchmark early, have cloud fallback |
+| Kreativium 27B too slow on mobile | Medium | High | Benchmark early, have cloud fallback |
 | IndexedDB migration data loss | Low | Critical | Backup before migration, verification |
 | Statistical fixes break existing insights | Medium | Medium | A/B test, gradual rollout |
 | Storage limits hit before migration | Medium | High | Implement monitoring first (Phase 1) |
@@ -757,7 +757,7 @@ src/App.tsx - New routes
 
 ### v1.5 (Enhanced)
 - Phase 3.3 complete (medication, sleep tracking)
-- Phase 5 complete (local Gemma 3 27B)
+- Phase 5 complete (local Kreativium 27B)
 - Phase 6 complete (caregiver sharing)
 
 ### v2.0 (Full Featured)

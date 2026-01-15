@@ -2,9 +2,9 @@
 /**
  * Settings Context - Manages onboarding state, analysis settings, and data refresh
  */
-import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo, useEffect, type ReactNode } from 'react';
 import { STORAGE_KEYS } from '../constants/storage';
-import { getStorageItem, safeSetItem, STORAGE_REFRESH_EVENT } from './storage';
+import { createStorageSyncHandlers, getStorageItem, safeSetItem, STORAGE_REFRESH_EVENT } from './storage';
 import type { SettingsContextType, AnalysisSettings } from './types';
 import { DEFAULT_ANALYSIS_SETTINGS } from './types';
 
@@ -22,6 +22,38 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
     const [analysisSettings, setAnalysisSettings] = useState<AnalysisSettings>(() =>
         getStorageItem(STORAGE_KEYS.ANALYSIS_SETTINGS, DEFAULT_ANALYSIS_SETTINGS)
     );
+
+    // Multi-tab sync and refresh event handling
+    useEffect(() => {
+        const onboardingSync = createStorageSyncHandlers({
+            key: STORAGE_KEYS.ONBOARDING_COMPLETED,
+            getLatest: () => getStorageItem(STORAGE_KEYS.ONBOARDING_COMPLETED, false),
+            onUpdate: setHasCompletedOnboarding
+        });
+
+        const analysisSync = createStorageSyncHandlers({
+            key: STORAGE_KEYS.ANALYSIS_SETTINGS,
+            getLatest: () => getStorageItem(STORAGE_KEYS.ANALYSIS_SETTINGS, DEFAULT_ANALYSIS_SETTINGS),
+            onUpdate: setAnalysisSettings
+        });
+
+        const handleStorageChange = (e: StorageEvent) => {
+            onboardingSync.handleStorageChange(e);
+            analysisSync.handleStorageChange(e);
+        };
+
+        const handleRefresh = () => {
+            onboardingSync.handleRefresh();
+            analysisSync.handleRefresh();
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+        window.addEventListener(STORAGE_REFRESH_EVENT, handleRefresh);
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+            window.removeEventListener(STORAGE_REFRESH_EVENT, handleRefresh);
+        };
+    }, []);
 
     const completeOnboarding = useCallback(() => {
         setHasCompletedOnboarding(true);

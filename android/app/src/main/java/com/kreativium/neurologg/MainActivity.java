@@ -7,7 +7,8 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         // Register custom plugins
-        registerPlugin(GemmaPlugin.class);
+        registerPlugin(KreativiumPlugin.class);
+        registerPlugin(BiometricPlugin.class);
 
         super.onCreate(savedInstanceState);
     }

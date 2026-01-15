@@ -1,6 +1,6 @@
 /**
  * Model Context
- * Provides global state management for the local Gemma 3 model
+ * Provides global state management for the local Kreativium 4B model
  * Tracks download status, loading state, and provides actions
  */
 

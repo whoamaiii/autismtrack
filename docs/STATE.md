@@ -2,7 +2,9 @@
 
 ## Overview
 
-NeuroLogg Pro uses React Context for state management with localStorage persistence. All state is managed in `src/store.tsx` through the `DataProvider` component.
+NeuroLogg Pro uses React Context for state management with localStorage persistence. All state is managed in `src/store/index.tsx` through the `DataProvider` component.
+
+Each provider uses `createStorageSyncHandlers` from `src/store/storage.ts` to keep localStorage and multi-tab state in sync (including `STORAGE_REFRESH_EVENT` reloads).
 
 ---
 

@@ -1,10 +1,10 @@
 # Bundled Model Instructions
 
-This folder is for the Gemma 3 4B model file that gets bundled with the APK.
+This folder is for the Kreativium 4B model file that gets bundled with the APK.
 
 ## How to Download the Model
 
-1. **Accept the Gemma License** (required):
+1. **Accept the model license** (required):
    - Go to: https://huggingface.co/litert-community/Gemma3-4B-IT
    - Click "Access repository" and accept the license terms
    - You need a Hugging Face account
@@ -35,7 +35,7 @@ This folder is for the Gemma 3 4B model file that gets bundled with the APK.
 - **File Name**: Must be exactly `gemma3-4b-it-int4-web.task`
 - **File Size**: ~2.56 GB (2,560,000,000 bytes)
 - **APK Size**: The resulting APK will be approximately 2.6 GB
-- **License**: You must accept the Gemma license before downloading
+- **License**: You must accept the model license before downloading
 
 ## How It Works
 

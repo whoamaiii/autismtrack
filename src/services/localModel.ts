@@ -1,6 +1,6 @@
 /**
  * Local Model Service
- * Provides on-device AI inference using Gemma 3 4B via MediaPipe
+ * Provides on-device AI inference using Kreativium 4B via MediaPipe
  * Only available on native Android platforms
  */
 
@@ -20,7 +20,7 @@ import {
 // PLUGIN INTERFACE
 // =============================================================================
 
-interface GemmaPluginInterface {
+interface KreativiumPluginInterface {
     isModelDownloaded(): Promise<{
         downloaded: boolean;
         bundledAvailable?: boolean;
@@ -62,7 +62,7 @@ interface GemmaPluginInterface {
 }
 
 // Register the native plugin (only works on Android)
-const GemmaPlugin = registerPlugin<GemmaPluginInterface>('Gemma');
+const KreativiumPlugin = registerPlugin<KreativiumPluginInterface>('Kreativium');
 
 // =============================================================================
 // TYPES
@@ -99,7 +99,7 @@ export interface DownloadProgressEvent {
 // CONSTANTS
 // =============================================================================
 
-const MODEL_SIZE_BYTES = 2_560_000_000; // ~2.56GB (actual size of gemma3-4b-it-int4-web.task)
+const MODEL_SIZE_BYTES = 2_560_000_000; // ~2.56GB (actual size of model file)
 const MODEL_SIZE_DISPLAY = '2.56 GB';
 
 // =============================================================================
@@ -120,7 +120,7 @@ export async function isLocalModelAvailable(): Promise<boolean> {
         return false;
     }
     try {
-        const status = await GemmaPlugin.getModelStatus();
+        const status = await KreativiumPlugin.getModelStatus();
         return status.downloaded;
     } catch {
         return false;
@@ -135,7 +135,7 @@ export async function isLocalModelReady(): Promise<boolean> {
         return false;
     }
     try {
-        const status = await GemmaPlugin.getModelStatus();
+        const status = await KreativiumPlugin.getModelStatus();
         return status.downloaded && status.loaded;
     } catch {
         return false;
@@ -160,7 +160,7 @@ export async function getModelStatus(): Promise<ModelStatus> {
     }
 
     try {
-        const status = await GemmaPlugin.getModelStatus();
+        const status = await KreativiumPlugin.getModelStatus();
         return {
             available: true,
             downloaded: status.downloaded,
@@ -212,7 +212,7 @@ export async function checkNetworkStatus(): Promise<NetworkStatus> {
     }
 
     try {
-        return await GemmaPlugin.checkNetworkStatus();
+        return await KreativiumPlugin.checkNetworkStatus();
     } catch (error) {
         console.warn('[LocalModel] Failed to check network status:', error);
         // Assume connected if we can't check
@@ -276,7 +276,7 @@ export async function extractBundledModel(): Promise<{
     }
 
     try {
-        const result = await GemmaPlugin.extractBundledModelIfNeeded();
+        const result = await KreativiumPlugin.extractBundledModelIfNeeded();
         return {
             success: result.success,
             extracted: result.extracted ?? false,
@@ -301,7 +301,7 @@ export async function checkAndExtractBundledModel(): Promise<boolean> {
     }
 
     try {
-        const status = await GemmaPlugin.getModelStatus();
+        const status = await KreativiumPlugin.getModelStatus();
 
         // If already downloaded, no need to extract
         if (status.downloaded) {
@@ -311,7 +311,7 @@ export async function checkAndExtractBundledModel(): Promise<boolean> {
         // If bundled model is available, extract it
         if (status.bundledAvailable) {
             console.log('[LocalModel] Bundled model found, extracting...');
-            const result = await GemmaPlugin.extractBundledModelIfNeeded();
+            const result = await KreativiumPlugin.extractBundledModelIfNeeded();
             if (result.success) {
                 console.log('[LocalModel] Bundled model extracted successfully');
                 return true;
@@ -327,7 +327,7 @@ export async function checkAndExtractBundledModel(): Promise<boolean> {
 }
 
 /**
- * Download the Gemma 3 4B model
+ * Download the Kreativium 4B model
  * Returns a promise that resolves when download is complete
  * Progress can be monitored via getModelStatus() polling
  *
@@ -340,7 +340,7 @@ export async function downloadModel(hfToken?: string): Promise<void> {
 
     try {
         const options = hfToken ? { hfToken } : undefined;
-        const result = await GemmaPlugin.downloadModel(options);
+        const result = await KreativiumPlugin.downloadModel(options);
         if (!result.success) {
             throw new Error(result.message || 'Download failed');
         }
@@ -358,7 +358,7 @@ export async function cancelDownload(): Promise<void> {
     if (!isNative()) return;
 
     try {
-        await GemmaPlugin.cancelDownload();
+        await KreativiumPlugin.cancelDownload();
     } catch (error) {
         console.error('[LocalModel] Failed to cancel download:', error);
     }
@@ -371,7 +371,7 @@ export async function deleteModel(): Promise<void> {
     if (!isNative()) return;
 
     try {
-        await GemmaPlugin.deleteModel();
+        await KreativiumPlugin.deleteModel();
         localAnalysisCache.clear();
     } catch (error) {
         throw new Error(
@@ -394,7 +394,7 @@ export async function loadModel(): Promise<void> {
     }
 
     try {
-        const status = await GemmaPlugin.getModelStatus();
+        const status = await KreativiumPlugin.getModelStatus();
         if (!status.downloaded) {
             throw new Error('Model not downloaded. Please download first.');
         }
@@ -403,7 +403,7 @@ export async function loadModel(): Promise<void> {
             return; // Already loaded
         }
 
-        const result = await GemmaPlugin.loadModel();
+        const result = await KreativiumPlugin.loadModel();
         if (!result.success) {
             throw new Error(result.message || 'Failed to load model');
         }
@@ -421,7 +421,7 @@ export async function unloadModel(): Promise<void> {
     if (!isNative()) return;
 
     try {
-        await GemmaPlugin.unloadModel();
+        await KreativiumPlugin.unloadModel();
     } catch (error) {
         console.error('[LocalModel] Failed to unload model:', error);
     }
@@ -432,7 +432,7 @@ export async function unloadModel(): Promise<void> {
 // =============================================================================
 
 /**
- * Analyze logs using the local Gemma model
+ * Analyze logs using the local Kreativium model
  * Primary analysis function for native Android
  */
 export async function analyzeLogsWithLocalModel(
@@ -460,7 +460,7 @@ export async function analyzeLogsWithLocalModel(
     }
 
     // Ensure model is loaded
-    const status = await GemmaPlugin.getModelStatus();
+    const status = await KreativiumPlugin.getModelStatus();
     if (!status.loaded) {
         if (!status.downloaded) {
             throw new Error('Model not downloaded. Please download from Settings.');
@@ -480,7 +480,7 @@ export async function analyzeLogsWithLocalModel(
     );
 
     // Combine prompts for single-turn inference
-    // Gemma 3 works best with a combined prompt format
+    // This model works best with a combined prompt format
     const fullPrompt = `<start_of_turn>system
 ${systemPrompt}
 <end_of_turn>
@@ -491,12 +491,12 @@ ${userPrompt}
 `;
 
     if (import.meta.env.DEV) {
-        console.log('[LocalModel] Sending prompt to Gemma 3...');
+        console.log('[LocalModel] Sending prompt to Kreativium 4B...');
         console.log('[LocalModel] Prompt length:', fullPrompt.length);
     }
 
     try {
-        const { response, durationMs } = await GemmaPlugin.generateResponse({
+        const { response, durationMs } = await KreativiumPlugin.generateResponse({
             prompt: fullPrompt
         });
 
@@ -511,7 +511,7 @@ ${userPrompt}
         // Add metadata
         result.dateRangeStart = analysisData.dateRangeStart;
         result.dateRangeEnd = analysisData.dateRangeEnd;
-        result.modelUsed = 'gemma-3-4b-it-int4 (local)';
+        result.modelUsed = 'kreativium-4b-it-int4 (local)';
 
         // Cache the result
         localAnalysisCache.set(result, logsHash, 'regular');
@@ -546,7 +546,7 @@ export async function shouldUseLocalModel(): Promise<boolean> {
     }
 
     try {
-        const status = await GemmaPlugin.getModelStatus();
+        const status = await KreativiumPlugin.getModelStatus();
         return status.downloaded && status.loaded;
     } catch {
         return false;
@@ -564,7 +564,7 @@ export async function ensureModelReady(): Promise<boolean> {
     }
 
     try {
-        const status = await GemmaPlugin.getModelStatus();
+        const status = await KreativiumPlugin.getModelStatus();
 
         if (!status.downloaded) {
             return false; // Needs download
@@ -625,7 +625,7 @@ export function validateHfToken(token: string): { isValid: boolean; error?: stri
  *
  * To get a token:
  * 1. Go to https://huggingface.co/litert-community/Gemma3-4B-IT
- * 2. Accept the Gemma license
+ * 2. Accept the model license
  * 3. Go to https://huggingface.co/settings/tokens
  * 4. Create a new token with "read" permission
  */
@@ -635,7 +635,7 @@ export async function setHfToken(token: string): Promise<void> {
     }
 
     try {
-        await GemmaPlugin.setHfToken({ token });
+        await KreativiumPlugin.setHfToken({ token });
     } catch (error) {
         throw new Error(
             `Failed to set HF token: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -652,7 +652,7 @@ export async function clearHfToken(): Promise<void> {
     }
 
     try {
-        await GemmaPlugin.clearHfToken();
+        await KreativiumPlugin.clearHfToken();
     } catch (error) {
         console.error('[LocalModel] Failed to clear HF token:', error);
     }

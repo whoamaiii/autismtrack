@@ -5,7 +5,7 @@
 import { createContext, useContext, useState, useCallback, useMemo, useEffect, type ReactNode } from 'react';
 import type { ContextType } from '../types';
 import { STORAGE_KEYS } from '../constants/storage';
-import { getStorageContext, safeSetItem, STORAGE_REFRESH_EVENT } from './storage';
+import { createStorageSyncHandlers, getStorageContext, safeSetItem, STORAGE_REFRESH_EVENT } from './storage';
 import type { AppContextType } from './types';
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -21,22 +21,17 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
     // Multi-tab sync and refresh event handling
     useEffect(() => {
-        const handleStorageChange = (e: StorageEvent) => {
-            if (e.key !== STORAGE_KEYS.CURRENT_CONTEXT || !e.newValue) return;
-            if (e.newValue === 'home' || e.newValue === 'school') {
-                setCurrentContextState(e.newValue);
-            }
-        };
+        const contextSync = createStorageSyncHandlers({
+            key: STORAGE_KEYS.CURRENT_CONTEXT,
+            getLatest: () => getStorageContext(STORAGE_KEYS.CURRENT_CONTEXT, 'home'),
+            onUpdate: setCurrentContextState
+        });
 
-        const handleRefresh = () => {
-            setCurrentContextState(getStorageContext(STORAGE_KEYS.CURRENT_CONTEXT, 'home'));
-        };
-
-        window.addEventListener('storage', handleStorageChange);
-        window.addEventListener(STORAGE_REFRESH_EVENT, handleRefresh);
+        window.addEventListener('storage', contextSync.handleStorageChange);
+        window.addEventListener(STORAGE_REFRESH_EVENT, contextSync.handleRefresh);
         return () => {
-            window.removeEventListener('storage', handleStorageChange);
-            window.removeEventListener(STORAGE_REFRESH_EVENT, handleRefresh);
+            window.removeEventListener('storage', contextSync.handleStorageChange);
+            window.removeEventListener(STORAGE_REFRESH_EVENT, contextSync.handleRefresh);
         };
     }, []);
 

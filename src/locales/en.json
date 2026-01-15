@@ -56,7 +56,7 @@
     },
     "home": {
         "title": "KREATIVIUM",
-        "subtitle": "",
+        "subtitle": "Track patterns and support regulation",
         "crisisMode": {
             "title": "Crisis Mode",
             "subtitle": "Start breathing timer",
@@ -684,6 +684,8 @@
     },
     "navigation": {
         "home": "Home",
+        "dashboard": "Dashboard",
+        "analysis": "Analysis",
         "stats": "Stats",
         "log": "Log",
         "trends": "Trends",
@@ -1036,7 +1038,7 @@
         "downloadFailed": "Download failed",
         "modelInfo": {
             "model": "Model",
-            "modelName": "Gemma 2B (optimized)",
+            "modelName": "Kreativium 2B (optimized)",
             "size": "Size",
             "sizeValue": "~600 MB",
             "vramRequired": "VRAM required"
@@ -1069,10 +1071,10 @@
         "downloadProgress": "Download progress",
         "errorGatedModel": "This model requires a Hugging Face token. Click \"Need token?\" for instructions.",
         "tokenRequired": "Hugging Face Token Required",
-        "tokenInstructions": "Gemma 3 4B is a gated model. Follow these steps to get access:",
+        "tokenInstructions": "Kreativium 4B is a gated model. Follow these steps to get access:",
         "tokenStep3": "Paste your token below",
         "tokenInputLabel": "Hugging Face token",
-        "acceptLicense": "Accept the Gemma license",
+        "acceptLicense": "Accept the model license",
         "createToken": "Create a token with \"read\" permission",
         "downloadingButton": "Downloading...",
         "downloadButton": "Download AI model",
@@ -1080,7 +1082,7 @@
         "needToken": "Need token?",
         "settingsHint": "You can download the model later from Settings",
         "settingsTitle": "Local AI model",
-        "modelName": "Gemma 3 4B",
+        "modelName": "Kreativium 4B",
         "statusDownloaded": "Downloaded",
         "statusExtracting": "Extracting...",
         "statusNotDownloaded": "Not downloaded",
@@ -1089,7 +1091,7 @@
         "deleteConfirm": "Are you sure you want to delete the model? You'll need to re-download it to use local analysis.",
         "deleteButton": "Delete model",
         "descriptionDownloaded": "Analysis runs locally on device. Data is never sent to external servers.",
-        "descriptionNotDownloaded": "Download Gemma 3 to run analysis offline. Requires WiFi for download.",
+        "descriptionNotDownloaded": "Download Kreativium 4B to run analysis offline. Requires WiFi for download.",
         "etaRemaining": "~{{time}} remaining",
         "extractingModel": "Extracting model...",
         "extractionProgress": "Extraction progress",
