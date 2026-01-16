@@ -76,7 +76,7 @@ export const AuthErrorScreen: React.FC = () => {
           description: 'The scanned QR code is not valid.',
           canRetry: true,
           helpText:
-            'Please scan the correct NeuroLogg unlock QR code.',
+            'Please scan the correct Kreativium unlock QR code.',
         };
 
       case AUTH_ERROR_CODES.QR_EXPIRED:

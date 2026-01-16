@@ -310,10 +310,14 @@ export async function checkAndExtractBundledModel(): Promise<boolean> {
 
         // If bundled model is available, extract it
         if (status.bundledAvailable) {
-            console.log('[LocalModel] Bundled model found, extracting...');
+            if (import.meta.env.DEV) {
+                console.log('[LocalModel] Bundled model found, extracting...');
+            }
             const result = await KreativiumPlugin.extractBundledModelIfNeeded();
             if (result.success) {
-                console.log('[LocalModel] Bundled model extracted successfully');
+                if (import.meta.env.DEV) {
+                    console.log('[LocalModel] Bundled model extracted successfully');
+                }
                 return true;
             }
             console.error('[LocalModel] Failed to extract bundled model:', result.message);

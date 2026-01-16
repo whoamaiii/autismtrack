@@ -19,7 +19,9 @@ import { useTranslation } from 'react-i18next';
 import { AudioPlayer } from './AudioPlayer';
 import { CrisisReflection } from './CrisisReflection';
 import { BackButton } from './BackButton';
+import { BreathingCountdown } from './BreathingCountdown';
 import { isNative } from '../utils/platform';
+import { useToast } from './Toast';
 
 export const CrisisMode: React.FC = () => {
     const { t } = useTranslation();
@@ -27,9 +29,13 @@ export const CrisisMode: React.FC = () => {
     const { addCrisisEvent, addCrisisReflection } = useCrisis();
     const { currentContext } = useAppContext();
     const prefersReducedMotion = useReducedMotion();
+    const { showSuccess } = useToast();
+
+    // Breathing countdown phase
+    const [showBreathingCountdown, setShowBreathingCountdown] = useState(true);
 
     // Timer state
-    const [isActive, setIsActive] = useState(true);
+    const [isActive, setIsActive] = useState(false); // Start paused until breathing completes
     const [seconds, setSeconds] = useState(0);
     const [isRecording, setIsRecording] = useState(false);
     const [startTime] = useState(new Date().toISOString());
@@ -61,10 +67,17 @@ export const CrisisMode: React.FC = () => {
     const [pendingAudioBlob, setPendingAudioBlob] = useState<Blob | null>(null);
     const [audioUrl, setAudioUrl] = useState<string | null>(null);
     const [audioError, setAudioError] = useState<string | null>(null);
-    // Initialize with 'unavailable' on native platforms since audio recording is disabled there
-    const [micPermissionState, setMicPermissionState] = useState<'prompt' | 'granted' | 'denied' | 'unavailable'>(() =>
-        isNative() ? 'unavailable' : 'prompt'
-    );
+    // Initialize permission state based on platform capabilities
+    const [micPermissionState, setMicPermissionState] = useState<'prompt' | 'granted' | 'denied' | 'unavailable'>(() => {
+        // Native platforms have audio recording disabled
+        if (isNative()) return 'unavailable';
+        // Check if browser supports media devices
+        if (typeof navigator !== 'undefined' && !navigator.mediaDevices?.getUserMedia) {
+            return 'unavailable';
+        }
+        // Default to prompt - will be updated by Permissions API if available
+        return 'prompt';
+    });
     const startTimeRef = React.useRef<number | null>(null);
 
     // Audio recording duration state
@@ -141,12 +154,8 @@ export const CrisisMode: React.FC = () => {
 
         // Check if Permissions API is available
         if (!navigator.permissions) {
-            // Permissions API not available - check if getUserMedia is at least available
-            if (!navigator.mediaDevices?.getUserMedia) {
-                // No media device support at all
-                setMicPermissionState('unavailable');
-            }
-            // Otherwise leave as 'prompt' to allow user to try recording
+            // Permissions API not available, but initial state already set correctly
+            // Leave as-is ('prompt' or 'unavailable' based on getUserMedia availability)
             if (import.meta.env.DEV) {
                 console.warn('[CrisisMode] Permissions API not available');
             }
@@ -383,6 +392,7 @@ export const CrisisMode: React.FC = () => {
     const saveCrisisAndGoToReflection = (recoveryMins?: number) => {
         const eventData = createCrisisEventData(recoveryMins);
         addCrisisEvent(eventData);
+        showSuccess(t('crisis.saved', 'Crisis event saved'));
 
         // Create a full CrisisEvent for the reflection component
         const fullEvent: CrisisEvent = {
@@ -419,6 +429,7 @@ export const CrisisMode: React.FC = () => {
     // Handler for reflection completion
     const handleReflectionComplete = (reflection: Omit<CrisisReflectionType, 'id' | 'timestamp'>) => {
         addCrisisReflection(reflection);
+        showSuccess(t('crisis.reflectionSaved', 'Reflection saved'));
         navigate('/');
     };
 
@@ -445,6 +456,7 @@ export const CrisisMode: React.FC = () => {
             audioUrl: audioUrl || undefined,
             notes: ''
         });
+        showSuccess(t('crisis.saved', 'Crisis event saved'));
 
         navigate('/');
     };
@@ -456,6 +468,18 @@ export const CrisisMode: React.FC = () => {
         { value: 'interrupted', label: t('crisisResolution.interrupted') },
         { value: 'other', label: t('crisisResolution.other') }
     ];
+
+    // Handle breathing countdown completion
+    const handleBreathingComplete = useCallback(() => {
+        setShowBreathingCountdown(false);
+        setIsActive(true);
+        startTimeRef.current = Date.now();
+    }, []);
+
+    // Show breathing countdown first
+    if (showBreathingCountdown) {
+        return <BreathingCountdown onComplete={handleBreathingComplete} duration={3} />;
+    }
 
     return (
         <div className="flex flex-col min-h-screen text-white relative overflow-hidden">
@@ -771,7 +795,7 @@ export const CrisisMode: React.FC = () => {
                                         aria-valuenow={peakIntensity}
                                         aria-describedby="peak-intensity-description"
                                     />
-                                    <div id="peak-intensity-description" className="flex justify-between text-xs text-slate-500 mt-1">
+                                    <div id="peak-intensity-description" className="flex justify-between text-sm text-slate-400 mt-2 font-medium">
                                         <span>{t('crisis.intensity.mild')}</span>
                                         <span>{t('crisis.intensity.extreme')}</span>
                                     </div>

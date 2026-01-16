@@ -265,6 +265,18 @@ export const SensoryProfile: React.FC = () => {
                             <title id={chartTitleId}>{t('sensoryProfile.radar')}</title>
                             <desc id={chartDescId}>{t('sensoryProfile.chartDescription')}</desc>
 
+                            {/* Gradient definitions for filled polygon */}
+                            <defs>
+                                <linearGradient id="radarGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stopColor="#00D4FF" stopOpacity="0.4" />
+                                    <stop offset="100%" stopColor="#A855F7" stopOpacity="0.3" />
+                                </linearGradient>
+                                <linearGradient id="radarStroke" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stopColor="#00D4FF" />
+                                    <stop offset="100%" stopColor="#A855F7" />
+                                </linearGradient>
+                            </defs>
+
                             {/* Grid Hexagons (decorative) */}
                             <g aria-hidden="true">
                                 {[0.5, 0.75, 1].map((scale, i) => (
@@ -294,31 +306,31 @@ export const SensoryProfile: React.FC = () => {
                                 })}
                             </g>
 
-                            {/* Data Polygon - only render if we have data */}
+                            {/* Data Polygon with gradient fill */}
                             {!chartData.isEmpty && (
                                 <motion.polygon
                                     initial={{ opacity: 0, scale: 0 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     transition={{ duration: 1, type: "spring" }}
                                     style={{ transformOrigin: `${CENTER}px ${CENTER}px` }}
-                                    fill="rgba(43, 108, 238, 0.3)"
+                                    fill="url(#radarGradient)"
                                     points={chartData.points}
-                                    stroke="#3b82f6"
+                                    stroke="url(#radarStroke)"
                                     strokeWidth="2"
                                     strokeLinejoin="round"
                                 />
                             )}
 
-                            {/* Data Points */}
+                            {/* Data Points with gradient color */}
                             {!chartData.isEmpty && chartData.coordinates.map((c, i) => (
                                 <motion.circle
                                     key={i}
                                     initial={{ r: 0 }}
-                                    animate={{ r: 4 }}
+                                    animate={{ r: 5 }}
                                     transition={{ delay: 0.5 + i * 0.1 }}
                                     cx={c.x}
                                     cy={c.y}
-                                    fill="#3b82f6"
+                                    fill={i < 3 ? '#00D4FF' : '#A855F7'}
                                     stroke="white"
                                     strokeWidth="2"
                                     aria-label={`${t(`sensoryProfile.axes.${c.axisKey}`)}: ${c.value}`}
@@ -356,6 +368,29 @@ export const SensoryProfile: React.FC = () => {
                             </div>
                         )}
                     </div>
+
+                    {/* Legend */}
+                    {!chartData.isEmpty && (
+                        <div className="mt-4 pt-4 border-t border-white/10">
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                                {AXIS_CONFIG.map((axis, i) => {
+                                    const count = chartData.coordinates[i]?.value ?? 0;
+                                    return (
+                                        <div key={axis.key} className="flex items-center gap-2">
+                                            <span
+                                                className="w-3 h-3 rounded-full flex-shrink-0"
+                                                style={{ backgroundColor: i < 3 ? '#00D4FF' : '#A855F7' }}
+                                            />
+                                            <span className="text-slate-300 truncate">
+                                                {t(`sensoryProfile.axes.${axis.key}`)}
+                                            </span>
+                                            <span className="text-slate-500 ml-auto">{count}</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
                 </motion.div>
 
                 {/* Dynamic AI Insights Section */}

@@ -19,6 +19,7 @@ import {
     Sparkles,
     TrendingUp
 } from 'lucide-react';
+import { Card } from './ui/Card';
 import { BackButton } from './BackButton';
 import type { ChildProfile } from '../types';
 import {
@@ -192,6 +193,7 @@ export const Settings: React.FC = () => {
     const handleExport = async () => {
         try {
             await downloadExport();
+            showSuccess(t('settings.export.title'), t('settings.export.success', 'Data exported successfully'));
         } catch (error) {
             if (import.meta.env.DEV) {
                 console.error('[Settings] Export failed:', error);
@@ -293,10 +295,11 @@ export const Settings: React.FC = () => {
             </div>
 
             {/* Info Banner */}
-            <motion.div
+            <Card
+                variant="info"
+                size="md"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="liquid-glass-card p-4 rounded-2xl"
             >
                 <div className="flex items-start gap-3">
                     <Info size={20} className="text-primary mt-0.5 flex-shrink-0" />
@@ -306,14 +309,16 @@ export const Settings: React.FC = () => {
                         </p>
                     </div>
                 </div>
-            </motion.div>
+            </Card>
 
             {/* Profile Form */}
-            <motion.div
+            <Card
+                variant="primary"
+                size="lg"
+                className="space-y-6"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="liquid-glass-card p-5 rounded-3xl space-y-6"
             >
                 {/* Basic Info */}
                 <div>
@@ -469,7 +474,7 @@ export const Settings: React.FC = () => {
                         {t('settings.additionalContext.note')}
                     </p>
                 </div>
-            </motion.div>
+            </Card>
 
             {/* Local AI Model Section (Android only) */}
             <motion.div
@@ -481,11 +486,13 @@ export const Settings: React.FC = () => {
             </motion.div>
 
             {/* Data Management Section */}
-            <motion.div
+            <Card
+                variant="primary"
+                size="lg"
+                className="space-y-6"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="liquid-glass-card p-5 rounded-3xl space-y-6"
             >
                 <div className="flex items-center gap-2 mb-4">
                     <Database size={18} className="text-blue-400" />
@@ -590,14 +597,16 @@ export const Settings: React.FC = () => {
                     <span>{t('settings.stats.events')}: {dataStats.crisis}</span>
                     <span>{t('settings.stats.goals')}: {dataStats.goals}</span>
                 </div>
-            </motion.div>
+            </Card>
 
             {/* Analysis Settings Section */}
-            <motion.div
+            <Card
+                variant="primary"
+                size="lg"
+                className="space-y-6"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.25 }}
-                className="liquid-glass-card p-5 rounded-3xl space-y-6"
             >
                 <div className="flex items-center gap-2 mb-4">
                     <TrendingUp size={18} className="text-cyan-400" />
@@ -640,7 +649,7 @@ export const Settings: React.FC = () => {
                         </p>
                     </div>
                 </div>
-            </motion.div>
+            </Card>
 
             {/* Save Profile Button */}
             <div className="flex gap-3">

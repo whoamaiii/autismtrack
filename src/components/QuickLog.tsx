@@ -20,6 +20,7 @@ import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { useLogs, useAppContext } from '../store';
 import type { ContextType } from '../types';
 import { isNative } from '../utils/platform';
+import { useToast } from './Toast';
 
 // =============================================================================
 // TYPES
@@ -143,6 +144,7 @@ export const QuickLog: React.FC<QuickLogProps> = ({ onLogAdded, compact = false 
     const { t } = useTranslation();
     const { addLog } = useLogs();
     const { currentContext, setCurrentContext } = useAppContext();
+    const { showSuccess } = useToast();
 
     const [showDetails, setShowDetails] = useState(false);
     const [selectedLevel, setSelectedLevel] = useState<QuickLogLevel | null>(null);
@@ -190,6 +192,7 @@ export const QuickLog: React.FC<QuickLogProps> = ({ onLogAdded, compact = false 
             setShowDetails(false);
             setSelectedLevel(null);
             onLogAdded?.();
+            showSuccess(t('quickLog.saved', 'Log saved'));
 
             // Clear success indicator and re-enable after animation
             setTimeout(() => {
@@ -200,7 +203,7 @@ export const QuickLog: React.FC<QuickLogProps> = ({ onLogAdded, compact = false 
             // Re-enable on failure
             setIsSaving(false);
         }
-    }, [addLog, effectiveContext, note, onLogAdded, isSaving]);
+    }, [addLog, effectiveContext, note, onLogAdded, isSaving, showSuccess, t]);
 
     const handleButtonClick = useCallback((level: QuickLogLevel) => {
         if (showDetails && selectedLevel === level) {

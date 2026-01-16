@@ -266,10 +266,10 @@ export const generatePDF = async (
 
     // Set metadata
     doc.setProperties({
-        title: options.title || 'NeuroLogg Pro Rapport',
+        title: options.title || 'Kreativium Rapport',
         subject: 'Atferdsanalyse og Logg',
-        author: 'NeuroLogg Pro',
-        creator: 'NeuroLogg Pro App'
+        author: 'Kreativium',
+        creator: 'Kreativium App'
     });
 
     let currentY: number = margin;
@@ -277,7 +277,7 @@ export const generatePDF = async (
     // 2. Header
     doc.setFontSize(fonts.title);
     doc.setTextColor(...colors.textPrimary);
-    doc.text(options.title || 'NeuroLogg Pro Rapport', margin, currentY);
+    doc.text(options.title || 'Kreativium Rapport', margin, currentY);
 
     currentY += spacing.afterTitle;
     doc.setFontSize(fonts.body);
@@ -497,7 +497,7 @@ export const generatePDF = async (
         doc.setFontSize(fonts.footer);
         doc.setTextColor(...colors.textMuted);
         doc.text(
-            `Side ${i} av ${pageCount} - Generert av NeuroLogg Pro`,
+            `Side ${i} av ${pageCount} - Generert av Kreativium`,
             pageWidth / 2,
             doc.internal.pageSize.height - 10,
             { align: 'center' }
@@ -505,5 +505,5 @@ export const generatePDF = async (
     }
 
     // Save
-    doc.save(`neurolog-pro-rapport-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+    doc.save(`kreativium-rapport-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
 };

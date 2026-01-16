@@ -2,6 +2,7 @@ import React, { useReducer, useId, useCallback, useMemo, useState } from 'react'
 import { useLogs, useAppContext } from '../store';
 import { type LogEntry, SENSORY_TRIGGERS, CONTEXT_TRIGGERS, STRATEGIES } from '../types';
 import { TriggerSelector } from './TriggerSelector';
+import { TimeQuickSelect } from './TimeQuickSelect';
 import { X, HelpCircle, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -162,7 +163,7 @@ const AccessibleSlider: React.FC<AccessibleSliderProps> = ({
                 aria-valuenow={value}
                 aria-describedby={descId}
             />
-            <div id={descId} className="flex justify-between text-xs text-slate-500 dark:text-slate-400 font-medium">
+            <div id={descId} className="flex justify-between text-sm text-slate-600 dark:text-slate-300 font-medium">
                 <span>{lowLabel}</span>
                 <span>{highLabel}</span>
             </div>
@@ -305,13 +306,21 @@ export const LogEntryForm: React.FC<LogEntryFormProps> = ({ onClose }) => {
                         {/* Scrollable content area */}
                         <div className="p-6 flex flex-col gap-8 pb-24">
                         {/* Date & Time with fallback for unsupported browsers */}
-                        <div className="flex flex-col gap-2">
+                        <div className="flex flex-col gap-3">
                             <label
                                 htmlFor={`${formId}-datetime`}
                                 className="text-slate-700 dark:text-slate-300 font-medium text-sm"
                             >
                                 {t('log.date')}
                             </label>
+
+                            {/* Quick time selection chips */}
+                            <TimeQuickSelect
+                                value={formState.timestamp}
+                                onChange={(timestamp) => dispatch({ type: 'SET_TIMESTAMP', payload: timestamp })}
+                            />
+
+                            {/* Full datetime picker */}
                             {dateTimeSupported ? (
                                 <input
                                     type="datetime-local"

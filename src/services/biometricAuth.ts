@@ -118,7 +118,7 @@ export async function authenticateWithBiometric(options?: {
   allowDeviceCredential?: boolean;
 }): Promise<BiometricAuthResult> {
   const defaultOptions = {
-    title: 'Unlock NeuroLogg',
+    title: 'Unlock Kreativium',
     subtitle: 'Authenticate to access your data',
     description: '',
     negativeButtonText: 'Cancel',
@@ -396,13 +396,13 @@ export async function registerWebAuthnCredential(userId: string): Promise<{
     const publicKeyOptions: PublicKeyCredentialCreationOptions = {
       challenge,
       rp: {
-        name: 'NeuroLogg Pro',
+        name: 'Kreativium',
         id: window.location.hostname,
       },
       user: {
         id: new TextEncoder().encode(userId),
         name: userId,
-        displayName: 'NeuroLogg User',
+        displayName: 'Kreativium User',
       },
       pubKeyCredParams: [
         { type: 'public-key', alg: -7 }, // ES256

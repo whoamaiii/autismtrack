@@ -10,6 +10,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Check } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { StartStep } from './steps/StartStep';
 import { ProfileStep } from './steps/ProfileStep';
 import { PersonalizeStep } from './steps/PersonalizeStep';
@@ -18,7 +20,11 @@ import { useSettings } from '../../store';
 
 type OnboardingStep = 'start' | 'profile' | 'personalize' | 'completion';
 
+// Steps that show in the progress indicator (excludes start and completion)
+const PROGRESS_STEPS = ['profile', 'personalize'] as const;
+
 export const OnboardingWizard: React.FC = () => {
+    const { t } = useTranslation();
     const [currentStep, setCurrentStep] = useState<OnboardingStep>('start');
     const navigate = useNavigate();
     const { completeOnboarding } = useSettings();
@@ -27,6 +33,16 @@ export const OnboardingWizard: React.FC = () => {
     const stepOrder: OnboardingStep[] = ['start', 'profile', 'personalize', 'completion'];
     const currentStepIndex = stepOrder.indexOf(currentStep);
     const progress = ((currentStepIndex) / (stepOrder.length - 1)) * 100;
+
+    // Get step labels for progress indicator
+    const stepLabels: Record<typeof PROGRESS_STEPS[number], string> = {
+        profile: t('onboarding.steps.profile', 'Profile'),
+        personalize: t('onboarding.steps.personalize', 'Personalize'),
+    };
+
+    // Calculate which step we're on (1-based, for display)
+    const progressStepIndex = PROGRESS_STEPS.indexOf(currentStep as typeof PROGRESS_STEPS[number]);
+    const displayStepNumber = progressStepIndex >= 0 ? progressStepIndex + 1 : 0;
 
     const handleQuickStart = () => {
         // User chose to explore without setup - complete onboarding
@@ -94,18 +110,68 @@ export const OnboardingWizard: React.FC = () => {
             </div>
 
             <div className="w-full max-w-md px-6 py-8 relative z-10">
-                {/* Progress Bar - Only show after start */}
+                {/* Progress Indicator - Only show during profile and personalize steps */}
                 {currentStep !== 'start' && currentStep !== 'completion' && (
                     <motion.div
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
                         className="mb-8"
                     >
-                        <div className="flex justify-between text-xs text-white/40 mb-2 px-1">
-                            <span>Profil</span>
-                            <span>Tilpasning</span>
+                        {/* Step Counter */}
+                        <div className="text-center mb-4">
+                            <span className="text-xs font-medium text-white/60">
+                                {t('onboarding.stepCounter', 'Step {{current}} of {{total}}', {
+                                    current: displayStepNumber,
+                                    total: PROGRESS_STEPS.length,
+                                })}
+                            </span>
                         </div>
-                        <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+
+                        {/* Step Dots with Labels */}
+                        <div className="flex justify-center items-center gap-4">
+                            {PROGRESS_STEPS.map((step, index) => {
+                                const isCompleted = progressStepIndex > index;
+                                const isCurrent = progressStepIndex === index;
+
+                                return (
+                                    <div key={step} className="flex flex-col items-center gap-2">
+                                        {/* Step Dot */}
+                                        <motion.div
+                                            className={`
+                                                w-8 h-8 rounded-full flex items-center justify-center
+                                                font-semibold text-sm transition-all duration-300
+                                                ${isCompleted
+                                                    ? 'bg-gradient-to-r from-cyan-500 to-purple-500 text-white'
+                                                    : isCurrent
+                                                        ? 'bg-primary text-white ring-4 ring-primary/30'
+                                                        : 'bg-white/10 text-white/40'
+                                                }
+                                            `}
+                                            initial={false}
+                                            animate={{
+                                                scale: isCurrent ? 1.1 : 1,
+                                            }}
+                                        >
+                                            {isCompleted ? (
+                                                <Check size={16} strokeWidth={3} />
+                                            ) : (
+                                                index + 1
+                                            )}
+                                        </motion.div>
+                                        {/* Step Label */}
+                                        <span className={`
+                                            text-xs font-medium transition-colors
+                                            ${isCurrent ? 'text-white' : isCompleted ? 'text-white/60' : 'text-white/40'}
+                                        `}>
+                                            {stepLabels[step]}
+                                        </span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Progress Bar */}
+                        <div className="mt-4 h-1 bg-white/10 rounded-full overflow-hidden">
                             <motion.div
                                 className="h-full bg-gradient-to-r from-cyan-500 to-purple-500"
                                 initial={{ width: 0 }}

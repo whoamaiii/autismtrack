@@ -20,7 +20,10 @@
         "unknown": "Unknown"
     },
     "chart": {
-        "noDataForPeriod": "No data available for this period"
+        "noDataForPeriod": "No data available for this period",
+        "time": "Time",
+        "arousalLevel": "Arousal Level",
+        "average": "Avg"
     },
     "errorBoundary": {
         "title": "Something went wrong",
@@ -34,7 +37,7 @@
         "skipToMain": "Skip to main content"
     },
     "onboarding": {
-        "appName": "NeuroLogg Pro",
+        "appName": "Kreativium",
         "tagline": "Understand and support your child's regulation",
         "features": {
             "quickLogging": "Quick daily logging with one tap",
@@ -44,6 +47,11 @@
         "startSetup": "Start setup",
         "setupTime": "Takes less than 2 minutes",
         "exploreFirst": "Explore the app first",
+        "stepCounter": "Step {{current}} of {{total}}",
+        "steps": {
+            "profile": "Profile",
+            "personalize": "Personalize"
+        },
         "profile": {
             "title": "Who is this for?",
             "subtitle": "We personalize the app for your child",
@@ -121,9 +129,14 @@
             "loaded": "Loaded!",
             "clearData": "Clear all test data",
             "hide": "Hide dev tools",
-            "hideHint": "Hide dev tools (click Show Developer Tools to restore)",
-            "show": "Show Developer Tools"
+            "hideHint": "Hide dev tools temporarily",
+            "show": "Show Developer Tools",
+            "unlocked": "Developer tools unlocked! 🎉",
+            "locked": "Developer tools locked",
+            "lock": "Lock dev tools",
+            "lockHint": "Lock dev tools permanently"
         },
+        "version": "App version",
         "switchLanguage": "Switch language",
         "mockDataLoaded": "Test data loaded successfully",
         "mockDataCleared": "Test data cleared",
@@ -133,6 +146,10 @@
             "planning": "Planning",
             "more": "More"
         }
+    },
+    "languages": {
+        "selectLanguage": "Select language",
+        "changed": "Language changed to {{language}}"
     },
     "energyRegulation": {
         "title": "Energy & Regulation",
@@ -243,7 +260,8 @@
                 "title": "Export Data",
                 "subtitle": "Save backup of all data",
                 "desc": "This creates a JSON file with all logs, crisis events, goals, and settings.",
-                "button": "Download Backup"
+                "button": "Download Backup",
+                "success": "Data exported successfully"
             },
             "import": {
                 "title": "Import Data",
@@ -342,25 +360,26 @@
     },
     "layout": {
         "home": "Home",
-        "school": "School"
+        "school": "School",
+        "loggingAt": "Logging at: {{context}}"
     },
     "log": {
         "title": "New Log Entry",
         "date": "Date & Time",
         "arousal": {
             "label": "Arousal (Stress)",
-            "low": "Calm",
-            "high": "Overwhelmed"
+            "low": "Calm 😌",
+            "high": "Overwhelmed 😰"
         },
         "valence": {
             "label": "Valence (Mood)",
-            "low": "Unpleasant",
-            "high": "Pleasant"
+            "low": "Sad 😢",
+            "high": "Happy 😊"
         },
         "energy": {
             "label": "Energy (Spoons)",
-            "low": "Low Battery",
-            "high": "Fully Charged"
+            "low": "Low 🔋",
+            "high": "High ⚡"
         },
         "triggers": {
             "sensory": "Sensory Triggers",
@@ -391,8 +410,23 @@
         },
         "save": "Save Log"
     },
+    "timeQuickSelect": {
+        "now": "Now",
+        "5min": "5 min ago",
+        "30min": "30 min ago",
+        "1hour": "1 hour ago"
+    },
+    "quickLog": {
+        "saved": "Log saved"
+    },
     "crisis": {
         "title": "Crisis Mode",
+        "breathing": {
+            "breatheIn": "Breathe in...",
+            "breatheOut": "Breathe out...",
+            "message": "Take a moment to center yourself",
+            "skip": "Skip"
+        },
         "duration": "Duration",
         "stopEvent": "STOP EVENT",
         "stopRecording": "Stop Recording",
@@ -406,8 +440,8 @@
         "type": "Event Type",
         "intensity": {
             "label": "Peak Intensity",
-            "mild": "Mild",
-            "extreme": "Extreme"
+            "mild": "Mild 🟡",
+            "extreme": "Extreme 🔴"
         },
         "warningSigns": "Observed Warning Signs",
         "sensoryTriggers": "Sensory Triggers",
@@ -422,6 +456,8 @@
             "skip": "Skip",
             "save": "Save Event"
         },
+        "saved": "Crisis event saved",
+        "reflectionSaved": "Reflection saved",
         "timerRunning": "Timer active",
         "micPermissionDenied": "Microphone access is blocked. Click the lock icon in the address bar to change permissions.",
         "micOsDenied": "Microphone access is blocked at the system level. Open System Preferences > Privacy > Microphone to grant access.",
@@ -692,6 +728,14 @@
         "trends": "Trends",
         "settings": "Settings"
     },
+    "dashboard": {
+        "pageTitle": "Statistics",
+        "pageSubtitle": "AI-powered behavior analysis"
+    },
+    "analysis": {
+        "pageTitle": "Trends",
+        "pageSubtitle": "History and patterns"
+    },
     "simpleInsights": {
         "empty": {
             "message": "Log your first observation to see insights",
@@ -816,6 +860,23 @@
             "impactMinutes": "{{minutes}} min impact",
             "noData": "No recovery data yet",
             "noDataHint": "Log recovery time after crises to see patterns"
+        },
+        "emptyStates": {
+            "patterns": {
+                "title": "Discover Time-Based Patterns",
+                "description": "Log entries throughout the day to reveal when stress levels are typically highest. The heatmap will show patterns by day and time.",
+                "cta": "Start Logging"
+            },
+            "strategies": {
+                "title": "Track What Works",
+                "description": "Add strategies when logging to see which ones help most. You can also add known effective strategies in your profile.",
+                "cta": "Add Strategies in Settings"
+            },
+            "advanced": {
+                "title": "Unlock Advanced Insights",
+                "description": "Log consistently for 7+ days to discover multi-factor patterns, strategy combinations, and recovery trends.",
+                "cta": "Start Logging"
+            }
         }
     },
     "contextComparison": {

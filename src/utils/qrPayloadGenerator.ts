@@ -111,7 +111,7 @@ IMPORTANT SECURITY NOTES:
 4. Do not share this QR code digitally (no screenshots, no messaging)
 
 TO USE:
-1. Open the NeuroLogg app on the target device
+1. Open the Kreativium app on the target device
 2. When prompted, scan this QR code
 3. The device will be enrolled and unlocked
 

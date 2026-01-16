@@ -196,7 +196,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
     setState('biometricPending');
 
     const result = await authenticateWithBiometric({
-      title: 'Unlock NeuroLogg',
+      title: 'Unlock Kreativium',
       subtitle: 'Authenticate to access your data',
     });
 

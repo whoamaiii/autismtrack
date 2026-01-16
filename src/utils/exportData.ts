@@ -229,8 +229,8 @@ export async function downloadExport(): Promise<void> {
 
             // Share the file so user can save it where they want
             await Share.share({
-                title: 'NeuroLogg Pro Backup',
-                text: 'Your NeuroLogg Pro data backup',
+                title: 'Kreativium Backup',
+                text: 'Your Kreativium data backup',
                 url: result.uri,
                 dialogTitle: 'Save backup file'
             });

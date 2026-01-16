@@ -39,7 +39,7 @@ export const LockScreen: React.FC = () => {
         transition={{ delay: 0.2 }}
         className="text-3xl font-bold text-white mb-2"
       >
-        NeuroLogg Pro
+        Kreativium
       </motion.h1>
 
       <motion.p

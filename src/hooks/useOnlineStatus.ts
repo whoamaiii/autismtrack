@@ -26,8 +26,8 @@ export const useOnlineStatus = (): boolean => {
         window.addEventListener('online', handleOnline);
         window.addEventListener('offline', handleOffline);
 
-        // Sync initial state in case it changed before effect ran
-        setIsOnline(navigator.onLine);
+        // Initial state is set via lazy initialization in useState
+        // Event listeners handle any changes after mount
 
         return () => {
             window.removeEventListener('online', handleOnline);

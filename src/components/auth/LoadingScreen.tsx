@@ -35,7 +35,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
         transition={{ delay: 0.2 }}
         className="text-2xl font-bold text-white mb-2"
       >
-        NeuroLogg Pro
+        Kreativium
       </motion.h1>
 
       {/* Loading indicator */}

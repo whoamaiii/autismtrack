@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 // useNavigate removed - using BackButton component
 import { useTranslation } from 'react-i18next';
-import { Play, AlertTriangle, Brain, Calendar, Loader2, RefreshCw, TrendingUp, Shield, Zap, Layers, ChevronDown, ChevronUp, Combine, Clock, Heart, TrendingDown, Minus, AlertCircle } from 'lucide-react';
+import { Play, AlertTriangle, Brain, Calendar, Loader2, RefreshCw, TrendingUp, Shield, Zap, Layers, ChevronDown, ChevronUp, Combine, Clock, Heart, TrendingDown, Minus, AlertCircle, BarChart3, Lightbulb, Sparkles, ArrowRight } from 'lucide-react';
+import { EmptyState } from './EmptyState';
 import { BackButton } from './BackButton';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
@@ -563,7 +564,30 @@ export const BehaviorInsights: React.FC = () => {
             {/* ===== PATTERNS TAB ===== */}
             {activeTab === 'patterns' && (
                 <>
-            {/* Heatmap of Dysregulation */}
+            {filteredLogs.length < 3 ? (
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                >
+                    <div className="liquid-glass-card p-6 rounded-3xl">
+                        <h2 className="text-white text-[22px] font-bold leading-tight tracking-[-0.015em]">{t('behaviorInsights.heatmap.title')}</h2>
+                        <p className="text-slate-400 text-base font-normal leading-normal pt-1">{t('behaviorInsights.heatmap.subtitle')}</p>
+                        <div className="mt-6">
+                            <EmptyState
+                                icon={BarChart3}
+                                title={t('behaviorInsights.emptyStates.patterns.title')}
+                                description={t('behaviorInsights.emptyStates.patterns.description')}
+                                actionLabel={t('behaviorInsights.emptyStates.patterns.cta')}
+                                actionLink="/log"
+                                actionIcon={ArrowRight}
+                                compact
+                            />
+                        </div>
+                    </div>
+                </motion.div>
+            ) : (
+            /* Heatmap of Dysregulation */
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -643,6 +667,7 @@ export const BehaviorInsights: React.FC = () => {
                     </div>
                 </div>
             </motion.div>
+            )}
                 </>
             )}
 
@@ -710,10 +735,16 @@ export const BehaviorInsights: React.FC = () => {
                             ))}
                         </div>
                     ) : (
-                        <div className="py-8 text-center text-slate-500">
-                            <Zap size={32} className="mx-auto mb-2 opacity-50" />
-                            <p>{t('behaviorInsights.strategy.noData')}</p>
-                            <p className="text-xs mt-1">{t('behaviorInsights.strategy.noDataHint')}</p>
+                        <div className="mt-6">
+                            <EmptyState
+                                icon={Lightbulb}
+                                title={t('behaviorInsights.emptyStates.strategies.title')}
+                                description={t('behaviorInsights.emptyStates.strategies.description')}
+                                actionLabel={t('behaviorInsights.emptyStates.strategies.cta')}
+                                actionLink="/settings"
+                                actionIcon={ArrowRight}
+                                compact
+                            />
                         </div>
                     )}
 
@@ -762,9 +793,9 @@ export const BehaviorInsights: React.FC = () => {
                                         <span className="text-slate-500">→</span>
                                         <span className="text-white font-medium text-sm">{corr.factor2}</span>
                                         <span className={`text-xs px-2 py-0.5 rounded-full ${corr.strength === 'strong'
-                                            ? 'bg-red-500/20 text-red-400'
+                                            ? 'bg-red-500/20 text-red-300'
                                             : corr.strength === 'moderate'
-                                                ? 'bg-yellow-500/20 text-yellow-400'
+                                                ? 'bg-amber-500/20 text-amber-300'
                                                 : 'bg-slate-600 text-slate-300'
                                             }`}>
                                             {corr.strength === 'strong' ? t('behaviorInsights.correlations.strength.strong') : corr.strength === 'moderate' ? t('behaviorInsights.correlations.strength.moderate') : t('behaviorInsights.correlations.strength.weak')}
@@ -805,9 +836,9 @@ export const BehaviorInsights: React.FC = () => {
                             {multiFactorPatterns.slice(0, 5).map((pattern, i) => {
                                 const isExpanded = expandedPatterns.has(pattern.id);
                                 const confidenceColors = {
-                                    high: 'bg-green-500/20 text-green-400 ring-green-500/30',
-                                    medium: 'bg-yellow-500/20 text-yellow-400 ring-yellow-500/30',
-                                    low: 'bg-slate-500/20 text-slate-400 ring-slate-500/30'
+                                    high: 'bg-green-500/20 text-green-300 ring-green-500/30',
+                                    medium: 'bg-amber-500/20 text-amber-300 ring-amber-500/30',
+                                    low: 'bg-slate-500/20 text-slate-300 ring-slate-500/30'
                                 };
 
                                 return (
@@ -911,9 +942,16 @@ export const BehaviorInsights: React.FC = () => {
                             })}
                         </div>
                     ) : (
-                        <div className="py-8 text-center text-slate-500">
-                            <Layers size={32} className="mx-auto mb-2 opacity-50" />
-                            <p>{t('behaviorInsights.multiFactorPatterns.noPatterns', 'Ikke nok data ennå')}</p>
+                        <div className="mt-6">
+                            <EmptyState
+                                icon={Sparkles}
+                                title={t('behaviorInsights.emptyStates.advanced.title')}
+                                description={t('behaviorInsights.emptyStates.advanced.description')}
+                                actionLabel={t('behaviorInsights.emptyStates.advanced.cta')}
+                                actionLink="/log"
+                                actionIcon={ArrowRight}
+                                compact
+                            />
                         </div>
                     )}
                 </div>
@@ -1124,12 +1162,16 @@ export const BehaviorInsights: React.FC = () => {
                             </p>
                         </div>
                     ) : (
-                        <div className="py-8 text-center text-slate-500">
-                            <Heart size={32} className="mx-auto mb-2 opacity-50" />
-                            <p>{t('behaviorInsights.recoveryPatterns.noData', 'Ingen gjenopprettingsdata ennå')}</p>
-                            <p className="text-xs mt-1">
-                                {t('behaviorInsights.recoveryPatterns.noDataHint', 'Logg gjenopprettingstid etter kriser for å se mønstre')}
-                            </p>
+                        <div className="mt-6">
+                            <EmptyState
+                                icon={Heart}
+                                title={t('behaviorInsights.recoveryPatterns.noData')}
+                                description={t('behaviorInsights.recoveryPatterns.noDataHint')}
+                                actionLabel={t('behaviorInsights.emptyStates.advanced.cta')}
+                                actionLink="/crisis"
+                                actionIcon={ArrowRight}
+                                compact
+                            />
                         </div>
                     )}
                 </div>

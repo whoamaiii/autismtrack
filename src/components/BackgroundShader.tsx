@@ -100,12 +100,16 @@ const ShaderPlane = () => {
 
     // Cleanup WebGL resources on unmount to prevent memory leaks
     useEffect(() => {
+        // Capture current ref values for cleanup
+        const geometry = geometryRef.current;
+        const material = materialRef.current;
+
         return () => {
-            if (geometryRef.current) {
-                geometryRef.current.dispose();
+            if (geometry) {
+                geometry.dispose();
             }
-            if (materialRef.current) {
-                materialRef.current.dispose();
+            if (material) {
+                material.dispose();
             }
         };
     }, []);

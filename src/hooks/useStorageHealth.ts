@@ -71,10 +71,8 @@ export const useStorageHealth = (): UseStorageHealthReturn => {
         window.addEventListener(STORAGE_ERROR_EVENT, handleStorageError);
         window.addEventListener('storage', handleStorageChange);
 
-        // Initial check
-        refresh();
-
-        // Periodic check every 30 seconds while app is open
+        // Initial state is set via lazy initialization in useState
+        // Periodic check handles updates while app is open
         const intervalId = setInterval(refresh, 30000);
 
         return () => {

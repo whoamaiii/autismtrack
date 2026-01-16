@@ -20,7 +20,10 @@
         "unknown": "Ukjent"
     },
     "chart": {
-        "noDataForPeriod": "Ingen data tilgjengelig for denne perioden"
+        "noDataForPeriod": "Ingen data tilgjengelig for denne perioden",
+        "time": "Tid",
+        "arousalLevel": "Spenningsnivå",
+        "average": "Snitt"
     },
     "errorBoundary": {
         "title": "Noe gikk galt",
@@ -34,7 +37,7 @@
         "skipToMain": "Hopp til hovedinnhold"
     },
     "onboarding": {
-        "appName": "NeuroLogg Pro",
+        "appName": "Kreativium",
         "tagline": "Forstå og støtt barnets regulering",
         "features": {
             "quickLogging": "Rask daglig logging med ett trykk",
@@ -44,6 +47,11 @@
         "startSetup": "Start oppsett",
         "setupTime": "Tar under 2 minutter",
         "exploreFirst": "Utforsk appen først",
+        "stepCounter": "Steg {{current}} av {{total}}",
+        "steps": {
+            "profile": "Profil",
+            "personalize": "Tilpass"
+        },
         "profile": {
             "title": "Hvem er dette for?",
             "subtitle": "Vi personaliserer appen for barnet",
@@ -121,10 +129,19 @@
             "loaded": "Lastet!",
             "clearData": "Slett alle testdata",
             "hide": "Skjul utviklerverktøy",
-            "hideHint": "Skjul utviklerverktøy (klikk Vis Utviklerverktøy for å gjenopprette)",
-            "show": "Vis Utviklerverktøy"
+            "hideHint": "Skjul utviklerverktøy midlertidig",
+            "show": "Vis Utviklerverktøy",
+            "unlocked": "Utviklerverktøy låst opp! 🎉",
+            "locked": "Utviklerverktøy låst",
+            "lock": "Lås utviklerverktøy",
+            "lockHint": "Lås utviklerverktøy permanent"
         },
-        "switchLanguage": "Bytt språk",
+        "version": "App-versjon",
+        "switchLanguage": "Bytt språk"
+    },
+    "languages": {
+        "selectLanguage": "Velg språk",
+        "changed": "Språk endret til {{language}}",
         "mockDataLoaded": "Testdata lastet",
         "mockDataCleared": "Testdata slettet",
         "sections": {
@@ -243,7 +260,8 @@
                 "title": "Eksporter Data",
                 "subtitle": "Lagre backup av all data",
                 "desc": "Dette lager en JSON-fil med alle logger, krisehendelser, mål og innstillinger.",
-                "button": "Last ned Backup"
+                "button": "Last ned Backup",
+                "success": "Data eksportert"
             },
             "import": {
                 "title": "Importer Data",
@@ -342,25 +360,26 @@
     },
     "layout": {
         "home": "Hjem",
-        "school": "Skole"
+        "school": "Skole",
+        "loggingAt": "Logger for: {{context}}"
     },
     "log": {
         "title": "Ny Loggføring",
         "date": "Dato & Tid",
         "arousal": {
             "label": "Spenning (Stress)",
-            "low": "Rolig",
-            "high": "Overveldet"
+            "low": "Rolig 😌",
+            "high": "Overveldet 😰"
         },
         "valence": {
             "label": "Valens (Humør)",
-            "low": "Ubehagelig",
-            "high": "Behagelig"
+            "low": "Trist 😢",
+            "high": "Glad 😊"
         },
         "energy": {
             "label": "Energi (Overskudd)",
-            "low": "Lavt Batteri",
-            "high": "Fulladet"
+            "low": "Lav 🔋",
+            "high": "Høy ⚡"
         },
         "triggers": {
             "sensory": "Sensoriske Utløsere",
@@ -391,8 +410,23 @@
         },
         "save": "Lagre Logg"
     },
+    "timeQuickSelect": {
+        "now": "Nå",
+        "5min": "5 min siden",
+        "30min": "30 min siden",
+        "1hour": "1 time siden"
+    },
+    "quickLog": {
+        "saved": "Logg lagret"
+    },
     "crisis": {
         "title": "Krisemodus",
+        "breathing": {
+            "breatheIn": "Pust inn...",
+            "breatheOut": "Pust ut...",
+            "message": "Ta et øyeblikk for å samle deg",
+            "skip": "Hopp over"
+        },
         "duration": "Varighet",
         "stopEvent": "STOPP HENDELSE",
         "stopRecording": "Stopp Opptak",
@@ -406,8 +440,8 @@
         "type": "Type Hendelse",
         "intensity": {
             "label": "Høyeste Intensitet",
-            "mild": "Mild",
-            "extreme": "Ekstrem"
+            "mild": "Mild 🟡",
+            "extreme": "Ekstrem 🔴"
         },
         "warningSigns": "Varseltegn Observert",
         "sensoryTriggers": "Sensoriske Utløsere",
@@ -422,6 +456,8 @@
             "skip": "Hopp Over",
             "save": "Lagre Hendelse"
         },
+        "saved": "Krisehendelse lagret",
+        "reflectionSaved": "Refleksjon lagret",
         "timerRunning": "Tidtaker aktiv",
         "micPermissionDenied": "Mikrofontilgang er blokkert. Klikk på låsikonet i adressefeltet for å endre tillatelser.",
         "micOsDenied": "Mikrofontilgang er blokkert på systemnivå. Åpne Systeminnstillinger > Personvern > Mikrofon for å gi tilgang.",
@@ -692,6 +728,14 @@
         "trends": "Trender",
         "settings": "Innstillinger"
     },
+    "dashboard": {
+        "pageTitle": "Statistikk",
+        "pageSubtitle": "AI-drevet atferdsanalyse"
+    },
+    "analysis": {
+        "pageTitle": "Trender",
+        "pageSubtitle": "Historikk og mønstre"
+    },
     "simpleInsights": {
         "empty": {
             "message": "Logg din første observasjon for å se innsikter",
@@ -816,6 +860,23 @@
             "impactMinutes": "{{minutes}} min effekt",
             "noData": "Ingen gjenopprettingsdata ennå",
             "noDataHint": "Logg gjenopprettingstid etter kriser for å se mønstre"
+        },
+        "emptyStates": {
+            "patterns": {
+                "title": "Oppdag Tidsmønstre",
+                "description": "Logg gjennom dagen for å avdekke når stressnivået typisk er høyest. Heatmappet viser mønstre etter dag og tid.",
+                "cta": "Start Logging"
+            },
+            "strategies": {
+                "title": "Spor Hva Som Fungerer",
+                "description": "Legg til strategier ved logging for å se hvilke som hjelper mest. Du kan også legge til kjente effektive strategier i profilen din.",
+                "cta": "Legg til Strategier i Innstillinger"
+            },
+            "advanced": {
+                "title": "Lås Opp Avansert Innsikt",
+                "description": "Logg konsistent i 7+ dager for å oppdage multi-faktormønstre, strategikombinasjoner og gjenopprettingstrender.",
+                "cta": "Start Logging"
+            }
         }
     },
     "contextComparison": {

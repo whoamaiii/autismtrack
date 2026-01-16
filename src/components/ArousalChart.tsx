@@ -1,26 +1,51 @@
 import React, { useMemo } from 'react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import {
+    AreaChart,
+    Area,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer,
+    ReferenceLine,
+    ReferenceArea
+} from 'recharts';
 import type { LogEntry } from '../types';
 import { format } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 
 interface ArousalChartProps {
     logs: LogEntry[];
+    /** Show threshold zones (green/yellow/red) */
+    showZones?: boolean;
+    /** Show average line */
+    showAverage?: boolean;
 }
 
-export const ArousalChart: React.FC<ArousalChartProps> = ({ logs }) => {
+export const ArousalChart: React.FC<ArousalChartProps> = ({
+    logs,
+    showZones = true,
+    showAverage = true
+}) => {
     const { t } = useTranslation();
 
     // Memoize sorted logs and chart data to prevent re-sorting on every render
-    const data = useMemo(() => {
+    const { data, average } = useMemo(() => {
         const sortedLogs = [...logs].sort((a, b) =>
             new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
         );
-        return sortedLogs.map(log => ({
+        const chartData = sortedLogs.map(log => ({
             time: new Date(log.timestamp).getTime(),
             arousal: log.arousal,
             formattedTime: format(new Date(log.timestamp), 'HH:mm'),
         }));
+
+        // Calculate average arousal
+        const avg = sortedLogs.length > 0
+            ? Math.round((sortedLogs.reduce((sum, log) => sum + log.arousal, 0) / sortedLogs.length) * 10) / 10
+            : 0;
+
+        return { data: chartData, average: avg };
     }, [logs]);
 
     if (data.length === 0) {
@@ -40,6 +65,16 @@ export const ArousalChart: React.FC<ArousalChartProps> = ({ logs }) => {
                         <stop offset="95%" stopColor="#4c8dff" stopOpacity={0} />
                     </linearGradient>
                 </defs>
+
+                {/* Threshold zones - subtle background coloring */}
+                {showZones && (
+                    <>
+                        <ReferenceArea y1={0} y2={3} fill="#22c55e" fillOpacity={0.08} />
+                        <ReferenceArea y1={3} y2={7} fill="#f59e0b" fillOpacity={0.06} />
+                        <ReferenceArea y1={7} y2={10} fill="#ef4444" fillOpacity={0.08} />
+                    </>
+                )}
+
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.1)" />
                 <XAxis
                     dataKey="formattedTime"
@@ -54,11 +89,36 @@ export const ArousalChart: React.FC<ArousalChartProps> = ({ logs }) => {
                     tick={{ fill: '#94a3b8', fontSize: 12 }}
                     tickLine={false}
                     axisLine={false}
+                    ticks={[0, 3, 7, 10]}
                 />
                 <Tooltip
-                    contentStyle={{ backgroundColor: '#0d111c', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '8px' }}
+                    contentStyle={{
+                        backgroundColor: '#0d111c',
+                        borderColor: 'rgba(255,255,255,0.1)',
+                        borderRadius: '8px'
+                    }}
                     itemStyle={{ color: '#fff' }}
+                    labelFormatter={(label) => `${t('chart.time')}: ${label}`}
+                    formatter={(value) => [value ?? 0, t('chart.arousalLevel')]}
                 />
+
+                {/* Average reference line */}
+                {showAverage && data.length > 1 && (
+                    <ReferenceLine
+                        y={average}
+                        stroke="#a855f7"
+                        strokeDasharray="4 4"
+                        strokeWidth={2}
+                        label={{
+                            value: `${t('chart.average', 'Avg')}: ${average}`,
+                            position: 'right',
+                            fill: '#a855f7',
+                            fontSize: 11,
+                            fontWeight: 600
+                        }}
+                    />
+                )}
+
                 <Area
                     type="monotone"
                     dataKey="arousal"

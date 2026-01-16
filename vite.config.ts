@@ -42,8 +42,8 @@ export default defineConfig({
         ],
       },
       manifest: {
-        name: 'NeuroLogg Pro',
-        short_name: 'NeuroLogg',
+        name: 'Kreativium',
+        short_name: 'Kreativium',
         description: 'Advanced neuro-behavioral tracking and analysis',
         theme_color: '#0f172a',
         background_color: '#0f172a',

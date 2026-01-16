@@ -1,5 +1,5 @@
 /**
- * PDF Layout Constants for NeuroLogg Pro reports
+ * PDF Layout Constants for Kreativium reports
  * Centralizes all magic numbers for consistent PDF styling
  */
 

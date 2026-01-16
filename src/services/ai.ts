@@ -32,7 +32,7 @@ const USE_GEMINI_FALLBACK = true;
 
 const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || '';
 const SITE_URL = import.meta.env.VITE_SITE_URL || 'http://localhost:5173';
-const SITE_NAME = 'NeuroLogg Pro';
+const SITE_NAME = 'Kreativium';
 
 // =============================================================================
 // ERROR REPORTING

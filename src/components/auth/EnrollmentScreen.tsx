@@ -69,7 +69,7 @@ export const EnrollmentScreen: React.FC = () => {
             </h1>
 
             <p className="text-slate-400 text-sm text-center mb-8">
-              NeuroLogg Pro uses biometric authentication to keep
+              Kreativium uses biometric authentication to keep
               your child's data safe and private.
             </p>
 

@@ -12,7 +12,6 @@ import {
     Heart,
     MessageSquare,
     Activity,
-    Check,
     GitCompare
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -22,6 +21,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useToast } from './Toast';
 import { STORAGE_KEYS } from '../constants/storage';
+import { Tag } from './ui';
 
 // Lazy load ContextComparison
 const ContextComparison = lazy(() => import('./ContextComparison'));
@@ -170,8 +170,8 @@ export const Analysis: React.FC = () => {
                     <ArrowLeft className="text-white" size={24} />
                 </Link>
                 <div>
-                    <h1 className="text-2xl font-bold text-white">{t('logExplorer.title')}</h1>
-                    <p className="text-slate-400 text-sm">{t('logExplorer.subtitle')}</p>
+                    <h1 className="text-2xl font-bold text-white">{t('analysis.pageTitle')}</h1>
+                    <p className="text-slate-400 text-sm">{t('analysis.pageSubtitle')}</p>
                 </div>
             </div>
 
@@ -282,12 +282,20 @@ export const Analysis: React.FC = () => {
                                 {/* Header Row */}
                                 <div className="flex justify-between items-start mb-4">
                                     <div className="flex items-center gap-3">
-                                        <div
-                                            className={`w-10 h-10 rounded-xl flex items-center justify-center border ${getArousalColor(log.arousal)}`}
-                                            role="img"
-                                            aria-label={`${t('logExplorer.arousal', 'Arousal')}: ${log.arousal}/10 (${getArousalLabel(log.arousal)})`}
-                                        >
-                                            <span className="font-bold text-lg" aria-hidden="true">{log.arousal}</span>
+                                        <div className="flex flex-col items-center">
+                                            <div
+                                                className={`w-12 h-12 rounded-xl flex items-center justify-center border ${getArousalColor(log.arousal)}`}
+                                                role="img"
+                                                aria-label={`${t('logExplorer.arousal', 'Arousal')}: ${log.arousal}/10 (${getArousalLabel(log.arousal)})`}
+                                            >
+                                                <span className="font-bold text-xl" aria-hidden="true">{log.arousal}</span>
+                                            </div>
+                                            <span className={`text-[10px] font-medium mt-1 ${
+                                                log.arousal <= 3 ? 'text-green-400' :
+                                                log.arousal <= 6 ? 'text-amber-300' : 'text-red-400'
+                                            }`}>
+                                                {getArousalLabel(log.arousal)}
+                                            </span>
                                         </div>
                                         <div>
                                             <div className="flex items-center gap-2 text-slate-300 text-sm font-medium">
@@ -328,22 +336,35 @@ export const Analysis: React.FC = () => {
 
                                 {/* Content Details */}
                                 <div className="space-y-3">
-                                    {(log.sensoryTriggers.length > 0 || log.contextTriggers.length > 0) && (
+                                    {/* Sensory Triggers */}
+                                    {log.sensoryTriggers.length > 0 && (
                                         <div className="flex flex-wrap gap-2">
-                                            {[...log.sensoryTriggers, ...log.contextTriggers].map((trigger, i) => (
-                                                <span key={i} className="text-xs px-2 py-1 rounded-md bg-red-500/10 text-red-300 border border-red-500/20">
+                                            {log.sensoryTriggers.map((trigger, i) => (
+                                                <Tag key={`sensory-${i}`} category="sensory" showCategoryIcon>
                                                     {trigger}
-                                                </span>
+                                                </Tag>
                                             ))}
                                         </div>
                                     )}
 
+                                    {/* Context Triggers */}
+                                    {log.contextTriggers.length > 0 && (
+                                        <div className="flex flex-wrap gap-2">
+                                            {log.contextTriggers.map((trigger, i) => (
+                                                <Tag key={`context-${i}`} category="context" showCategoryIcon>
+                                                    {trigger}
+                                                </Tag>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* Strategies Used */}
                                     {log.strategies.length > 0 && (
                                         <div className="flex flex-wrap gap-2">
                                             {log.strategies.map((s, i) => (
-                                                <span key={i} className="text-xs px-2 py-1 rounded-md bg-green-500/10 text-green-300 border border-green-500/20 flex items-center gap-1">
-                                                    <Check size={10} /> {s}
-                                                </span>
+                                                <Tag key={`strategy-${i}`} category="strategy" showCategoryIcon>
+                                                    {s}
+                                                </Tag>
                                             ))}
                                         </div>
                                     )}

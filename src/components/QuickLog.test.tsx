@@ -7,6 +7,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QuickLog } from './QuickLog';
 import { BrowserRouter } from 'react-router-dom';
 import { DataProvider } from '../store';
+import { ToastProvider } from './Toast';
 
 // =============================================================================
 // TEST SETUP
@@ -16,7 +17,9 @@ const renderQuickLog = (props = {}) => {
     return render(
         <BrowserRouter>
             <DataProvider>
-                <QuickLog {...props} />
+                <ToastProvider>
+                    <QuickLog {...props} />
+                </ToastProvider>
             </DataProvider>
         </BrowserRouter>
     );

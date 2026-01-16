@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useLogs, useCrisis, useChildProfile } from '../store';
 import { ArousalChart } from './ArousalChart';
 import { Plus, Calendar, Battery, BrainCircuit, Sparkles, Loader2, RefreshCw, AlertCircle, Zap, SearchX } from 'lucide-react';
+import { LoadingIcon } from './ui/LoadingIcon';
 import { EmptyState } from './EmptyState';
 import { format } from 'date-fns';
 import { nb, enUS } from 'date-fns/locale';
@@ -12,6 +13,7 @@ import { analyzeLogs, analyzeLogsDeep, analyzeLogsStreaming } from '../services/
 import type { AnalysisResult } from '../types';
 import { useToast } from './Toast';
 import { getModelDisplayName } from '../utils/modelUtils';
+import { Card } from './ui/Card';
 
 // Extended type for deep analysis result
 interface DeepAnalysisResult extends AnalysisResult {
@@ -24,7 +26,7 @@ export const Dashboard: React.FC = () => {
     const { childProfile } = useChildProfile();
     const { showError, showSuccess } = useToast();
     const prefersReducedMotion = useReducedMotion();
-    const { i18n } = useTranslation();
+    const { t, i18n } = useTranslation();
 
     // Locale-aware date formatting
     const dateLocale = i18n.language === 'no' ? nb : enUS;
@@ -305,7 +307,7 @@ export const Dashboard: React.FC = () => {
                     >
                         <Sparkles size={20} />
                     </motion.div>
-                    <h1 className="text-slate-900 dark:text-white text-xl font-bold tracking-tight">Kreativium</h1>
+                    <h1 className="text-slate-900 dark:text-white text-xl font-bold tracking-tight">{t('dashboard.pageTitle')}</h1>
                 </div>
                 <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 bg-white/50 dark:bg-white/5 px-3 py-1.5 rounded-full border border-slate-200 dark:border-white/10 backdrop-blur-sm">
                     <Calendar size={16} />
@@ -391,7 +393,7 @@ export const Dashboard: React.FC = () => {
                         </div>
                     ) : (isAnalyzing || isDeepAnalyzing) ? (
                         <div className="py-4 text-center">
-                            <Loader2 size={24} className="text-primary animate-spin mx-auto mb-2" />
+                            <LoadingIcon size={32} className="mx-auto mb-2" />
                             <p className="text-slate-600 dark:text-slate-300 text-sm">
                                 {isDeepAnalyzing ? 'Dyp analyse...' : 'Analyserer...'}
                             </p>
@@ -472,11 +474,13 @@ export const Dashboard: React.FC = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Arousal Curve Card */}
-                <motion.div
+                <Card
+                    variant="primary"
+                    size="lg"
+                    className="flex flex-col gap-4"
                     initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={prefersReducedMotion ? { duration: 0.01 } : { duration: 0.3, delay: 0.05 }}
-                    className="flex flex-col gap-4 liquid-glass-card p-6 rounded-3xl"
                 >
                     <div className="flex justify-between items-start">
                         <div>
@@ -490,9 +494,9 @@ export const Dashboard: React.FC = () => {
                                 initial={prefersReducedMotion ? { opacity: 0 } : { scale: 0 }}
                                 animate={prefersReducedMotion ? { opacity: 1 } : { scale: 1 }}
                                 transition={prefersReducedMotion ? { duration: 0.01 } : { type: "spring" as const, stiffness: 500, damping: 20, delay: 0.15 }}
-                                className={`px-3 py-1 rounded-full text-sm font-bold ${latestLog.arousal <= 3 ? 'bg-green-500/20 text-green-600 dark:text-green-400' :
-                                    latestLog.arousal <= 7 ? 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400' :
-                                        'bg-red-500/20 text-red-600 dark:text-red-400'
+                                className={`px-3 py-1 rounded-full text-sm font-bold ${latestLog.arousal <= 3 ? 'bg-green-500/20 text-green-600 dark:text-green-300' :
+                                    latestLog.arousal <= 7 ? 'bg-amber-500/20 text-amber-600 dark:text-amber-300' :
+                                        'bg-red-500/20 text-red-600 dark:text-red-300'
                                     }`}
                                 aria-label={`Spenningsnivå ${latestLog.arousal} av 10, ${latestLog.arousal <= 3 ? 'rolig' :
                                     latestLog.arousal <= 7 ? 'økt' : 'høy'
@@ -507,14 +511,16 @@ export const Dashboard: React.FC = () => {
                     <div className="h-48 w-full mt-2">
                         <ArousalChart logs={todaysLogs} />
                     </div>
-                </motion.div>
+                </Card>
 
                 {/* Energy Card */}
-                <motion.div
+                <Card
+                    variant="primary"
+                    size="lg"
+                    className="flex flex-col gap-4"
                     initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: -15 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={prefersReducedMotion ? { duration: 0.01 } : { duration: 0.3, delay: 0.1 }}
-                    className="liquid-glass-card p-6 rounded-3xl flex flex-col gap-4"
                 >
                     <div className="flex justify-between items-center">
                         <h3 className="text-slate-500 dark:text-slate-400 font-medium flex items-center gap-2">
@@ -531,7 +537,7 @@ export const Dashboard: React.FC = () => {
                         />
                     </div>
                     <p className="text-slate-400 text-sm">Energi Igjen</p>
-                </motion.div>
+                </Card>
             </div>
 
             {/* Floating Action Button */}

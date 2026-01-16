@@ -177,7 +177,7 @@ export const Reports: React.FC = () => {
 
             // 2. Generate PDF (dynamic import on first use)
             await generatePDF(filteredLogs, filteredCrisis, analysis, {
-                title: 'NeuroLogg Pro - Atferdsrapport',
+                title: 'Kreativium - Atferdsrapport',
                 startDate,
                 endDate: new Date()
             });

@@ -3,10 +3,11 @@ import { Link } from 'react-router-dom';
 import {
     Brain, Activity, Settings, Clock, Database, Check,
     Trash2, Sparkles, ArrowRight,
-    Globe, X, Eye, FileText, Target, Ear
+    X, Eye, FileText, Target, Ear
 } from 'lucide-react';
 
 import { motion, useReducedMotion } from 'framer-motion';
+import { InteractiveCard } from './InteractiveCard';
 // Note: generateMockData is now dynamically imported for bundle optimization
 import { useSettings, useLogs, useCrisis, useChildProfile } from '../store';
 import { RiskForecast } from './RiskForecast';
@@ -15,6 +16,11 @@ import { CollapsibleSection } from './CollapsibleSection';
 import { AnimatedLogo } from './AnimatedLogo';
 import { useTranslation } from 'react-i18next';
 import { useToast } from './Toast';
+import { useSecretTapGesture } from '../hooks/useSecretTapGesture';
+import { LanguageSelector } from './LanguageSelector';
+
+// App version from package.json (Vite injects this at build time)
+const APP_VERSION = '1.0.0';
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -57,17 +63,26 @@ export const Home: React.FC = () => {
     const { logs } = useLogs();
     const { crisisEvents } = useCrisis();
     const { childProfile } = useChildProfile();
-    const { t, i18n } = useTranslation();
+    const { t } = useTranslation();
     const { showSuccess } = useToast();
     const prefersReducedMotion = useReducedMotion();
     const mainRef = useRef<HTMLElement>(null);
     const [mockDataLoaded, setMockDataLoaded] = useState(false);
     const [mockDataCleared, setMockDataCleared] = useState(false);
-    // Dev tools visibility - can be hidden even in dev mode for QA/demo purposes
+    // Dev tools visibility - can be hidden even when unlocked for demo purposes
     const [devToolsHidden, setDevToolsHidden] = useState(() => {
         return localStorage.getItem('kreativium_hideDevTools') === 'true';
     });
-    const showDevTools = import.meta.env.DEV && !devToolsHidden;
+
+    // Secret tap gesture to unlock dev tools (7 taps on version number)
+    const { tapCount, isUnlocked: devModeUnlocked, handleTap: handleVersionTap, resetUnlock } = useSecretTapGesture({
+        onUnlock: () => {
+            showSuccess(t('home.devTools.unlocked', 'Developer tools unlocked! 🎉'));
+        }
+    });
+
+    // Show dev tools if: (unlocked via gesture OR in dev mode) AND not manually hidden
+    const showDevTools = (devModeUnlocked || import.meta.env.DEV) && !devToolsHidden;
 
     const handleHideDevTools = () => {
         localStorage.setItem('kreativium_hideDevTools', 'true');
@@ -77,6 +92,13 @@ export const Home: React.FC = () => {
     const handleShowDevTools = () => {
         localStorage.removeItem('kreativium_hideDevTools');
         setDevToolsHidden(false);
+    };
+
+    const handleLockDevTools = () => {
+        resetUnlock();
+        setDevToolsHidden(true);
+        localStorage.setItem('kreativium_hideDevTools', 'true');
+        showSuccess(t('home.devTools.locked', 'Developer tools locked'));
     };
 
     // Select motion-safe variants based on user preference
@@ -119,10 +141,6 @@ export const Home: React.FC = () => {
         setTimeout(() => setMockDataCleared(false), 2000);
     };
 
-    const toggleLanguage = () => {
-        i18n.changeLanguage(i18n.language === 'no' ? 'en' : 'no');
-    };
-
     return (
         <div className="flex flex-col gap-1.5 pt-0 pb-28 relative">
             {/* Skip Link for keyboard navigation */}
@@ -159,14 +177,10 @@ export const Home: React.FC = () => {
                         <Settings className="text-slate-400 dark:text-slate-300" size={20} aria-hidden="true" />
                     </Link>
 
-                    {/* Language toggle - top right */}
-                    <button
-                        onClick={toggleLanguage}
-                        className="absolute top-2 right-0 z-50 p-2.5 bg-white/5 hover:bg-white/10 rounded-full transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center backdrop-blur-sm"
-                        aria-label={t('home.switchLanguage')}
-                    >
-                        <Globe className="text-slate-400 dark:text-slate-300" size={20} aria-hidden="true" />
-                    </button>
+                    {/* Language selector - top right */}
+                    <div className="absolute top-2 right-0 z-50">
+                        <LanguageSelector compact />
+                    </div>
 
                     <div className="flex items-center justify-center -mb-6">
                         <AnimatedLogo
@@ -260,43 +274,51 @@ export const Home: React.FC = () => {
                     >
                         <div className="grid grid-cols-2 gap-3">
                             <motion.div variants={activeItemVariants}>
-                                <Link to="/dashboard" className="liquid-glass-card p-4 rounded-2xl hover:bg-white/10 transition-colors active:scale-98 block h-full">
-                                    <div className="bg-teal-500/10 w-10 h-10 rounded-xl flex items-center justify-center mb-3">
-                                        <Activity className="text-teal-500" size={20} />
-                                    </div>
-                                    <h3 className="text-slate-900 dark:text-white font-bold">{t('home.dashboard.title')}</h3>
-                                    <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">{t('home.dashboard.subtitle')}</p>
-                                </Link>
+                                <InteractiveCard
+                                    to="/dashboard"
+                                    title={t('home.dashboard.title')}
+                                    subtitle={t('home.dashboard.subtitle')}
+                                    icon={Activity}
+                                    iconBgColor="bg-teal-500/10"
+                                    iconColor="text-teal-500"
+                                    variant="grid"
+                                />
                             </motion.div>
 
                             <motion.div variants={activeItemVariants}>
-                                <Link to="/analysis" className="liquid-glass-card p-4 rounded-2xl hover:bg-white/10 transition-colors active:scale-98 block h-full">
-                                    <div className="bg-purple-500/10 w-10 h-10 rounded-xl flex items-center justify-center mb-3">
-                                        <Brain className="text-purple-500" size={20} />
-                                    </div>
-                                    <h3 className="text-slate-900 dark:text-white font-bold">{t('home.analysis.title')}</h3>
-                                    <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">{t('home.analysis.subtitle')}</p>
-                                </Link>
+                                <InteractiveCard
+                                    to="/analysis"
+                                    title={t('home.analysis.title')}
+                                    subtitle={t('home.analysis.subtitle')}
+                                    icon={Brain}
+                                    iconBgColor="bg-purple-500/10"
+                                    iconColor="text-purple-500"
+                                    variant="grid"
+                                />
                             </motion.div>
 
                             <motion.div variants={activeItemVariants}>
-                                <Link to="/behavior-insights" className="liquid-glass-card p-4 rounded-2xl hover:bg-white/10 transition-colors active:scale-98 block h-full">
-                                    <div className="bg-orange-500/10 w-10 h-10 rounded-xl flex items-center justify-center mb-3">
-                                        <Sparkles className="text-orange-500" size={20} />
-                                    </div>
-                                    <h3 className="text-slate-900 dark:text-white font-bold">{t('home.behavior.title')}</h3>
-                                    <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">{t('home.behavior.subtitle')}</p>
-                                </Link>
+                                <InteractiveCard
+                                    to="/behavior-insights"
+                                    title={t('home.behavior.title')}
+                                    subtitle={t('home.behavior.subtitle')}
+                                    icon={Sparkles}
+                                    iconBgColor="bg-orange-500/10"
+                                    iconColor="text-orange-500"
+                                    variant="grid"
+                                />
                             </motion.div>
 
                             <motion.div variants={activeItemVariants}>
-                                <Link to="/sensory-profile" className="liquid-glass-card p-4 rounded-2xl hover:bg-white/10 transition-colors active:scale-98 block h-full">
-                                    <div className="bg-pink-500/10 w-10 h-10 rounded-xl flex items-center justify-center mb-3">
-                                        <Ear className="text-pink-500" size={20} />
-                                    </div>
-                                    <h3 className="text-slate-900 dark:text-white font-bold">{t('home.sensory.title')}</h3>
-                                    <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">{t('home.sensory.subtitle')}</p>
-                                </Link>
+                                <InteractiveCard
+                                    to="/sensory-profile"
+                                    title={t('home.sensory.title')}
+                                    subtitle={t('home.sensory.subtitle')}
+                                    icon={Ear}
+                                    iconBgColor="bg-pink-500/10"
+                                    iconColor="text-pink-500"
+                                    variant="grid"
+                                />
                             </motion.div>
                         </div>
                     </CollapsibleSection>
@@ -313,27 +335,27 @@ export const Home: React.FC = () => {
                         itemCount={2}
                     >
                         <div className="space-y-2">
-                            <Link to="/schedule" className="liquid-glass-card p-4 rounded-2xl hover:bg-white/10 transition-colors active:scale-98 flex items-center gap-4">
-                                <div className="bg-teal-500/10 w-10 h-10 rounded-xl flex items-center justify-center">
-                                    <Clock className="text-teal-500" size={20} />
-                                </div>
-                                <div className="flex-1">
-                                    <h3 className="text-slate-900 dark:text-white font-bold">{t('home.schedule.title')}</h3>
-                                    <p className="text-slate-500 dark:text-slate-400 text-xs">{t('home.schedule.subtitle')}</p>
-                                </div>
-                                <ArrowRight className="text-slate-400" size={18} />
-                            </Link>
+                            <InteractiveCard
+                                to="/schedule"
+                                title={t('home.schedule.title')}
+                                subtitle={t('home.schedule.subtitle')}
+                                icon={Clock}
+                                iconBgColor="bg-teal-500/10"
+                                iconColor="text-teal-500"
+                                variant="list"
+                                showArrow
+                            />
 
-                            <Link to="/goals" className="liquid-glass-card p-4 rounded-2xl hover:bg-white/10 transition-colors active:scale-98 flex items-center gap-4">
-                                <div className="bg-indigo-500/10 w-10 h-10 rounded-xl flex items-center justify-center">
-                                    <Target className="text-indigo-500" size={20} />
-                                </div>
-                                <div className="flex-1">
-                                    <h3 className="text-slate-900 dark:text-white font-bold">{t('home.goals.title')}</h3>
-                                    <p className="text-slate-500 dark:text-slate-400 text-xs">{t('home.goals.subtitle')}</p>
-                                </div>
-                                <ArrowRight className="text-slate-400" size={18} />
-                            </Link>
+                            <InteractiveCard
+                                to="/goals"
+                                title={t('home.goals.title')}
+                                subtitle={t('home.goals.subtitle')}
+                                icon={Target}
+                                iconBgColor="bg-indigo-500/10"
+                                iconColor="text-indigo-500"
+                                variant="list"
+                                showArrow
+                            />
                         </div>
                     </CollapsibleSection>
 
@@ -344,36 +366,54 @@ export const Home: React.FC = () => {
                         itemCount={1}
                     >
                         <div className="space-y-2">
-                            <Link to="/reports" className="liquid-glass-card p-4 rounded-2xl hover:bg-white/10 transition-colors active:scale-98 flex items-center gap-4">
-                                <div className="bg-slate-500/10 w-10 h-10 rounded-xl flex items-center justify-center">
-                                    <FileText className="text-slate-400" size={20} />
-                                </div>
-                                <div className="flex-1">
-                                    <h3 className="text-slate-900 dark:text-white font-bold">{t('home.reports.title')}</h3>
-                                    <p className="text-slate-500 dark:text-slate-400 text-xs">{t('home.reports.subtitle')}</p>
-                                </div>
-                                <ArrowRight className="text-slate-400" size={18} />
-                            </Link>
+                            <InteractiveCard
+                                to="/reports"
+                                title={t('home.reports.title')}
+                                subtitle={t('home.reports.subtitle')}
+                                icon={FileText}
+                                iconBgColor="bg-slate-500/10"
+                                iconColor="text-slate-400"
+                                variant="list"
+                                showArrow
+                            />
                         </div>
                     </CollapsibleSection>
 
-                    {/* Dev Tools - Mock Data (Development only, dismissible) */}
+                    {/* Dev Tools - Mock Data (Unlocked via 7-tap gesture or dev mode) */}
                     {showDevTools && (
                         <motion.div variants={activeItemVariants}>
                             <div className="liquid-glass-card p-4 rounded-2xl border border-amber-500/20">
                                 <div className="flex items-center justify-between mb-3">
                                     <p className="text-amber-500/80 text-xs font-medium uppercase tracking-wider flex items-center gap-2">
                                         <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                                        {t('home.devTools.title')} <span className="text-slate-500">(DEV MODE)</span>
+                                        {t('home.devTools.title')}
+                                        {devModeUnlocked && !import.meta.env.DEV && (
+                                            <span className="text-slate-500">(UNLOCKED)</span>
+                                        )}
+                                        {import.meta.env.DEV && (
+                                            <span className="text-slate-500">(DEV MODE)</span>
+                                        )}
                                     </p>
-                                    <button
-                                        onClick={handleHideDevTools}
-                                        className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-slate-400 hover:text-white"
-                                        aria-label={t('home.devTools.hide', 'Hide dev tools')}
-                                        title={t('home.devTools.hideHint', 'Hide dev tools (restore in Settings)')}
-                                    >
-                                        <X size={16} />
-                                    </button>
+                                    <div className="flex gap-1">
+                                        {devModeUnlocked && !import.meta.env.DEV && (
+                                            <button
+                                                onClick={handleLockDevTools}
+                                                className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-amber-500/70 hover:text-amber-500 text-xs"
+                                                aria-label={t('home.devTools.lock', 'Lock dev tools')}
+                                                title={t('home.devTools.lockHint', 'Lock dev tools permanently')}
+                                            >
+                                                🔒
+                                            </button>
+                                        )}
+                                        <button
+                                            onClick={handleHideDevTools}
+                                            className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-slate-400 hover:text-white"
+                                            aria-label={t('home.devTools.hide', 'Hide dev tools')}
+                                            title={t('home.devTools.hideHint', 'Hide dev tools temporarily')}
+                                        >
+                                            <X size={16} />
+                                        </button>
+                                    </div>
                                 </div>
                                 <div className="flex gap-2">
                                     <button
@@ -407,8 +447,8 @@ export const Home: React.FC = () => {
                             </div>
                         </motion.div>
                     )}
-                    {/* Show dev tools button when hidden */}
-                    {import.meta.env.DEV && devToolsHidden && (
+                    {/* Show dev tools button when hidden (only if already unlocked) */}
+                    {(devModeUnlocked || import.meta.env.DEV) && devToolsHidden && (
                         <motion.div variants={activeItemVariants}>
                             <button
                                 onClick={handleShowDevTools}
@@ -419,6 +459,28 @@ export const Home: React.FC = () => {
                             </button>
                         </motion.div>
                     )}
+
+                    {/* Version number with secret tap gesture */}
+                    <motion.div
+                        variants={activeItemVariants}
+                        className="flex flex-col items-center justify-center pt-4 pb-2"
+                    >
+                        <button
+                            onClick={handleVersionTap}
+                            className="text-slate-600 text-xs select-none touch-manipulation relative"
+                            aria-label={t('home.version', 'App version')}
+                        >
+                            <span className={tapCount > 0 ? 'animate-pulse' : ''}>
+                                Kreativium v{APP_VERSION}
+                            </span>
+                            {/* Tap progress indicator */}
+                            {tapCount > 0 && tapCount < 7 && (
+                                <span className="absolute -right-6 top-0 text-amber-500/60 text-[10px]">
+                                    {tapCount}/7
+                                </span>
+                            )}
+                        </button>
+                    </motion.div>
                 </motion.div>
             </main>
         </div>

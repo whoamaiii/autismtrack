@@ -1,5 +1,5 @@
 /**
- * Mock Data Generator for NeuroLogg Pro
+ * Mock Data Generator for Kreativium
  * Generates realistic behavioral data for a neurodivergent child over 2 weeks
  *
  * Patterns modeled:

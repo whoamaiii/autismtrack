@@ -24,7 +24,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex justify-center"
+                    className="flex flex-col items-center gap-2"
                 >
                     <div className="bg-white/10 dark:bg-black/20 backdrop-blur-md p-1.5 rounded-full flex gap-1 border border-white/10 relative">
                         <motion.div
@@ -59,6 +59,24 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                             {t('layout.school')}
                         </button>
                     </div>
+
+                    {/* Context Indicator */}
+                    <motion.div
+                        key={currentContext}
+                        initial={{ opacity: 0, y: -4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className={`
+                            flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium
+                            ${currentContext === 'home'
+                                ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20'
+                                : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                            }
+                        `}
+                    >
+                        <span className={`w-1.5 h-1.5 rounded-full ${currentContext === 'home' ? 'bg-orange-400' : 'bg-blue-400'}`} />
+                        {t('layout.loggingAt', { context: currentContext === 'home' ? t('layout.home') : t('layout.school') })}
+                    </motion.div>
                 </motion.div>
                 {children ?? <Outlet />}
             </main>

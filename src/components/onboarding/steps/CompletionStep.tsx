@@ -137,7 +137,7 @@ export const CompletionStep: React.FC<CompletionStepProps> = ({ onComplete }) =>
                     <Sparkles className="w-5 h-5 text-amber-400" />
                 </div>
                 <p className="text-white/60">
-                    NeuroLogg Pro er klar for {childName}
+                    Kreativium er klar for {childName}
                 </p>
             </motion.div>
 

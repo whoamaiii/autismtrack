@@ -23,8 +23,8 @@ export const useReducedMotion = (): boolean => {
             setPrefersReducedMotion(event.matches);
         };
 
-        // Set initial value
-        setPrefersReducedMotion(mediaQuery.matches);
+        // Initial value is set via lazy initialization in useState
+        // Event listener handles any subsequent changes
 
         // Listen for changes
         mediaQuery.addEventListener('change', handleChange);
