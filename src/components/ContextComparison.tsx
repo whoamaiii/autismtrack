@@ -108,14 +108,14 @@ export default function ContextComparison({ onClose }: ContextComparisonProps) {
                 <div className="sticky top-0 z-10 flex items-center bg-background-dark/95 p-4 pb-2 backdrop-blur-sm justify-between border-b border-white/10">
                     <button
                         onClick={onClose}
-                        className="flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-white/10 transition-colors text-white"
+                        className="flex size-11 shrink-0 items-center justify-center rounded-full hover:bg-white/10 transition-colors text-white"
                     >
                         <ArrowLeft size={20} />
                     </button>
                     <h2 className="text-white text-lg font-bold">
                         {t('contextComparison.title', 'Hjemme vs. Skole')}
                     </h2>
-                    <div className="size-10" />
+                    <div className="size-11" />
                 </div>
 
                 <div className="p-4 pt-8">
@@ -149,14 +149,14 @@ export default function ContextComparison({ onClose }: ContextComparisonProps) {
             <div className="sticky top-0 z-10 flex items-center bg-background-dark/95 p-4 pb-2 backdrop-blur-sm justify-between border-b border-white/10">
                 <button
                     onClick={onClose}
-                    className="flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-white/10 transition-colors text-white"
+                    className="flex size-11 shrink-0 items-center justify-center rounded-full hover:bg-white/10 transition-colors text-white"
                 >
                     <ArrowLeft size={20} />
                 </button>
                 <h2 className="text-white text-lg font-bold">
                     {t('contextComparison.title', 'Hjemme vs. Skole')}
                 </h2>
-                <div className="size-10" />
+                <div className="size-11" />
             </div>
 
             <div className="p-4 pb-24 flex flex-col gap-4">

@@ -148,6 +148,7 @@ export const QuickLog: React.FC<QuickLogProps> = ({ onLogAdded, compact = false 
     const [selectedLevel, setSelectedLevel] = useState<QuickLogLevel | null>(null);
     const [note, setNote] = useState('');
     const [successLevel, setSuccessLevel] = useState<QuickLogLevel | null>(null);
+    const [isSaving, setIsSaving] = useState(false); // Prevent double taps
     const [detectedContext] = useState<ContextType>(() => detectContext());
 
     // Use detected context if current context isn't explicitly set
@@ -156,7 +157,12 @@ export const QuickLog: React.FC<QuickLogProps> = ({ onLogAdded, compact = false 
     }, [currentContext, detectedContext]);
 
     const handleQuickLog = useCallback((level: QuickLogLevel) => {
+        // Always trigger haptic feedback for user feedback, even when blocked
         triggerHapticFeedback(level === 'crisis' ? 'heavy' : level === 'struggling' ? 'medium' : 'light');
+
+        // Prevent double taps from creating duplicate logs
+        if (isSaving) return;
+        setIsSaving(true);
 
         const mapping = QUICK_LOG_MAPPINGS[level];
         const now = new Date();
@@ -185,10 +191,16 @@ export const QuickLog: React.FC<QuickLogProps> = ({ onLogAdded, compact = false 
             setSelectedLevel(null);
             onLogAdded?.();
 
-            // Clear success indicator after animation
-            setTimeout(() => setSuccessLevel(null), 1500);
+            // Clear success indicator and re-enable after animation
+            setTimeout(() => {
+                setSuccessLevel(null);
+                setIsSaving(false);
+            }, 1500);
+        } else {
+            // Re-enable on failure
+            setIsSaving(false);
         }
-    }, [addLog, effectiveContext, note, onLogAdded]);
+    }, [addLog, effectiveContext, note, onLogAdded, isSaving]);
 
     const handleButtonClick = useCallback((level: QuickLogLevel) => {
         if (showDetails && selectedLevel === level) {
@@ -284,8 +296,8 @@ export const QuickLog: React.FC<QuickLogProps> = ({ onLogAdded, compact = false 
                         <div className="relative">
                             {/* Main button */}
                             <motion.button
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
+                                whileHover={isSaving ? {} : { scale: 1.02 }}
+                                whileTap={isSaving ? {} : { scale: 0.98 }}
                                 onClick={() => handleButtonClick(level)}
                                 onDoubleClick={() => handleToggleDetails(level)}
                                 className={`
@@ -296,9 +308,11 @@ export const QuickLog: React.FC<QuickLogProps> = ({ onLogAdded, compact = false 
                                     transition-all duration-200
                                     ${selectedLevel === level ? `ring-2 ${ringColor}` : ''}
                                     ${successLevel === level ? 'ring-2 ring-green-500' : ''}
-                                    active:scale-95
+                                    ${isSaving ? 'opacity-60' : 'active:scale-95'}
                                 `}
                                 aria-label={`${label} - ${t('quickLog.tapToLog', 'Trykk for å logge')}`}
+                                aria-busy={isSaving}
+                                aria-disabled={isSaving}
                             >
                                 <div className={`flex items-center gap-3 ${compact ? 'flex-col' : ''}`}>
                                     <Icon className={`${compact ? 'w-6 h-6' : 'w-8 h-8'} text-white`} />
@@ -333,7 +347,7 @@ export const QuickLog: React.FC<QuickLogProps> = ({ onLogAdded, compact = false 
                                                         handleToggleDetails(level);
                                                     }
                                                 }}
-                                                className="p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                                                className="p-2 rounded-lg hover:bg-white/10 transition-colors cursor-pointer min-w-[44px] min-h-[44px] flex items-center justify-center"
                                                 aria-label={t('quickLog.addDetails', 'Legg til detaljer')}
                                             >
                                                 {showDetails && selectedLevel === level ? (

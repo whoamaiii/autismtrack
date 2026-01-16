@@ -45,10 +45,22 @@ const playTimerEndSound = () => {
         oscillator.start(audioContext.currentTime);
         oscillator.stop(audioContext.currentTime + 0.5);
 
-        // Clean up AudioContext after sound finishes to prevent memory leak
-        oscillator.onended = () => {
-            audioContext.close();
+        // Track if cleanup has occurred to prevent double-close
+        let cleaned = false;
+        const cleanup = () => {
+            if (!cleaned) {
+                cleaned = true;
+                audioContext.close().catch(() => {
+                    // Ignore close errors (context might already be closed)
+                });
+            }
         };
+
+        // Primary cleanup via onended event
+        oscillator.onended = cleanup;
+
+        // Backup cleanup via timeout (in case onended doesn't fire in some browsers)
+        setTimeout(cleanup, 600);
     } catch {
         // Audio not supported, ignore
     }

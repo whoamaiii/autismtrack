@@ -220,6 +220,36 @@ export function ModelProvider({ children }: { children: React.ReactNode }) {
         extractBundled();
     }, [isNativeDevice, isChecking, isExtracting, status.downloaded, status.bundledAvailable, refreshStatus]);
 
+    // Auto-load model into memory when downloaded but not loaded
+    // This ensures the model is ready for inference after app restart
+    useEffect(() => {
+        if (!isNativeDevice || isChecking || isExtracting) return;
+
+        // Only auto-load if model is downloaded but not loaded (and not currently downloading)
+        if (status.downloaded && !status.loaded && !status.downloading) {
+            const autoLoadModel = async () => {
+                if (import.meta.env.DEV) {
+                    console.log('[ModelContext] 🔄 Auto-loading model into memory...');
+                }
+                try {
+                    await loadModel();
+                    if (isMountedRef.current) {
+                        await refreshStatus();
+                        if (import.meta.env.DEV) {
+                            console.log('[ModelContext] ✅ Model auto-loaded successfully, ready for inference');
+                        }
+                    }
+                } catch (error) {
+                    if (import.meta.env.DEV) {
+                        console.warn('[ModelContext] ⚠️ Auto-load failed (will retry on first analysis):', error);
+                    }
+                    // Don't propagate error - analyzeLogsWithLocalModel will retry loading
+                }
+            };
+            autoLoadModel();
+        }
+    }, [isNativeDevice, isChecking, isExtracting, status.downloaded, status.loaded, status.downloading, refreshStatus]);
+
     // Check if we should show the download prompt on first launch
     useEffect(() => {
         if (!isNativeDevice || isChecking || isExtracting) return;

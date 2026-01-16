@@ -1,5 +1,5 @@
-import { useRef, useMemo } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { useRef, useMemo, useEffect } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
 const VertexShader = `
@@ -80,6 +80,8 @@ const FragmentShader = `
 
 const ShaderPlane = () => {
     const mesh = useRef<THREE.Mesh>(null);
+    const geometryRef = useRef<THREE.PlaneGeometry | null>(null);
+    const materialRef = useRef<THREE.ShaderMaterial | null>(null);
 
     const uniforms = useMemo(
         () => ({
@@ -96,10 +98,26 @@ const ShaderPlane = () => {
         }
     });
 
+    // Cleanup WebGL resources on unmount to prevent memory leaks
+    useEffect(() => {
+        return () => {
+            if (geometryRef.current) {
+                geometryRef.current.dispose();
+            }
+            if (materialRef.current) {
+                materialRef.current.dispose();
+            }
+        };
+    }, []);
+
     return (
         <mesh ref={mesh} scale={[10, 10, 1]}>
-            <planeGeometry args={[2, 2]} />
+            <planeGeometry
+                ref={geometryRef}
+                args={[2, 2]}
+            />
             <shaderMaterial
+                ref={materialRef}
                 fragmentShader={FragmentShader}
                 vertexShader={VertexShader}
                 uniforms={uniforms}
@@ -108,10 +126,25 @@ const ShaderPlane = () => {
     );
 };
 
+// Cleanup component that disposes renderer resources
+const SceneCleanup = () => {
+    const { gl } = useThree();
+
+    useEffect(() => {
+        return () => {
+            // Dispose of the WebGL renderer to free GPU memory
+            gl.dispose();
+        };
+    }, [gl]);
+
+    return null;
+};
+
 const BackgroundShader = () => {
     return (
         <div className="fixed inset-0 z-[-1] pointer-events-none">
             <Canvas camera={{ position: [0, 0, 1] }}>
+                <SceneCleanup />
                 <ShaderPlane />
             </Canvas>
         </div>

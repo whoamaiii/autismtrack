@@ -60,11 +60,11 @@ export const EnergyRegulation: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 className="sticky top-0 z-10 flex items-center bg-background-dark/80 p-4 pb-2 backdrop-blur-sm justify-between rounded-b-xl -mx-4 -mt-4 mb-2 border-b border-white/10"
             >
-                <button onClick={() => navigate(-1)} className="flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-white/10 transition-colors text-white" aria-label={t('energyRegulation.goBack')}>
+                <button onClick={() => navigate(-1)} className="flex size-11 shrink-0 items-center justify-center rounded-full hover:bg-white/10 transition-colors text-white" aria-label={t('energyRegulation.goBack')}>
                     <ArrowLeft size={20} />
                 </button>
                 <h2 className="text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">{t('energyRegulation.title')}</h2>
-                <div className="flex w-10 items-center justify-end">
+                <div className="flex w-11 items-center justify-end">
                     {/* Placeholder */}
                 </div>
             </motion.div>

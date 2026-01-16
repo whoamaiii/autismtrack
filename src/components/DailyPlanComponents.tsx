@@ -683,12 +683,12 @@ export const StickyHeader: React.FC<{
                 whileTap={{ scale: 0.9 }}
                 onClick={onBack}
                 aria-label="Back"
-                className="flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-white/10 transition-colors text-white"
+                className="flex size-11 shrink-0 items-center justify-center rounded-full hover:bg-white/10 transition-colors text-white"
             >
                 <ArrowLeft size={20} />
             </motion.button>
             <h1 className="text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">{title}</h1>
-            <div className="flex size-10 items-center justify-center">
+            <div className="flex size-11 items-center justify-center">
                 {rightAction}
             </div>
         </motion.div>

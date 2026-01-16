@@ -383,8 +383,8 @@ describe('GoalTracking Component', () => {
         it('has accessible button labels', () => {
             renderWithProviders();
 
-            // Check for aria-labels
-            expect(screen.getByLabelText('Gå tilbake')).toBeInTheDocument();
+            // Check for aria-labels - BackButton uses translated 'common.back' key
+            expect(screen.getByLabelText('Back')).toBeInTheDocument();
             expect(screen.getAllByLabelText('goals.addGoal').length).toBeGreaterThan(0);
         });
     });

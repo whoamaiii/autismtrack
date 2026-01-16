@@ -17,7 +17,7 @@ import {
     type StreamCallbacks
 } from './aiCommon';
 import {
-    isLocalModelReady,
+    isLocalModelAvailable,
     analyzeLogsWithLocalModel,
     clearLocalAnalysisCache
 } from './localModel';
@@ -604,14 +604,19 @@ export const analyzeLogs = async (
     const dedupeKey = `regular:${generateLogsHash(logs, crisisEvents)}`;
     return deduplicatedRequest(dedupeKey, async () => {
     // LOCAL MODEL FIRST: Try local Kreativium 4B on native Android
+    // Uses isLocalModelAvailable() instead of isLocalModelReady() because
+    // analyzeLogsWithLocalModel() handles auto-loading if model is downloaded but not loaded
     if (isNative()) {
         try {
-            const localReady = await isLocalModelReady();
-            if (localReady) {
+            const localAvailable = await isLocalModelAvailable();
+            if (localAvailable) {
                 if (import.meta.env.DEV) {
-                    console.log('[AI] Using local Kreativium 4B model for analysis...');
+                    console.log('[AI] 🤖 LOCAL MODEL: Using Kreativium 4B (Gemma) for on-device analysis...');
+                    console.log('[AI] 📊 Real data being processed locally - no cloud API calls');
                 }
                 return await analyzeLogsWithLocalModel(logs, crisisEvents, options.childProfile);
+            } else if (import.meta.env.DEV) {
+                console.log('[AI] ⚠️ Local model not available (not downloaded), falling back to cloud');
             }
         } catch (localError) {
             if (import.meta.env.DEV) {
@@ -729,17 +734,21 @@ export const analyzeLogsDeep = async (
     const dedupeKey = `deep:${generateLogsHash(logs, crisisEvents)}`;
     return deduplicatedRequest(dedupeKey, async () => {
     // LOCAL MODEL FIRST: Try local Kreativium 4B on native Android
+    // Uses isLocalModelAvailable() - analyzeLogsWithLocalModel() handles auto-loading
     if (isNative()) {
         try {
-            const localReady = await isLocalModelReady();
-            if (localReady) {
+            const localAvailable = await isLocalModelAvailable();
+            if (localAvailable) {
                 if (import.meta.env.DEV) {
-                    console.log('[AI] Using local Kreativium 4B model for deep analysis...');
+                    console.log('[AI] 🤖 LOCAL MODEL: Using Kreativium 4B (Gemma) for deep analysis...');
+                    console.log('[AI] 📊 Real data being processed locally - privacy preserved');
                 }
                 const result = await analyzeLogsWithLocalModel(logs, crisisEvents, options.childProfile);
                 // Mark as deep analysis from local model
                 result.isDeepAnalysis = true;
                 return { ...result, modelUsed: 'kreativium-4b-it-int4 (local)' };
+            } else if (import.meta.env.DEV) {
+                console.log('[AI] ⚠️ Local model not available for deep analysis, falling back to cloud');
             }
         } catch (localError) {
             if (import.meta.env.DEV) {
@@ -923,18 +932,22 @@ export const analyzeLogsStreaming = async (
     options: { childProfile?: ChildProfile | null } = {}
 ): Promise<AnalysisResult> => {
     // LOCAL MODEL FIRST: Use local Kreativium 4B on native Android (non-streaming, but private)
+    // Uses isLocalModelAvailable() - analyzeLogsWithLocalModel() handles auto-loading
     if (isNative()) {
         try {
-            const localReady = await isLocalModelReady();
-            if (localReady) {
+            const localAvailable = await isLocalModelAvailable();
+            if (localAvailable) {
                 if (import.meta.env.DEV) {
-                    console.log('[AI] Using local Kreativium 4B for analysis (non-streaming)...');
+                    console.log('[AI] 🤖 LOCAL MODEL: Using Kreativium 4B for streaming analysis...');
+                    console.log('[AI] 📊 Privacy first - data stays on device');
                 }
                 // Local model doesn't support streaming, but privacy is more important
                 const result = await analyzeLogsWithLocalModel(logs, crisisEvents, options.childProfile);
                 // Notify completion via callback
                 callbacks.onComplete?.(result.summary || '');
                 return result;
+            } else if (import.meta.env.DEV) {
+                console.log('[AI] ⚠️ Local model not available for streaming, falling back to cloud');
             }
         } catch (localError) {
             if (import.meta.env.DEV) {

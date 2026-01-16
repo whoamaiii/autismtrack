@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Target, TrendingUp, CheckCircle2, Plus, ArrowLeft, X, Clock, AlertTriangle } from 'lucide-react';
+// useNavigate removed - using BackButton component
+import { Target, TrendingUp, CheckCircle2, Plus, X, Clock, AlertTriangle } from 'lucide-react';
+import { BackButton } from './BackButton';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGoals, useAppContext } from '../store';
 import { type Goal, type GoalCategory, type GoalStatus, GOAL_CATEGORIES } from '../types';
@@ -8,7 +9,6 @@ import { useTranslation } from 'react-i18next';
 import { useToast } from './Toast';
 
 export const GoalTracking: React.FC = () => {
-    const navigate = useNavigate();
     const { goals, addGoal, addGoalProgress, getOverallProgress } = useGoals();
     const { currentContext } = useAppContext();
     const { t } = useTranslation();
@@ -228,9 +228,7 @@ export const GoalTracking: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 className="sticky top-0 z-10 flex items-center bg-background-dark/80 p-4 pb-2 backdrop-blur-sm justify-between rounded-b-xl -mx-4 -mt-4 mb-2 border-b border-white/10"
             >
-                <button onClick={() => navigate(-1)} className="flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-white/10 transition-colors text-white" aria-label="Gå tilbake">
-                    <ArrowLeft size={20} />
-                </button>
+                <BackButton className="size-10 shrink-0" />
                 <h2 className="text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">{t('goals.title')}</h2>
                 <button
                     onClick={() => setShowAddGoal(true)}

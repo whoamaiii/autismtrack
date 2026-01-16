@@ -38,7 +38,7 @@ export const TransitionInsights: React.FC = () => {
                 <div className="sticky top-0 z-10 flex items-center bg-background-dark/80 p-4 pb-2 backdrop-blur-sm justify-between rounded-b-xl -mx-4 -mt-4 mb-2 border-b border-white/10">
                     <button
                         onClick={() => navigate(-1)}
-                        className="flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-white/10 transition-colors text-white"
+                        className="flex size-11 shrink-0 items-center justify-center rounded-full hover:bg-white/10 transition-colors text-white"
                         aria-label={t('transitions.goBack')}
                     >
                         <ArrowLeft size={20} />
@@ -48,7 +48,7 @@ export const TransitionInsights: React.FC = () => {
                             {t('transitions.analysis.title')}
                         </h1>
                     </div>
-                    <div className="size-10"></div>
+                    <div className="size-11"></div>
                 </div>
 
                 {/* Empty state content */}
@@ -99,7 +99,7 @@ export const TransitionInsights: React.FC = () => {
             <div className="sticky top-0 z-10 flex items-center bg-background-dark/80 p-4 pb-2 backdrop-blur-sm justify-between rounded-b-xl -mx-4 -mt-4 mb-2 border-b border-white/10">
                 <button
                     onClick={() => navigate(-1)}
-                    className="flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-white/10 transition-colors text-white"
+                    className="flex size-11 shrink-0 items-center justify-center rounded-full hover:bg-white/10 transition-colors text-white"
                     aria-label={t('transitions.goBack')}
                 >
                     <ArrowLeft size={20} />
@@ -109,7 +109,7 @@ export const TransitionInsights: React.FC = () => {
                         {t('transitions.analysis.title')}
                     </h1>
                 </div>
-                <div className="size-10"></div>
+                <div className="size-11"></div>
             </div>
 
             <div className="space-y-6">

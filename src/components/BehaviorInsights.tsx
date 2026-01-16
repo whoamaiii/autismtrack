@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+// useNavigate removed - using BackButton component
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Play, AlertTriangle, Brain, Calendar, Loader2, RefreshCw, TrendingUp, Shield, Zap, Layers, ChevronDown, ChevronUp, Combine, Clock, Heart, TrendingDown, Minus, AlertCircle } from 'lucide-react';
+import { Play, AlertTriangle, Brain, Calendar, Loader2, RefreshCw, TrendingUp, Shield, Zap, Layers, ChevronDown, ChevronUp, Combine, Clock, Heart, TrendingDown, Minus, AlertCircle } from 'lucide-react';
+import { BackButton } from './BackButton';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import { useLogs, useCrisis, useChildProfile } from '../store';
@@ -98,8 +99,17 @@ const getHeatmapColorClass = (level: number, sampleCount: number = 1): string =>
     return sampleCount >= 3 ? 'bg-red-500/80' : 'bg-red-500/40';
 };
 
+// Tab configuration for organized content
+type TabId = 'overview' | 'patterns' | 'strategies' | 'advanced';
+
+interface TabConfig {
+    id: TabId;
+    labelKey: string;
+    defaultLabel: string;
+    icon: React.ReactNode;
+}
+
 export const BehaviorInsights: React.FC = () => {
-    const navigate = useNavigate();
     const { t } = useTranslation();
     const { logs } = useLogs();
     const { crisisEvents } = useCrisis();
@@ -110,6 +120,17 @@ export const BehaviorInsights: React.FC = () => {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [dateRange, setDateRange] = useState<'7' | '30' | '90'>('30');
     const [isInitialLoading, setIsInitialLoading] = useState(true);
+
+    // Tab navigation state
+    const [activeTab, setActiveTab] = useState<TabId>('overview');
+
+    // Tab definitions
+    const tabs: TabConfig[] = [
+        { id: 'overview', labelKey: 'behaviorInsights.tabs.overview', defaultLabel: 'Overview', icon: <Brain size={16} /> },
+        { id: 'patterns', labelKey: 'behaviorInsights.tabs.patterns', defaultLabel: 'Patterns', icon: <TrendingUp size={16} /> },
+        { id: 'strategies', labelKey: 'behaviorInsights.tabs.strategies', defaultLabel: 'Strategies', icon: <Zap size={16} /> },
+        { id: 'advanced', labelKey: 'behaviorInsights.tabs.advanced', defaultLabel: 'Advanced', icon: <Layers size={16} /> },
+    ];
 
     // Loading state for perceived performance - show skeleton briefly
     useEffect(() => {
@@ -285,9 +306,7 @@ export const BehaviorInsights: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 className="sticky top-0 z-10 flex items-center bg-background-dark/80 p-4 pb-2 backdrop-blur-sm justify-between rounded-b-xl -mx-4 -mt-4 mb-2 border-b border-white/10"
             >
-                <button onClick={() => navigate(-1)} className="flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-white/10 transition-colors text-white" aria-label={t('behaviorInsights.goBack')}>
-                    <ArrowLeft size={20} />
-                </button>
+                <BackButton className="size-10 shrink-0" />
                 <h1 className="text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">{t('behaviorInsights.title')}</h1>
                 <div className="flex gap-2">
                     <button
@@ -353,6 +372,39 @@ export const BehaviorInsights: React.FC = () => {
                 ))}
             </motion.div>
 
+            {/* Tab Navigation - Reduces scroll by organizing content */}
+            <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+                className="flex gap-1 p-1 bg-white/5 rounded-2xl"
+                role="tablist"
+                aria-label={t('behaviorInsights.tabNavigation', 'Section navigation')}
+            >
+                {tabs.map((tab) => (
+                    <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        role="tab"
+                        aria-selected={activeTab === tab.id}
+                        aria-controls={`tabpanel-${tab.id}`}
+                        className={`
+                            flex-1 flex items-center justify-center gap-2
+                            py-2.5 px-3 rounded-xl text-sm font-medium
+                            transition-all duration-200
+                            min-h-[44px]
+                            ${activeTab === tab.id
+                                ? 'bg-primary text-white shadow-lg shadow-primary/25'
+                                : 'text-slate-400 hover:text-white hover:bg-white/5'
+                            }
+                        `}
+                    >
+                        {tab.icon}
+                        <span className="hidden sm:inline">{t(tab.labelKey, tab.defaultLabel)}</span>
+                    </button>
+                ))}
+            </motion.div>
+
             {/* Loading State */}
             <AnimatePresence>
                 {isAnalyzing && (
@@ -368,6 +420,9 @@ export const BehaviorInsights: React.FC = () => {
                 )}
             </AnimatePresence>
 
+            {/* ===== OVERVIEW TAB ===== */}
+            {activeTab === 'overview' && (
+                <>
             {/* AI Analysis Summary */}
             {analysis && !isAnalyzing && (
                 <motion.div
@@ -502,12 +557,17 @@ export const BehaviorInsights: React.FC = () => {
                     )}
                 </div>
             </motion.div>
+                </>
+            )}
 
+            {/* ===== PATTERNS TAB ===== */}
+            {activeTab === 'patterns' && (
+                <>
             {/* Heatmap of Dysregulation */}
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
+                transition={{ delay: 0.1 }}
             >
                 <div className="liquid-glass-card p-6 rounded-3xl">
                     <h2 className="text-white text-[22px] font-bold leading-tight tracking-[-0.015em]">{t('behaviorInsights.heatmap.title')}</h2>
@@ -583,12 +643,17 @@ export const BehaviorInsights: React.FC = () => {
                     </div>
                 </div>
             </motion.div>
+                </>
+            )}
 
+            {/* ===== STRATEGIES TAB ===== */}
+            {activeTab === 'strategies' && (
+                <>
             {/* Strategy Efficacy Chart */}
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
+                transition={{ delay: 0.1 }}
             >
                 <div className="liquid-glass-card p-6 rounded-3xl">
                     <h2 className="text-white text-[22px] font-bold leading-tight tracking-[-0.015em]">{t('behaviorInsights.strategy.title')}</h2>
@@ -712,12 +777,17 @@ export const BehaviorInsights: React.FC = () => {
                     </div>
                 </motion.div>
             )}
+                </>
+            )}
 
+            {/* ===== ADVANCED TAB ===== */}
+            {activeTab === 'advanced' && (
+                <>
             {/* Multi-Factor Patterns Section */}
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.55 }}
+                transition={{ delay: 0.1 }}
             >
                 <div className="liquid-glass-card p-6 rounded-3xl">
                     <div className="flex items-center gap-2 mb-1">
@@ -1064,6 +1134,8 @@ export const BehaviorInsights: React.FC = () => {
                     )}
                 </div>
             </motion.div>
+                </>
+            )}
 
             <div className="h-5"></div>
         </div>

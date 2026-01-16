@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Suspense, lazy, useCallback, useEffect } from 'react';
+import { MotionConfig } from 'framer-motion';
 import { DataProvider, useSettings } from './store';
 import { Layout } from './components/Layout';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -9,6 +10,8 @@ import { ModelProvider } from './contexts/ModelContext';
 import { ModelDownloadPrompt } from './components/ModelDownloadPrompt';
 import { AuthProvider } from './contexts/AuthContext';
 import { AuthGate } from './components/auth';
+import { OfflineBanner } from './components/OfflineBanner';
+import { StorageWarningBanner } from './components/StorageWarningBanner';
 
 // Feature flag for auth - set to false to enable biometric/QR unlock
 // Set to true during development to bypass auth requirements
@@ -33,13 +36,13 @@ const Analysis = lazy(() => import('./components/Analysis').then(m => ({ default
 const LogEntryForm = lazy(() => import('./components/LogEntryForm').then(m => ({ default: m.LogEntryForm })));
 const BehaviorInsights = lazy(() => import('./components/BehaviorInsights').then(m => ({ default: m.BehaviorInsights })));
 const SensoryProfile = lazy(() => import('./components/SensoryProfile').then(m => ({ default: m.SensoryProfile })));
-const EnergyRegulation = lazy(() => import('./components/EnergyRegulation').then(m => ({ default: m.EnergyRegulation })));
+// EnergyRegulation removed - consolidated into Dashboard energy card
 const CrisisMode = lazy(() => import('./components/CrisisMode').then(m => ({ default: m.CrisisMode })));
 const Reports = lazy(() => import('./components/Reports').then(m => ({ default: m.Reports })));
 const VisualSchedule = lazy(() => import('./components/VisualSchedule').then(m => ({ default: m.VisualSchedule })));
 const GoalTracking = lazy(() => import('./components/GoalTracking').then(m => ({ default: m.GoalTracking })));
-const DysregulationHeatmap = lazy(() => import('./components/DysregulationHeatmap').then(m => ({ default: m.DysregulationHeatmap })));
-const TransitionInsights = lazy(() => import('./components/TransitionInsights').then(m => ({ default: m.TransitionInsights })));
+// DysregulationHeatmap removed - consolidated into BehaviorInsights
+// TransitionInsights removed - low value, can filter in BehaviorInsights
 const Settings = lazy(() => import('./components/Settings').then(m => ({ default: m.Settings })));
 const NotFound = lazy(() => import('./components/NotFound').then(m => ({ default: m.NotFound })));
 
@@ -135,6 +138,9 @@ const OnboardingRoute = () => {
 // Layout wrapper with error boundary for protected routes
 const ProtectedLayout = () => (
   <>
+    {/* Status banners - shown at top of screen */}
+    <OfflineBanner />
+    <StorageWarningBanner />
     {/* Load shader after main app shell renders - doesn't block content */}
     <Suspense fallback={null}>
       <BackgroundShader />
@@ -178,9 +184,10 @@ const AppContent = () => {
           <Route path="/log" element={<LogEntryFormWrapper />} />
           <Route path="/behavior-insights" element={<BehaviorInsights />} />
           <Route path="/sensory-profile" element={<SensoryProfile />} />
-          <Route path="/energy-regulation" element={<EnergyRegulation />} />
-          <Route path="/heatmap" element={<DysregulationHeatmap />} />
-          <Route path="/transitions" element={<TransitionInsights />} />
+          {/* Routes removed to reduce complexity:
+              - /energy-regulation: Same data shown in Dashboard energy card
+              - /heatmap: Heatmap exists in BehaviorInsights
+              - /transitions: Low value, schedule data in BehaviorInsights */}
           <Route path="/settings" element={<Settings />} />
 
           {/* 404 catch-all */}
@@ -194,27 +201,30 @@ const AppContent = () => {
 function App() {
   return (
     <ErrorBoundary>
-      <BrowserRouter>
-        <ScrollToTop />
-        {/* AuthProvider wraps everything - manages biometric + QR unlock state */}
-        <AuthProvider bypassAuth={BYPASS_AUTH}>
-          {/* AuthGate blocks content until user is authenticated */}
-          <AuthGate>
-            <DataProvider>
-              <ModelProvider>
-                <ToastProvider>
-                  <StorageErrorListener />
-                  {/* First-launch model download prompt (Android only) */}
-                  <ModelDownloadPrompt />
-                  {/* CSS background always visible - shader loads in ProtectedLayout */}
-                  <CSSBackground />
-                  <AppContent />
-                </ToastProvider>
-              </ModelProvider>
-            </DataProvider>
-          </AuthGate>
-        </AuthProvider>
-      </BrowserRouter>
+      {/* MotionConfig respects OS prefers-reduced-motion setting */}
+      <MotionConfig reducedMotion="user">
+        <BrowserRouter>
+          <ScrollToTop />
+          {/* AuthProvider wraps everything - manages biometric + QR unlock state */}
+          <AuthProvider bypassAuth={BYPASS_AUTH}>
+            {/* AuthGate blocks content until user is authenticated */}
+            <AuthGate>
+              <DataProvider>
+                <ModelProvider>
+                  <ToastProvider>
+                    <StorageErrorListener />
+                    {/* First-launch model download prompt (Android only) */}
+                    <ModelDownloadPrompt />
+                    {/* CSS background always visible - shader loads in ProtectedLayout */}
+                    <CSSBackground />
+                    <AppContent />
+                  </ToastProvider>
+                </ModelProvider>
+              </DataProvider>
+            </AuthGate>
+          </AuthProvider>
+        </BrowserRouter>
+      </MotionConfig>
     </ErrorBoundary>
   );
 }

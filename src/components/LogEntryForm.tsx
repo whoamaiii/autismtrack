@@ -1,8 +1,8 @@
-import React, { useReducer, useId, useCallback, useMemo } from 'react';
+import React, { useReducer, useId, useCallback, useMemo, useState } from 'react';
 import { useLogs, useAppContext } from '../store';
 import { type LogEntry, SENSORY_TRIGGERS, CONTEXT_TRIGGERS, STRATEGIES } from '../types';
 import { TriggerSelector } from './TriggerSelector';
-import { X, HelpCircle } from 'lucide-react';
+import { X, HelpCircle, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useToast } from './Toast';
@@ -174,17 +174,21 @@ export const LogEntryForm: React.FC<LogEntryFormProps> = ({ onClose }) => {
     const { addLog } = useLogs();
     const { currentContext } = useAppContext();
     const { t } = useTranslation();
-    const { showSuccess, showError, showWarning } = useToast();
+    const { showSuccess, showError } = useToast();
     const formId = useId();
 
     // Consolidated form state with useReducer
     const [formState, dispatch] = useReducer(formReducer, null, createInitialState);
 
+    // Track submission state to prevent double-clicks
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     // Check datetime-local support once
     const dateTimeSupported = useMemo(() => isDateTimeLocalSupported(), []);
 
-    // Validation: require effectiveness when strategies are selected
-    const needsEffectiveness = formState.strategies.length > 0 && !formState.strategyEffectiveness;
+    // Note: Strategy effectiveness is now optional to reduce friction during stressful moments
+    // We still show the prompt to encourage input, but don't block submission
+    const suggestEffectiveness = formState.strategies.length > 0 && !formState.strategyEffectiveness;
 
     // Memoized dispatch callbacks for better performance
     const setArousal = useCallback((value: number) => dispatch({ type: 'SET_AROUSAL', payload: value }), []);
@@ -201,18 +205,12 @@ export const LogEntryForm: React.FC<LogEntryFormProps> = ({ onClose }) => {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Validate strategy effectiveness is set when strategies are used
-        if (needsEffectiveness) {
-            showWarning(t('log.effectiveness.required'), t('log.effectiveness.requiredDescription'));
-            // Scroll to and focus on the effectiveness section for accessibility
-            const effectivenessSection = document.getElementById(`${formId}-effectiveness`);
-            if (effectivenessSection) {
-                effectivenessSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                // Focus after scroll animation completes
-                setTimeout(() => effectivenessSection.focus(), 300);
-            }
-            return;
-        }
+        // Prevent double submission
+        if (isSubmitting) return;
+        setIsSubmitting(true);
+
+        // Strategy effectiveness is optional - just log a hint if not set
+        // This reduces friction when logging during stressful moments
 
         try {
             const newLog: LogEntry = {
@@ -234,12 +232,14 @@ export const LogEntryForm: React.FC<LogEntryFormProps> = ({ onClose }) => {
             const validation = validateLogEntryInput(newLog);
             if (!validation.success) {
                 showError(t('common.validationError'), validation.errors.join(', '));
+                setIsSubmitting(false);
                 return;
             }
 
             const success = addLog(newLog);
             if (!success) {
                 showError(t('common.error'), t('log.saveError'));
+                setIsSubmitting(false);
                 return;
             }
             showSuccess(t('log.saved'), t('log.savedDescription'));
@@ -247,6 +247,7 @@ export const LogEntryForm: React.FC<LogEntryFormProps> = ({ onClose }) => {
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : t('log.saveError');
             showError(t('common.error'), errorMessage);
+            setIsSubmitting(false);
         }
     };
 
@@ -288,7 +289,7 @@ export const LogEntryForm: React.FC<LogEntryFormProps> = ({ onClose }) => {
                         <h2 id={`${formId}-title`} className="text-slate-900 dark:text-white text-xl font-bold">{t('log.title')}</h2>
                         <button
                             onClick={onClose}
-                            className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-primary"
+                            className="p-3 rounded-full hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-primary min-w-[44px] min-h-[44px] flex items-center justify-center"
                             aria-label={t('common.close')}
                         >
                             <X size={24} aria-hidden="true" />
@@ -418,8 +419,8 @@ export const LogEntryForm: React.FC<LogEntryFormProps> = ({ onClose }) => {
                                     id={`${formId}-effectiveness`}
                                     tabIndex={-1}
                                     className={`flex flex-col gap-3 p-4 rounded-xl transition-colors ${
-                                        needsEffectiveness
-                                            ? 'bg-red-500/10 border-2 border-red-500/50'
+                                        suggestEffectiveness
+                                            ? 'bg-amber-500/10 border border-amber-500/30'
                                             : 'bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5'
                                     }`}
                                     role="group"
@@ -432,8 +433,7 @@ export const LogEntryForm: React.FC<LogEntryFormProps> = ({ onClose }) => {
                                                 id={`${formId}-effectiveness-label`}
                                                 className="text-slate-700 dark:text-slate-300 font-medium text-sm"
                                             >
-                                                {t('log.effectiveness.label')} <span className="text-red-500" aria-hidden="true">*</span>
-                                                <span className="sr-only">({t('common.required')})</span>
+                                                {t('log.effectiveness.label')} <span className="text-amber-500 text-xs" aria-hidden="true">(optional)</span>
                                             </span>
                                             <button
                                                 type="button"
@@ -444,9 +444,9 @@ export const LogEntryForm: React.FC<LogEntryFormProps> = ({ onClose }) => {
                                                 <HelpCircle size={16} aria-hidden="true" />
                                             </button>
                                         </div>
-                                        {needsEffectiveness && (
-                                            <span className="text-red-500 text-xs font-medium" role="alert">
-                                                {t('log.effectiveness.required')}
+                                        {suggestEffectiveness && (
+                                            <span className="text-amber-500 text-xs font-medium">
+                                                {t('log.effectiveness.helpful', 'Helps track what works')}
                                             </span>
                                         )}
                                     </div>
@@ -456,7 +456,7 @@ export const LogEntryForm: React.FC<LogEntryFormProps> = ({ onClose }) => {
                                     >
                                         {t('log.effectiveness.hint')}
                                     </p>
-                                    <div className="flex gap-2" role="radiogroup" aria-required="true">
+                                    <div className="flex gap-2" role="radiogroup" aria-required="false">
                                         <button
                                             type="button"
                                             onClick={() => setStrategyEffectiveness('helped')}
@@ -547,10 +547,19 @@ export const LogEntryForm: React.FC<LogEntryFormProps> = ({ onClose }) => {
                         <div className="p-6 border-t border-slate-100 dark:border-white/5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl">
                             <motion.button
                                 type="submit"
-                                whileTap={{ scale: 0.98 }}
-                                className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/25 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                                disabled={isSubmitting}
+                                whileTap={isSubmitting ? {} : { scale: 0.98 }}
+                                className={`w-full text-white font-bold py-4 rounded-xl shadow-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 flex items-center justify-center gap-2 ${
+                                    isSubmitting
+                                        ? 'bg-primary/50 cursor-not-allowed'
+                                        : 'bg-primary hover:bg-primary/90 shadow-primary/25'
+                                }`}
+                                aria-busy={isSubmitting}
                             >
-                                {t('log.save')}
+                                {isSubmitting && (
+                                    <Loader2 size={20} className="animate-spin" aria-hidden="true" />
+                                )}
+                                {isSubmitting ? t('common.saving', 'Saving...') : t('log.save')}
                             </motion.button>
                         </div>
                     </form>

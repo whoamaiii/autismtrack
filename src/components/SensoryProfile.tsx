@@ -1,9 +1,8 @@
 import React, { useMemo, useState, useId } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useLogs } from '../store';
+// Note: useNavigate removed - now using BackButton component
 import {
-    ArrowLeft,
     Eye,
     Activity,
     AlertTriangle,
@@ -11,6 +10,7 @@ import {
     Brain,
     Lightbulb
 } from 'lucide-react';
+import { BackButton } from './BackButton';
 import { motion } from 'framer-motion';
 import { translateTrigger } from '../utils/translateDomain';
 
@@ -65,7 +65,6 @@ const getDominantBaseline = (index: number): 'hanging' | 'middle' | 'auto' => {
 };
 
 export const SensoryProfile: React.FC = () => {
-    const navigate = useNavigate();
     const { t } = useTranslation();
     const { logs } = useLogs();
     const [timeRange, setTimeRange] = useState<'today' | 'week' | 'month'>('month');
@@ -202,13 +201,7 @@ export const SensoryProfile: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 className="sticky top-0 z-10 flex items-center bg-background-dark/80 p-4 pb-2 backdrop-blur-sm justify-between rounded-b-xl -mx-4 -mt-4 mb-2 border-b border-white/10"
             >
-                <button
-                    onClick={() => navigate(-1)}
-                    className="flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-white/10 transition-colors text-white"
-                    aria-label={t('sensoryProfile.goBack')}
-                >
-                    <ArrowLeft size={20} />
-                </button>
+                <BackButton className="size-10 shrink-0" />
                 <h2 className="text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">
                     {t('sensoryProfile.title')}
                 </h2>

@@ -5,6 +5,7 @@
         "required": "påkrevd",
         "error": "Feil",
         "validationError": "Valideringsfeil",
+        "saving": "Lagrer...",
         "noData": "Ingen data",
         "goBack": "Gå tilbake",
         "storageError": "Lagringsfeil",
@@ -1096,5 +1097,15 @@
         "extractingModel": "Pakker ut modell...",
         "extractionProgress": "Utpakkingsfremdrift",
         "extractingProgress": "Pakker ut... {{percent}}%"
+    },
+    "offline": {
+        "message": "Du er frakoblet. Noen funksjoner fungerer kanskje ikke.",
+        "retry": "Prøv igjen"
+    },
+    "storage": {
+        "warningTitle": "Lagring nesten full",
+        "warningMessage": "Du bruker {{percent}}% av tilgjengelig lagring. Vurder å eksportere og slette gamle data.",
+        "exportButton": "Eksporter data",
+        "dismissButton": "Avvis"
     }
 }

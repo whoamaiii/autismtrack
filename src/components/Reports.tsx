@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FileText, Download, Calendar, Check, Loader2, AlertCircle, ArrowLeft, Eye, X, ChevronRight } from 'lucide-react';
+// useNavigate removed - using BackButton component
+import { FileText, Download, Calendar, Check, Loader2, AlertCircle, Eye, X, ChevronRight } from 'lucide-react';
+import { BackButton } from './BackButton';
 import { useLogs, useCrisis, useChildProfile } from '../store';
 import { generatePDF } from '../services/pdfGenerator';
 import { analyzeLogs } from '../services/ai';
@@ -12,7 +13,6 @@ import { translateTrigger, translateStrategy } from '../utils/translateDomain';
 type Period = '30_days' | '3_months' | 'this_year';
 
 export const Reports: React.FC = () => {
-    const navigate = useNavigate();
     const { t } = useTranslation();
     const { logs } = useLogs();
     const { crisisEvents } = useCrisis();
@@ -228,9 +228,7 @@ export const Reports: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 className="sticky top-0 z-10 flex items-center bg-background-dark/80 p-4 pb-2 backdrop-blur-sm justify-between rounded-b-xl -mx-4 -mt-4 mb-2 border-b border-white/10"
             >
-                <button onClick={() => navigate(-1)} className="flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-white/10 transition-colors text-white" aria-label="Gå tilbake">
-                    <ArrowLeft size={20} />
-                </button>
+                <BackButton className="size-10 shrink-0" />
                 <h2 className="text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">{t('reports.title')}</h2>
                 <div className="size-10"></div>
             </motion.div>

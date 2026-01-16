@@ -180,11 +180,11 @@ export const DysregulationHeatmap: React.FC = () => {
         <div className="flex flex-col gap-6 py-6">
             {/* Header */}
             <div className="sticky top-0 z-10 flex items-center bg-background-dark/80 p-4 pb-2 backdrop-blur-sm justify-between rounded-b-xl -mx-4 -mt-4 mb-2 border-b border-white/10">
-                <Link to="/" className="flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-white/10 transition-colors text-white" aria-label="Gå tilbake">
+                <Link to="/" className="flex size-11 shrink-0 items-center justify-center rounded-full hover:bg-white/10 transition-colors text-white" aria-label="Gå tilbake">
                     <ArrowLeft size={20} />
                 </Link>
                 <h1 className="text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">{t('heatmap.title', 'Dysregulation Heatmap')}</h1>
-                <div className="size-10"></div>
+                <div className="size-11"></div>
             </div>
 
             {/* Stats Overview */}
@@ -319,8 +319,8 @@ export const DysregulationHeatmap: React.FC = () => {
                         <div className="flex-1 h-4 rounded bg-red-600/80" />
                     </div>
                     <div className="flex justify-between mt-1">
-                        <span className="text-[10px] text-slate-500">{t('heatmap.legend.low', 'Low (1-3)')}</span>
-                        <span className="text-[10px] text-slate-500">{t('heatmap.legend.high', 'High (8-10)')}</span>
+                        <span className="text-sm text-slate-500">{t('heatmap.legend.low', 'Low (1-3)')}</span>
+                        <span className="text-sm text-slate-500">{t('heatmap.legend.high', 'High (8-10)')}</span>
                     </div>
                 </div>
             </motion.div>

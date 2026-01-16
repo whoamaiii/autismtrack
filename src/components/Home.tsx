@@ -2,7 +2,7 @@ import React, { useState, useRef, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
     Brain, Activity, Settings, Clock, Database, Check,
-    Trash2, ArrowRightLeft, Sparkles, ArrowRight, Grid3X3,
+    Trash2, Sparkles, ArrowRight,
     Globe, X, Eye, FileText, Target, Ear
 } from 'lucide-react';
 
@@ -124,7 +124,7 @@ export const Home: React.FC = () => {
     };
 
     return (
-        <div className="flex flex-col gap-2 pt-0 pb-28 relative">
+        <div className="flex flex-col gap-1.5 pt-0 pb-28 relative">
             {/* Skip Link for keyboard navigation */}
             <a
                 href="#main-content"
@@ -168,7 +168,7 @@ export const Home: React.FC = () => {
                         <Globe className="text-slate-400 dark:text-slate-300" size={20} aria-hidden="true" />
                     </button>
 
-                    <div className="flex items-center justify-center -mb-4">
+                    <div className="flex items-center justify-center -mb-6">
                         <AnimatedLogo
                             width="100%"
                             showBackground={true}
@@ -301,41 +301,16 @@ export const Home: React.FC = () => {
                         </div>
                     </CollapsibleSection>
 
-                    {/* Tracking Tools Section - Collapsed by default */}
-                    <CollapsibleSection
-                        title={t('home.sections.tracking', 'Tracking Tools')}
-                        defaultExpanded={false}
-                        itemCount={3}
-                    >
-                        <div className="grid grid-cols-3 gap-3">
-                            <Link to="/sensory-profile" className="liquid-glass-card p-4 rounded-2xl hover:bg-white/10 transition-colors active:scale-98 block h-full text-center">
-                                <div className="bg-blue-500/10 w-10 h-10 rounded-xl flex items-center justify-center mb-2 mx-auto">
-                                    <Activity className="text-blue-500" size={20} />
-                                </div>
-                                <h3 className="text-slate-900 dark:text-white font-bold text-sm">{t('home.senses.title')}</h3>
-                            </Link>
-
-                            <Link to="/heatmap" className="liquid-glass-card p-4 rounded-2xl hover:bg-white/10 transition-colors active:scale-98 block h-full text-center">
-                                <div className="bg-rose-500/10 w-10 h-10 rounded-xl flex items-center justify-center mb-2 mx-auto">
-                                    <Grid3X3 className="text-rose-500" size={20} />
-                                </div>
-                                <h3 className="text-slate-900 dark:text-white font-bold text-sm">{t('home.heatmap.title')}</h3>
-                            </Link>
-
-                            <Link to="/energy-regulation" className="liquid-glass-card p-4 rounded-2xl hover:bg-white/10 transition-colors active:scale-98 block h-full text-center">
-                                <div className="bg-green-500/10 w-10 h-10 rounded-xl flex items-center justify-center mb-2 mx-auto">
-                                    <Activity className="text-green-500" size={20} />
-                                </div>
-                                <h3 className="text-slate-900 dark:text-white font-bold text-sm">{t('home.energy.title')}</h3>
-                            </Link>
-                        </div>
-                    </CollapsibleSection>
+                    {/* Note: Tracking Tools section removed - consolidated:
+                        - /heatmap now lives in BehaviorInsights
+                        - /energy-regulation data shown in Dashboard
+                        - /sensory-profile accessible via Insights section */}
 
                     {/* Planning Section - Collapsed by default */}
                     <CollapsibleSection
                         title={t('home.sections.planning', 'Planning')}
                         defaultExpanded={false}
-                        itemCount={3}
+                        itemCount={2}
                     >
                         <div className="space-y-2">
                             <Link to="/schedule" className="liquid-glass-card p-4 rounded-2xl hover:bg-white/10 transition-colors active:scale-98 flex items-center gap-4">
@@ -359,25 +334,14 @@ export const Home: React.FC = () => {
                                 </div>
                                 <ArrowRight className="text-slate-400" size={18} />
                             </Link>
-
-                            <Link to="/transitions" className="liquid-glass-card p-4 rounded-2xl hover:bg-white/10 transition-colors active:scale-98 flex items-center gap-4">
-                                <div className="bg-violet-500/10 w-10 h-10 rounded-xl flex items-center justify-center">
-                                    <ArrowRightLeft className="text-violet-500" size={20} />
-                                </div>
-                                <div className="flex-1">
-                                    <h3 className="text-slate-900 dark:text-white font-bold">{t('home.transitions.title')}</h3>
-                                    <p className="text-slate-500 dark:text-slate-400 text-xs">{t('home.transitions.subtitle')}</p>
-                                </div>
-                                <ArrowRight className="text-slate-400" size={18} />
-                            </Link>
                         </div>
                     </CollapsibleSection>
 
-                    {/* Utilities Section - Collapsed by default */}
+                    {/* Reports Section - Collapsed by default (Settings accessible via header icon) */}
                     <CollapsibleSection
                         title={t('home.sections.more', 'More')}
                         defaultExpanded={false}
-                        itemCount={2}
+                        itemCount={1}
                     >
                         <div className="space-y-2">
                             <Link to="/reports" className="liquid-glass-card p-4 rounded-2xl hover:bg-white/10 transition-colors active:scale-98 flex items-center gap-4">
@@ -387,17 +351,6 @@ export const Home: React.FC = () => {
                                 <div className="flex-1">
                                     <h3 className="text-slate-900 dark:text-white font-bold">{t('home.reports.title')}</h3>
                                     <p className="text-slate-500 dark:text-slate-400 text-xs">{t('home.reports.subtitle')}</p>
-                                </div>
-                                <ArrowRight className="text-slate-400" size={18} />
-                            </Link>
-
-                            <Link to="/settings" className="liquid-glass-card p-4 rounded-2xl hover:bg-white/10 transition-colors active:scale-98 flex items-center gap-4">
-                                <div className="bg-slate-500/10 w-10 h-10 rounded-xl flex items-center justify-center">
-                                    <Settings className="text-slate-400" size={20} />
-                                </div>
-                                <div className="flex-1">
-                                    <h3 className="text-slate-900 dark:text-white font-bold">{t('home.settings.title')}</h3>
-                                    <p className="text-slate-500 dark:text-slate-400 text-xs">{t('home.settings.subtitle')}</p>
                                 </div>
                                 <ArrowRight className="text-slate-400" size={18} />
                             </Link>

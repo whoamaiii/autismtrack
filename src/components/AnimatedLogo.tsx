@@ -9,15 +9,14 @@ const vertexShader = `
   varying vec2 vUv;
   varying vec3 vPosition;
   uniform float uTime;
-  uniform vec2 uMouse;
 
   void main() {
     vUv = uv;
     vPosition = position;
     
-    // Subtle breathing movement
+    // Very subtle breathing - slow
     vec3 pos = position;
-    pos.z += sin(uTime * 0.5) * 0.05;
+    pos.z += sin(uTime * 0.15) * 0.02;
     
     gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
   }
@@ -62,37 +61,36 @@ const fragmentShader = `
   void main() {
     vec2 uv = vUv;
     
-    // Liquid distortion - MORE PRONOUNCED
-    float noiseVal = snoise(uv * 2.5 + uTime * 0.3);
-    float flow = snoise(uv * 1.2 - uTime * 0.15);
+    // Subtle liquid distortion - slow and elegant
+    float noiseVal = snoise(uv * 2.0 + uTime * 0.08);
+    float flow = snoise(uv * 1.0 - uTime * 0.05);
     
-    // Create a stronger "glass" distortion effect
-    vec2 distortedUv = uv + vec2(noiseVal, flow) * 0.025;
+    // Gentle glass distortion
+    vec2 distortedUv = uv + vec2(noiseVal, flow) * 0.008;
     
-    // Stronger Chromatic Aberration (Prism effect)
-    float r = texture2D(uTexture, distortedUv + vec2(0.004, 0.0)).r;
+    // Subtle Chromatic Aberration
+    float r = texture2D(uTexture, distortedUv + vec2(0.0015, 0.0)).r;
     float g = texture2D(uTexture, distortedUv).g;
-    float b = texture2D(uTexture, distortedUv - vec2(0.004, 0.0)).b;
+    float b = texture2D(uTexture, distortedUv - vec2(0.0015, 0.0)).b;
     float a = texture2D(uTexture, distortedUv).a;
     
-    // More visible Liquid Shimmer / Specular Highlight
-    float light = snoise(uv * 3.0 + uTime * 0.6);
-    float highlight = smoothstep(0.35, 0.4, light) * smoothstep(0.45, 0.4, light);
+    // Soft shimmer - very slow
+    float light = snoise(uv * 2.0 + uTime * 0.15);
+    float highlight = smoothstep(0.3, 0.5, light) * smoothstep(0.7, 0.5, light);
     
-    // Mix colors
     vec3 color = vec3(r, g, b);
     
-    // Tint with app colors (Cyan/Purple) based on flow - slightly stronger
-    vec3 tint = mix(vec3(0.2, 0.9, 1.0), vec3(0.7, 0.2, 1.0), uv.x + noiseVal * 0.3);
-    color += tint * 0.15;
+    // Very subtle cyan-purple tint
+    vec3 tint = mix(vec3(0.3, 0.9, 1.0), vec3(0.6, 0.3, 1.0), uv.x);
+    color += tint * 0.05 * a;
     
-    // Stronger highlights (Glass reflection)
-    color += vec3(1.0) * highlight * 0.6 * a;
+    // Soft highlight
+    color += vec3(1.0) * highlight * 0.15 * a;
     
-    // Stronger Edge glow (Rim light)
-    float edge = texture2D(uTexture, distortedUv + vec2(0.015)).a;
-    float rim = (a - edge) * 3.0;
-    color += vec3(0.4, 0.8, 1.0) * max(0.0, rim);
+    // Subtle rim glow
+    float edge = texture2D(uTexture, distortedUv + vec2(0.008)).a;
+    float rim = (a - edge) * 1.5;
+    color += vec3(0.5, 0.8, 1.0) * max(0.0, rim) * 0.5;
 
     gl_FragColor = vec4(color, a);
   }
@@ -126,9 +124,9 @@ function LiquidLogoMesh({ isAnimating }: { isAnimating: boolean }) {
       const material = meshRef.current.material as THREE.ShaderMaterial;
       material.uniforms.uTime.value = state.clock.elapsedTime;
       
-      // Gentle floating motion
-      meshRef.current.position.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.05;
-      meshRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.3) * 0.02;
+      // Very gentle floating - slow and subtle
+      meshRef.current.position.y = Math.sin(state.clock.elapsedTime * 0.15) * 0.02;
+      meshRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.1) * 0.005;
     }
   });
 
@@ -169,36 +167,36 @@ export function AnimatedLogo({
   return (
     <motion.div
       className={`relative flex items-center justify-center ${className}`}
-      initial={{ opacity: 0, scale: 0.9 }}
+      initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.8, ease: "easeOut" }}
+      transition={{ duration: 1.2, ease: "easeOut" }}
       style={{ 
         width, 
-        height: typeof width === 'number' ? width * 0.45 : undefined,
-        aspectRatio: typeof width === 'string' ? '2.2/1' : undefined,
-        minHeight: 120
+        height: typeof width === 'number' ? width * 0.35 : undefined,
+        aspectRatio: typeof width === 'string' ? '2.8/1' : undefined,
+        minHeight: 90
       }}
       onAnimationComplete={onAnimationComplete}
     >
-      {/* Background Glows - More visible */}
+      {/* Background Glows - Slow and subtle */}
       {showBackground && isAnimating && (
         <>
            <motion.div
-            className="absolute inset-0 rounded-full bg-cyan-500/30 blur-[50px]"
-            animate={{ opacity: [0.4, 0.7, 0.4], scale: [0.9, 1.15, 0.9] }}
-            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute inset-0 rounded-full bg-cyan-500/15 blur-[60px]"
+            animate={{ opacity: [0.3, 0.5, 0.3], scale: [0.95, 1.05, 0.95] }}
+            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
           />
            <motion.div
-            className="absolute inset-0 rounded-full bg-purple-500/25 blur-[40px] translate-x-4"
-            animate={{ opacity: [0.3, 0.6, 0.3], scale: [1, 1.2, 1] }}
-            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+            className="absolute inset-0 rounded-full bg-purple-500/10 blur-[50px] translate-x-4"
+            animate={{ opacity: [0.2, 0.4, 0.2], scale: [1, 1.08, 1] }}
+            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
           />
         </>
       )}
 
       {/* 3D Liquid Logo */}
       <div className="absolute inset-0 z-10 w-full h-full">
-        <Canvas camera={{ position: [0, 0, 2], fov: 50 }} dpr={[1, 2]} resize={{ scroll: false }}>
+        <Canvas camera={{ position: [0, 0, 1.8], fov: 50 }} dpr={[1, 2]} resize={{ scroll: false }}>
           <React.Suspense fallback={null}>
             <LiquidLogoMesh isAnimating={isAnimating} />
           </React.Suspense>

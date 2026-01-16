@@ -2,7 +2,6 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useChildProfile } from '../store';
 import {
-    ArrowLeft,
     User,
     Save,
     Trash2,
@@ -20,7 +19,7 @@ import {
     Sparkles,
     TrendingUp
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { BackButton } from './BackButton';
 import type { ChildProfile } from '../types';
 import {
     DIAGNOSIS_OPTIONS,
@@ -284,11 +283,9 @@ export const Settings: React.FC = () => {
 
     return (
         <div className="flex flex-col gap-6 py-6 pb-24">
-            {/* Header */}
-            <div className="flex items-center gap-4">
-                <Link to="/" className="p-2 rounded-full hover:bg-white/10 transition-colors" aria-label={t('settings.goBack')}>
-                    <ArrowLeft className="text-white" size={24} />
-                </Link>
+            {/* Header with BackButton for mobile navigation */}
+            <div className="flex items-center gap-3">
+                <BackButton to="/" className="shrink-0" />
                 <div>
                     <h1 className="text-2xl font-bold text-white">{t('settings.title')}</h1>
                     <p className="text-slate-400 text-sm">{t('settings.subtitle')}</p>

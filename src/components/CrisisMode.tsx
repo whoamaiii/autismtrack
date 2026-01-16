@@ -18,6 +18,7 @@ import { TriggerSelector } from './TriggerSelector';
 import { useTranslation } from 'react-i18next';
 import { AudioPlayer } from './AudioPlayer';
 import { CrisisReflection } from './CrisisReflection';
+import { BackButton } from './BackButton';
 import { isNative } from '../utils/platform';
 
 export const CrisisMode: React.FC = () => {
@@ -140,8 +141,12 @@ export const CrisisMode: React.FC = () => {
 
         // Check if Permissions API is available
         if (!navigator.permissions) {
-            // Permissions API not available, but microphone might still work
-            // Leave as 'prompt' to allow user to try recording
+            // Permissions API not available - check if getUserMedia is at least available
+            if (!navigator.mediaDevices?.getUserMedia) {
+                // No media device support at all
+                setMicPermissionState('unavailable');
+            }
+            // Otherwise leave as 'prompt' to allow user to try recording
             if (import.meta.env.DEV) {
                 console.warn('[CrisisMode] Permissions API not available');
             }
@@ -471,13 +476,14 @@ export const CrisisMode: React.FC = () => {
             </AnimatePresence>
 
             <div className="relative z-10 flex flex-col flex-1 p-6">
-                {/* Header */}
+                {/* Header with BackButton for mobile navigation */}
                 <motion.div
                     initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.2 }}
-                    className="flex justify-between items-center mb-8"
+                    className="flex items-center gap-3 mb-8"
                 >
+                    <BackButton className="shrink-0" />
                     <div className="flex items-center gap-2 text-red-500">
                         <AlertTriangle size={24} />
                         <span className="font-bold text-lg tracking-wider uppercase">{t('crisis.title')}</span>

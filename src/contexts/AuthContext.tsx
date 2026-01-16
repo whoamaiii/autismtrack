@@ -225,6 +225,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
     success: boolean;
     error?: AuthError;
   }> => {
+    void _qrData; // Parameter kept for interface compatibility
     // QR authentication is disabled - biometric only
     return { success: true };
   }, []);
@@ -274,6 +275,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
     success: boolean;
     error?: AuthError;
   }> => {
+    void _qrData; // Parameter kept for interface compatibility
     // QR enrollment is disabled - biometric only
     return { success: true };
   }, []);

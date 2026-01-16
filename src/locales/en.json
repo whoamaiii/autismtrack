@@ -5,6 +5,7 @@
         "required": "required",
         "error": "Error",
         "validationError": "Validation Error",
+        "saving": "Saving...",
         "noData": "No data",
         "goBack": "Go back",
         "storageError": "Storage error",
@@ -1096,5 +1097,15 @@
         "extractingModel": "Extracting model...",
         "extractionProgress": "Extraction progress",
         "extractingProgress": "Extracting... {{percent}}%"
+    },
+    "offline": {
+        "message": "You're offline. Some features may not work.",
+        "retry": "Retry"
+    },
+    "storage": {
+        "warningTitle": "Storage Almost Full",
+        "warningMessage": "You're using {{percent}}% of available storage. Consider exporting and clearing old data.",
+        "exportButton": "Export Data",
+        "dismissButton": "Dismiss"
     }
 }

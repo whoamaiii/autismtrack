@@ -491,8 +491,12 @@ ${userPrompt}
 `;
 
     if (import.meta.env.DEV) {
-        console.log('[LocalModel] Sending prompt to Kreativium 4B...');
-        console.log('[LocalModel] Prompt length:', fullPrompt.length);
+        console.log('[LocalModel] ══════════════════════════════════════════════════════');
+        console.log('[LocalModel] 🤖 REAL ON-DEVICE INFERENCE STARTING');
+        console.log('[LocalModel] 📊 Logs being analyzed:', logs.length);
+        console.log('[LocalModel] 🚨 Crisis events included:', crisisEvents.length);
+        console.log('[LocalModel] 📝 Prompt length:', fullPrompt.length, 'characters');
+        console.log('[LocalModel] ══════════════════════════════════════════════════════');
     }
 
     try {
@@ -501,8 +505,14 @@ ${userPrompt}
         });
 
         if (import.meta.env.DEV) {
-            console.log(`[LocalModel] Response received in ${durationMs}ms`);
-            console.log('[LocalModel] Response length:', response.length);
+            const tokensEstimate = Math.round(response.length / 4); // rough estimate
+            console.log('[LocalModel] ══════════════════════════════════════════════════════');
+            console.log('[LocalModel] ✅ ON-DEVICE INFERENCE COMPLETED');
+            console.log(`[LocalModel] ⏱️  Duration: ${durationMs}ms (${(durationMs / 1000).toFixed(1)}s)`);
+            console.log(`[LocalModel] 📏 Response: ${response.length} chars (~${tokensEstimate} tokens)`);
+            console.log(`[LocalModel] 🚀 Speed: ~${Math.round(tokensEstimate / (durationMs / 1000))} tokens/sec`);
+            console.log('[LocalModel] 🔒 Data NEVER left the device - 100% private');
+            console.log('[LocalModel] ══════════════════════════════════════════════════════');
         }
 
         // Parse the response using shared utility

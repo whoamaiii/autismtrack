@@ -294,7 +294,7 @@ export const Dashboard: React.FC = () => {
                 initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={prefersReducedMotion ? { duration: 0.01 } : { duration: 0.2 }}
-                className="flex items-center justify-between mb-8"
+                className="flex items-center justify-between"
             >
                 <div className="flex items-center gap-3">
                     <motion.div
@@ -310,6 +310,163 @@ export const Dashboard: React.FC = () => {
                 <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 bg-white/50 dark:bg-white/5 px-3 py-1.5 rounded-full border border-slate-200 dark:border-white/10 backdrop-blur-sm">
                     <Calendar size={16} />
                     <span className="text-sm font-medium capitalize">{format(new Date(), 'MMM d', { locale: dateLocale })}</span>
+                </div>
+            </motion.div>
+
+            {/* AI Insights Card - MOVED TO TOP for above-fold visibility */}
+            <motion.div
+                initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={prefersReducedMotion ? { duration: 0.01 } : { duration: 0.3, delay: 0.05 }}
+                className="relative overflow-hidden rounded-3xl"
+            >
+                {/* Gradient background */}
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-purple-500/10 to-blue-500/20 dark:from-primary/30 dark:via-purple-500/20 dark:to-blue-500/30" />
+                <div className="absolute inset-0 backdrop-blur-xl" />
+
+                <div className="relative p-6 flex flex-col gap-4">
+                    {/* Header */}
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-xl bg-primary/20 dark:bg-primary/30">
+                                <AnimatePresence mode="wait">
+                                    {isAnalyzing ? (
+                                        <motion.div
+                                            key="loading"
+                                            animate={{ rotate: 360 }}
+                                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                        >
+                                            <Loader2 size={24} className="text-primary" />
+                                        </motion.div>
+                                    ) : analysisError ? (
+                                        <AlertCircle size={24} className="text-red-400" />
+                                    ) : (
+                                        <motion.div
+                                            key="brain"
+                                            initial={{ scale: 0.8 }}
+                                            animate={{ scale: 1 }}
+                                        >
+                                            <BrainCircuit size={24} className="text-primary" />
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                            <div>
+                                <h3 className="text-slate-900 dark:text-white font-bold text-lg">
+                                    AI Analyse
+                                    {analysis?.isDeepAnalysis && (
+                                        <span className="ml-2 text-xs bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-full">
+                                            DYP
+                                        </span>
+                                    )}
+                                </h3>
+                                <p className="text-slate-500 dark:text-slate-400 text-xs">
+                                    {analysis?.isDeepAnalysis
+                                        ? getModelDisplayName(analysis.modelUsed, 'Premium')
+                                        : 'Kreativium-flash7B'}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Analysis Content - Compact version for top placement */}
+                    {isStreaming ? (
+                        <div className="py-2">
+                            <div className="flex items-center gap-2 mb-2">
+                                <div className="relative">
+                                    <Sparkles size={16} className="text-purple-400 animate-pulse" />
+                                </div>
+                                <span className="text-purple-400 text-sm font-medium">
+                                    {retryInfo
+                                        ? `Prøver på nytt (${retryInfo.attempt}/${retryInfo.maxRetries})...`
+                                        : 'AI tenker...'}
+                                </span>
+                            </div>
+                            <div className="bg-black/20 rounded-xl p-3 font-mono text-xs text-green-400 max-h-32 overflow-y-auto">
+                                <pre className="whitespace-pre-wrap break-words">
+                                    {streamingText || '▌'}
+                                    <span className="animate-pulse">▌</span>
+                                </pre>
+                            </div>
+                        </div>
+                    ) : (isAnalyzing || isDeepAnalyzing) ? (
+                        <div className="py-4 text-center">
+                            <Loader2 size={24} className="text-primary animate-spin mx-auto mb-2" />
+                            <p className="text-slate-600 dark:text-slate-300 text-sm">
+                                {isDeepAnalyzing ? 'Dyp analyse...' : 'Analyserer...'}
+                            </p>
+                            {elapsedSeconds > 0 && (
+                                <p className="text-slate-500 dark:text-slate-400 text-xs mt-1 font-mono">
+                                    {elapsedSeconds}s
+                                </p>
+                            )}
+                        </div>
+                    ) : analysis ? (
+                        <div className="space-y-3">
+                            {/* Main Recommendation - Compact */}
+                            {analysis.recommendations && analysis.recommendations.length > 0 && (
+                                <div className="bg-white/50 dark:bg-white/5 rounded-xl p-3 border border-white/50 dark:border-white/10">
+                                    <p className="text-slate-800 dark:text-white text-sm leading-relaxed">
+                                        {analysis.recommendations[0]}
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Quick action row */}
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                                    <div className="w-2 h-2 rounded-full bg-green-500" aria-hidden="true" />
+                                    <span>{logs.length} logger</span>
+                                </div>
+                                <Link
+                                    to="/behavior-insights"
+                                    className="flex items-center gap-1 text-primary text-sm font-medium hover:underline"
+                                >
+                                    Mer →
+                                </Link>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="py-2">
+                            <EmptyState
+                                title={logs.length < 3 ? "Samle data" : "Start analyse"}
+                                description={logs.length < 3
+                                    ? "Logg minst 3 ganger for AI-innsikt"
+                                    : "Trykk for å analysere mønstre"}
+                                icon={logs.length < 3 ? SearchX : BrainCircuit}
+                                actionLabel={logs.length < 3 ? "Logg" : undefined}
+                                actionLink={logs.length < 3 ? "/log" : undefined}
+                                compact
+                            />
+                        </div>
+                    )}
+
+                    {/* Analysis Buttons - Compact row */}
+                    {logs.length >= 3 && !isAnalyzing && !isDeepAnalyzing && !isStreaming && (
+                        <div className="flex gap-2">
+                            <button
+                                onClick={handleQuickAnalysis}
+                                className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-white/50 dark:bg-white/10 hover:bg-white/70 dark:hover:bg-white/20 transition-colors text-sm font-medium text-slate-700 dark:text-slate-200"
+                            >
+                                <RefreshCw size={14} />
+                                Rask
+                            </button>
+                            <button
+                                onClick={handleDeepAnalysis}
+                                className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 transition-colors text-sm font-medium text-white shadow-lg shadow-purple-500/25"
+                            >
+                                <Zap size={14} />
+                                Dyp
+                            </button>
+                            <button
+                                onClick={handleStreamingAnalysis}
+                                className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 transition-colors text-sm font-medium text-white shadow-lg shadow-green-500/25"
+                            >
+                                <Sparkles size={14} />
+                                Live
+                            </button>
+                        </div>
+                    )}
                 </div>
             </motion.div>
 
@@ -376,205 +533,6 @@ export const Dashboard: React.FC = () => {
                     <p className="text-slate-400 text-sm">Energi Igjen</p>
                 </motion.div>
             </div>
-
-            {/* AI Insights Card - Full Width, Enhanced */}
-            <motion.div
-                initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={prefersReducedMotion ? { duration: 0.01 } : { duration: 0.3, delay: 0.12 }}
-                className="relative overflow-hidden rounded-3xl"
-            >
-                {/* Gradient background */}
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-purple-500/10 to-blue-500/20 dark:from-primary/30 dark:via-purple-500/20 dark:to-blue-500/30" />
-                <div className="absolute inset-0 backdrop-blur-xl" />
-
-                <div className="relative p-6 flex flex-col gap-4">
-                    {/* Header */}
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-xl bg-primary/20 dark:bg-primary/30">
-                                <AnimatePresence mode="wait">
-                                    {isAnalyzing ? (
-                                        <motion.div
-                                            key="loading"
-                                            animate={{ rotate: 360 }}
-                                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                                        >
-                                            <Loader2 size={24} className="text-primary" />
-                                        </motion.div>
-                                    ) : analysisError ? (
-                                        <AlertCircle size={24} className="text-red-400" />
-                                    ) : (
-                                        <motion.div
-                                            key="brain"
-                                            initial={{ scale: 0.8 }}
-                                            animate={{ scale: 1 }}
-                                        >
-                                            <BrainCircuit size={24} className="text-primary" />
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-                            <div>
-                                <h3 className="text-slate-900 dark:text-white font-bold text-lg">
-                                    AI Analyse
-                                    {analysis?.isDeepAnalysis && (
-                                        <span className="ml-2 text-xs bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-full">
-                                            DYP
-                                        </span>
-                                    )}
-                                </h3>
-                                <p className="text-slate-500 dark:text-slate-400 text-xs">
-                                    {analysis?.isDeepAnalysis
-                                        ? getModelDisplayName(analysis.modelUsed, 'Premium')
-                                        : 'Kreativium-flash7B'}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Analysis Content */}
-                    {isStreaming ? (
-                        <div className="py-4">
-                            <div className="flex items-center gap-2 mb-3">
-                                <div className="relative">
-                                    <Sparkles size={20} className="text-purple-400 animate-pulse" />
-                                    <div className="absolute inset-0 bg-purple-400/30 blur-lg animate-pulse" />
-                                </div>
-                                <span className="text-purple-400 text-sm font-medium">
-                                    {retryInfo
-                                        ? `Prøver på nytt (${retryInfo.attempt}/${retryInfo.maxRetries})...`
-                                        : 'AI tenker i sanntid...'
-                                    }
-                                </span>
-                            </div>
-                            <div className="bg-black/20 rounded-xl p-4 font-mono text-sm text-green-400 max-h-48 overflow-y-auto">
-                                <pre className="whitespace-pre-wrap break-words">
-                                    {streamingText || '▌'}
-                                    <span className="animate-pulse">▌</span>
-                                </pre>
-                            </div>
-                            <p className="text-slate-500 text-xs mt-2 text-center">
-                                Kreativium-flash7B streaming respons
-                            </p>
-                        </div>
-                    ) : (isAnalyzing || isDeepAnalyzing) ? (
-                        <div className="py-6 text-center">
-                            <Loader2 size={32} className="text-primary animate-spin mx-auto mb-3" />
-                            <p className="text-slate-600 dark:text-slate-300 text-sm">
-                                {isDeepAnalyzing ? 'Kjører dyp analyse...' : 'Analyserer logger...'}
-                            </p>
-                            <p className="text-slate-400 dark:text-slate-500 text-xs mt-1">
-                                {retryInfo
-                                    ? `Forsøk ${retryInfo.attempt} av ${retryInfo.maxRetries}...`
-                                    : isDeepAnalyzing
-                                        ? 'Dette kan ta opptil 30 sekunder'
-                                        : 'Kreativium-flash7B'
-                                }
-                            </p>
-                            {elapsedSeconds > 0 && (
-                                <p className="text-slate-500 dark:text-slate-400 text-xs mt-2 font-mono">
-                                    {elapsedSeconds}s
-                                </p>
-                            )}
-                        </div>
-                    ) : analysis ? (
-                        <div className="space-y-4">
-                            {/* Main Recommendation */}
-                            {analysis.recommendations && analysis.recommendations.length > 0 && (
-                                <div className="bg-white/50 dark:bg-white/5 rounded-2xl p-4 border border-white/50 dark:border-white/10">
-                                    <p className="text-xs font-medium text-primary uppercase tracking-wider mb-2">
-                                        Hovedanbefaling
-                                    </p>
-                                    <p className="text-slate-800 dark:text-white text-base leading-relaxed">
-                                        {analysis.recommendations[0]}
-                                    </p>
-                                </div>
-                            )}
-
-                            {/* Additional Insights */}
-                            {analysis.recommendations && analysis.recommendations.length > 1 && (
-                                <div className="space-y-2">
-                                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                                        Flere innsikter
-                                    </p>
-                                    <ul className="space-y-2">
-                                        {analysis.recommendations.slice(1, 3).map((rec, i) => (
-                                            <li key={i} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
-                                                <span className="text-primary mt-0.5">•</span>
-                                                <span>{rec}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
-
-                            {/* Status and Link */}
-                            <div className="flex items-center justify-between pt-3 border-t border-white/30 dark:border-white/10">
-                                <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" aria-hidden="true" />
-                                    <span>
-                                        {logs.length} logger
-                                        {crisisEvents.length > 0 && ` • ${crisisEvents.length} kriser`}
-                                    </span>
-                                </div>
-                                <Link
-                                    to="/behavior-insights"
-                                    className="flex items-center gap-1 text-primary text-sm font-medium hover:underline"
-                                >
-                                    Full analyse
-                                    <span>→</span>
-                                </Link>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="py-2">
-                            <EmptyState
-                                title={logs.length < 3 ? "Samle inn mer data" : "Klar for analyse"}
-                                description={logs.length < 3
-                                    ? "Du trenger minst 3 logger for å få AI-innsikt. Logg hvordan dagen har vært!"
-                                    : "Start en analyse for å få innsikt i mønstre og trender."}
-                                icon={logs.length < 3 ? SearchX : BrainCircuit}
-                                actionLabel={logs.length < 3 ? "Ny Logg" : undefined}
-                                actionLink={logs.length < 3 ? "/log" : undefined}
-                                compact
-                            />
-                        </div>
-                    )}
-
-                    {/* Action Buttons */}
-                    {logs.length >= 3 && !isAnalyzing && !isDeepAnalyzing && !isStreaming && (
-                        <div className="flex flex-col gap-2 pt-2">
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={handleQuickAnalysis}
-                                    className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-white/50 dark:bg-white/10 hover:bg-white/70 dark:hover:bg-white/20 transition-colors text-sm font-medium text-slate-700 dark:text-slate-200"
-                                >
-                                    <RefreshCw size={16} />
-                                    Rask
-                                </button>
-                                <button
-                                    onClick={handleDeepAnalysis}
-                                    className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 transition-colors text-sm font-medium text-white shadow-lg shadow-purple-500/25"
-                                >
-                                    <Zap size={16} />
-                                    Dyp
-                                </button>
-                            </div>
-                            {/* Streaming button - WOW factor for Kaggle demo */}
-                            <button
-                                onClick={handleStreamingAnalysis}
-                                className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 hover:from-green-600 hover:via-emerald-600 hover:to-teal-600 transition-colors text-sm font-medium text-white shadow-lg shadow-green-500/25 relative overflow-hidden group"
-                            >
-                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                                <Sparkles size={16} className="animate-pulse" />
-                                Live Streaming Analyse
-                                <span className="text-xs opacity-75">(Kreativium-flash7B)</span>
-                            </button>
-                        </div>
-                    )}
-                </div>
-            </motion.div>
 
             {/* Floating Action Button */}
             <motion.div
