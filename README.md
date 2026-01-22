@@ -1,4 +1,4 @@
-# NeuroLogg Pro
+Kreativium
 
 A behavioral health tracking application designed for neurodivergent children (autism, ADHD, and other neurodevelopmental conditions). Built with React 19, TypeScript, and modern web technologies.
 
